@@ -43,9 +43,17 @@
             <div class="menu menu-column menu-title-gray-800 menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary menu-arrow-gray-500"
                 id="#kt_aside_menu" data-kt-menu="true">
 @php
-    $dbMenus = \App\Models\MenuNavigation::with(['subMenuNavigation' => function($q) {
-        $q->where('is_active', true)->orderBy('order');
-    }])->where('is_active', true)->orderBy('order')->get();
+    $dbMenus = \Illuminate\Support\Facades\Cache::remember('global_db_menus', 3600, function() {
+        return \App\Models\MenuNavigation::with(['subMenuNavigation' => function($q) {
+            $q->where('is_active', true)->orderBy('order');
+        }])->where('is_active', true)->orderBy('order')->get();
+    });
+
+    $currentUser = auth()->user();
+    $userRolesList = $currentUser && method_exists($currentUser, 'getRoleNamesLower') 
+        ? $currentUser->getRoleNamesLower() 
+        : ($currentUser && $currentUser->roles ? $currentUser->roles->pluck('name')->map(fn($r) => strtolower(trim($r)))->all() : []);
+    $userRoles = collect($userRolesList);
     
     $isUrlActive = function($url) {
         $parsed = parse_url($url);
@@ -81,18 +89,17 @@
         @php
             $permissions = array_filter(explode(',', $menu->permission ?? ''));
             $hasAccess = false;
-            $userRoles = auth()->user()->roles->pluck('name')->map('strtolower');
             
             if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
-                $hasAccess = $userRoles->contains('super admin') || $userRoles->contains('superadmin');
-            } elseif (auth()->user()->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
+                $hasAccess = in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList);
+            } elseif ($currentUser->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
                 $hasAccess = false;
             } else {
                 if (empty($permissions)) {
                     $hasAccess = true;
                 } else {
                     foreach ($permissions as $perm) {
-                        if (auth()->user()->can(trim($perm))) {
+                        if ($currentUser->can(trim($perm))) {
                             $hasAccess = true;
                             break;
                         }
@@ -132,14 +139,12 @@
                 </div>
             @else
                 @php
-                    $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) {
+                    $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) use ($currentUser, $userRolesList) {
                         if ($sub->url === route('menu-navigation.index') || str_contains($sub->url, 'menu-navigation')) {
-                            $roles = auth()->user()->roles->pluck('name')->map('strtolower');
-                            return $roles->contains('super admin') || $roles->contains('superadmin') || auth()->user()->can('Manage Menu Aplikasi');
+                            return in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList) || $currentUser->can('Manage Menu Aplikasi');
                         }
 
-                        $user = auth()->user();
-                        if ($user->isSuperAdmin()) {
+                        if ($currentUser->isSuperAdmin()) {
                             return true;
                         }
 

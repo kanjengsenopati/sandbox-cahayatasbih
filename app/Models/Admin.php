@@ -132,12 +132,25 @@ class Admin extends Authenticatable
         return $outletIds;
     }
 
+    protected ?array $memoizedRoleNamesLower = null;
+
+    /**
+     * Get memoized lowercase role names for fast repeated checks within the request lifecycle.
+     */
+    public function getRoleNamesLower(): array
+    {
+        if ($this->memoizedRoleNamesLower === null) {
+            $this->memoizedRoleNamesLower = $this->roles ? $this->roles->pluck('name')->map(fn($r) => strtolower(trim($r)))->all() : [];
+        }
+        return $this->memoizedRoleNamesLower;
+    }
+
     /**
      * Check if admin has any cashier role (case-insensitive & substring matching)
      */
     public function isKasir(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir')) {
                 return true;
@@ -151,7 +164,7 @@ class Admin extends Authenticatable
      */
     public function isKasirKoperasi(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir') && (str_contains($role, 'koperasi') || str_contains($role, 'kantin'))) {
                 return true;
@@ -165,7 +178,7 @@ class Admin extends Authenticatable
      */
     public function isKoordinatorCahayaMart(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
                 return true;
@@ -179,7 +192,7 @@ class Admin extends Authenticatable
      */
     public function isKasirOutlet(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir') && str_contains($role, 'outlet')) {
                 return true;
@@ -337,7 +350,7 @@ class Admin extends Authenticatable
             return false;
         }
 
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             // Jika punya peran administratif / backoffice lain selain kasir/outlet murni
             if (
