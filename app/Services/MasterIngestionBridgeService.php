@@ -669,7 +669,9 @@ class MasterIngestionBridgeService
                 foreach ($chunks as $chunk) {
                     $q = $masterConn->table('bills')
                         ->whereIn('student_id', $chunk)
+
                         ->where('active_status', 1)
+
                         ->whereNull('deleted_at');
                     if (!empty($academicYearId)) $q->where('academic_year_id', $academicYearId);
                     if (!empty($billTypeId)) $q->where('bill_type_id', $billTypeId);
