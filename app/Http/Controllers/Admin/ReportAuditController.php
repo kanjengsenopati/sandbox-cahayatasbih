@@ -19,10 +19,12 @@ class ReportAuditController extends Controller
         }
 
         if (request()->ajax()) {
+            session()->save();
             $startDate = request()->input('start_date');
             $endDate = request()->input('end_date');
 
-            $data = Activity::latest()
+            $data = Activity::with('causer.roles')
+                ->latest()
                 ->whereNotNull('causer_id')
                 ->when($startDate, function ($query) use ($startDate) {
                     $query->whereDate('created_at', '>=', $startDate);

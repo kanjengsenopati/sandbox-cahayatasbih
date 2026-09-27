@@ -848,6 +848,13 @@ class BillController extends Controller
             return redirect()->route('bill.index')->with('error', 'Data siswa tidak ditemukan.');
         }
 
+        // Pre-aggregate bill totals for this student in a single query
+        $billSums = Bill::where('student_id', $id)
+            ->selectRaw('bill_type_id, SUM(amount - paid_amount) as total_unpaid, SUM(paid_amount) as total_paid')
+            ->groupBy('bill_type_id')
+            ->get()
+            ->keyBy('bill_type_id');
+
         // Mengambil tagihan bulanan
         $billMonth = BillType::with('billItem', 'academicYear')
             ->where('type', BillType::TYPE_MONTHLY)
@@ -856,14 +863,10 @@ class BillController extends Controller
             })
             ->latest()
             ->get()
-            ->map(function ($item) use ($id) {
-                $item->total_unpaid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->sum(\DB::raw('amount - paid_amount'));
-
-                $item->total_paid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->sum('paid_amount');
+            ->map(function ($item) use ($billSums) {
+                $sums = $billSums->get($item->id);
+                $item->total_unpaid = (int)($sums->total_unpaid ?? 0);
+                $item->total_paid = (int)($sums->total_paid ?? 0);
 
                 return $item;
             });
@@ -875,13 +878,10 @@ class BillController extends Controller
             })
             ->latest()
             ->get()
-            ->map(function ($item) use ($id) {
-                $item->total_unpaid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->sum(\DB::raw('amount - paid_amount'));
-                $item->total_paid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->sum('paid_amount');
+            ->map(function ($item) use ($billSums) {
+                $sums = $billSums->get($item->id);
+                $item->total_unpaid = (int)($sums->total_unpaid ?? 0);
+                $item->total_paid = (int)($sums->total_paid ?? 0);
 
                 return $item;
             });

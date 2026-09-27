@@ -88,7 +88,8 @@ class PpdbController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = PpdbRegistration::with('ppdb')->where('ppdb_id', $id)->latest()->get();
+            session()->save();
+            $data = PpdbRegistration::with(['ppdb', 'ppdbStudents'])->where('ppdb_id', $id)->latest();
             return DataTables::of($data)
                 ->addColumn('student_name', function ($data) {
                     return $data->ppdbStudents->first()->name ?? '-';

@@ -74,6 +74,7 @@ class PosTransactionController extends Controller
         }
 
         if ($request->ajax()) {
+            session()->save();
             if ($request->type == 'top-items') {
                 $startDate = $request->input('start_date');
                 $endDate = $request->input('end_date');
@@ -239,6 +240,10 @@ class PosTransactionController extends Controller
                     })
                     ->count();
 
+                $todayStats = $todayQuery->selectRaw('SUM(pay_amount) as sales, SUM(profit) as profit, COUNT(*) as count')->first();
+                $weekStats = $weekQuery->selectRaw('SUM(pay_amount) as sales, SUM(profit) as profit, COUNT(*) as count')->first();
+                $monthStats = $monthQuery->selectRaw('SUM(pay_amount) as sales, SUM(profit) as profit, COUNT(*) as count')->first();
+
                 $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
                 $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
                 $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $filterOutletId, $hasOutletRestriction, $authOutletIds);
@@ -256,17 +261,17 @@ class PosTransactionController extends Controller
                     'chart_profit' => $chartCashierProfit,
 
                     // Rekap waktu
-                    'today_sales' => 'Rp ' . number_format($todayQuery->sum('pay_amount'), 0, ',', '.'),
-                    'today_profit' => 'Rp ' . number_format($todayQuery->sum('profit'), 0, ',', '.'),
-                    'today_count' => number_format($todayQuery->count(), 0, ',', '.'),
+                    'today_sales' => 'Rp ' . number_format($todayStats->sales ?? 0, 0, ',', '.'),
+                    'today_profit' => 'Rp ' . number_format($todayStats->profit ?? 0, 0, ',', '.'),
+                    'today_count' => number_format($todayStats->count ?? 0, 0, ',', '.'),
 
-                    'week_sales' => 'Rp ' . number_format($weekQuery->sum('pay_amount'), 0, ',', '.'),
-                    'week_profit' => 'Rp ' . number_format($weekQuery->sum('profit'), 0, ',', '.'),
-                    'week_count' => number_format($weekQuery->count(), 0, ',', '.'),
+                    'week_sales' => 'Rp ' . number_format($weekStats->sales ?? 0, 0, ',', '.'),
+                    'week_profit' => 'Rp ' . number_format($weekStats->profit ?? 0, 0, ',', '.'),
+                    'week_count' => number_format($weekStats->count ?? 0, 0, ',', '.'),
 
-                    'month_sales' => 'Rp ' . number_format($monthQuery->sum('pay_amount'), 0, ',', '.'),
-                    'month_profit' => 'Rp ' . number_format($monthQuery->sum('profit'), 0, ',', '.'),
-                    'month_count' => number_format($monthQuery->count(), 0, ',', '.'),
+                    'month_sales' => 'Rp ' . number_format($monthStats->sales ?? 0, 0, ',', '.'),
+                    'month_profit' => 'Rp ' . number_format($monthStats->profit ?? 0, 0, ',', '.'),
+                    'month_count' => number_format($monthStats->count ?? 0, 0, ',', '.'),
                 ]);
             } elseif ($request->data == 'table') {
                 return DataTables::of($data)
@@ -434,23 +439,27 @@ class PosTransactionController extends Controller
         $mainOutlet = $outlets->first(fn($ot) => in_array(strtoupper($ot->code), ['KPR', 'KOPERASI']) || strtoupper($ot->name) === 'KOPERASI');
         $mainOutletId = $mainOutlet?->id;
 
-        // Pre-calculate sales, received handovers, and sent handovers for all outlets
-        $salesByOutlet = [];
-        $receivedHandoversByOutlet = [];
-        $sentHandoversByOutlet = [];
+        // Pre-calculate sales, received handovers, and sent handovers for all outlets in 3 grouped queries
+        $outletIds = $outlets->pluck('id')->toArray();
+        $salesByOutlet = PointOfSaleTransaction::whereIn('outlet_id', $outletIds)
+            ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+            ->groupBy('outlet_id')
+            ->selectRaw('outlet_id, SUM(pay_amount) as total')
+            ->pluck('total', 'outlet_id')
+            ->toArray();
 
-        foreach ($outlets as $ot) {
-            $salesByOutlet[$ot->id] = PointOfSaleTransaction::where('outlet_id', $ot->id)
-                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
-                ->sum('pay_amount');
+        $receivedHandoversByOutlet = OutletHandover::whereIn('recipient_outlet_id', $outletIds)
+            ->groupBy('recipient_outlet_id')
+            ->selectRaw('recipient_outlet_id, SUM(amount) as total')
+            ->pluck('total', 'recipient_outlet_id')
+            ->toArray();
 
-            $receivedHandoversByOutlet[$ot->id] = OutletHandover::where('recipient_outlet_id', $ot->id)
-                ->sum('amount');
-
-            $sentHandoversByOutlet[$ot->id] = OutletHandover::where('outlet_id', $ot->id)
-                ->sum('amount');
-        }
+        $sentHandoversByOutlet = OutletHandover::whereIn('outlet_id', $outletIds)
+            ->groupBy('outlet_id')
+            ->selectRaw('outlet_id, SUM(amount) as total')
+            ->pluck('total', 'outlet_id')
+            ->toArray();
 
         // Calculate pending amount based on parent-child logic
         foreach ($outlets as $ot) {

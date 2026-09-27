@@ -28,20 +28,34 @@ class RoleController extends Controller
         }
 
         if (request()->ajax()) {
+            session()->save();
+
+            $adminsWithRoles = \App\Models\Admin::with('roles:id,name')->select('id', 'name')->get();
+            $adminsByRole = [];
+            foreach ($adminsWithRoles as $adm) {
+                foreach ($adm->roles as $r) {
+                    $adminsByRole[$r->name][] = ['id' => $adm->id, 'name' => $adm->name];
+                }
+            }
+
+            $usersWithRoles = \App\Models\User::with('roles:id,name')->select('id', 'name')->get();
+            $usersByRole = [];
+            foreach ($usersWithRoles as $usr) {
+                foreach ($usr->roles as $r) {
+                    $usersByRole[$r->name][] = ['id' => $usr->id, 'name' => $usr->name];
+                }
+            }
+
             $data = Role::with('permissions')->latest();
             return DataTables::of($data)
-                ->addColumn('action', function ($data) {
+                ->addColumn('action', function ($data) use ($adminsByRole) {
                     $actionEdit = route('role.edit', $data->id);
                     $actionDelete = route('role.destroy', $data->id);
 
-                    $admins = collect();
-                    if ($data->guard_name === 'web' || $data->guard_name === 'api') {
-                        try {
-                            $admins = \App\Models\Admin::role($data->name)->pluck('id')->toArray();
-                        } catch (\Throwable $e) {}
-                    }
+                    $roleAdmins = $adminsByRole[$data->name] ?? [];
+                    $adminIds = array_column($roleAdmins, 'id');
 
-                    $assignBtn = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-1 btn-assign-user' data-id='{$data->id}' data-name='{$data->name}' data-users='".json_encode($admins)."'>
+                    $assignBtn = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-1 btn-assign-user' data-id='{$data->id}' data-name='{$data->name}' data-users='".json_encode($adminIds)."'>
                         <i class='fa-solid fa-user-gear text-primary fs-5'></i>
                     </button>";
 
@@ -51,31 +65,23 @@ class RoleController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Role']) .
                         "</div>";
                 })
-                ->editColumn('permissions', function ($query) {
+                ->editColumn('permissions', function ($query) use ($adminsByRole, $usersByRole) {
                     $permissionsHtml = $query->permissions->map(function ($permission) {
                         return "<span class='badge bg-success m-1'>{$permission->name}</span>";
                     })->implode('');
 
-                    $admins = collect();
+                    $roleUsers = [];
                     if ($query->guard_name === 'web' || $query->guard_name === 'api') {
-                        try {
-                            $admins = \App\Models\Admin::role($query->name)->get();
-                        } catch (\Throwable $e) {}
+                        $roleUsers = array_merge($roleUsers, $adminsByRole[$query->name] ?? []);
                     }
-
-                    $walis = collect();
                     if ($query->guard_name === 'wali') {
-                        try {
-                            $walis = \App\Models\User::role($query->name)->get();
-                        } catch (\Throwable $e) {}
+                        $roleUsers = array_merge($roleUsers, $usersByRole[$query->name] ?? []);
                     }
-
-                    $users = $admins->concat($walis);
 
                     $usersHtml = '';
-                    if ($users->count() > 0) {
-                        $usersBadges = $users->map(function ($user) {
-                            return "<span class='badge' style='background-color: #8b5cf6; color: white;'>{$user->name}</span>";
+                    if (!empty($roleUsers)) {
+                        $usersBadges = collect($roleUsers)->map(function ($user) {
+                            return "<span class='badge' style='background-color: #8b5cf6; color: white;'>{$user['name']}</span>";
                         })->implode('');
                         $usersHtml = "<div class='mt-2 border-top pt-2 d-flex flex-wrap align-items-center gap-1'><span class='text-muted me-1' style='font-size: 11px; font-weight: 600;'>User:</span><div class='d-flex flex-wrap gap-1'>{$usersBadges}</div></div>";
                     } else {

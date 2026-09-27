@@ -37,7 +37,7 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with('user', 'classroom.school')->hasSchool()
+            $data = Student::with('user', 'classroom.school', 'studentSubStatus')->hasSchool()
                 ->when(request('school_id'), function ($query) {
                     $query->whereHas('classroom', function ($query) {
                         $query->where('school_id', request('school_id'));
@@ -102,7 +102,7 @@ class StudentController extends Controller
                     }
 
                     if ($data->student_sub_status_id) {
-                        $subStatus = \App\Models\StudentSubStatus::find($data->student_sub_status_id);
+                        $subStatus = $data->studentSubStatus;
                         if ($subStatus) {
                             $html .= '<div class="mt-1"><span class="badge badge-light-info fw-bolder px-2 py-1">' . $subStatus->name . '</span></div>';
                         }

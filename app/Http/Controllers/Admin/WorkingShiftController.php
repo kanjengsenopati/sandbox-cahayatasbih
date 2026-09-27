@@ -17,7 +17,8 @@ class WorkingShiftController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = WorkingShift::latest()->get();
+            session()->save();
+            $data = WorkingShift::latest();
             return DataTables::of($data)
                 ->addColumn('target_label', function ($row) {
                     $labels = [

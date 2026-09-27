@@ -23,21 +23,17 @@ class ReportStudyGradeController extends Controller
         $schools = School::orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
+            session()->save();
             $data = StudyGrade::with(['student', 'academicYear', 'semester', 'study', 'classroom'])
                 ->when(request()->school_id, function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request()->school_id);
-                        });
+                    $query->whereHas('classroom', function ($q) {
+                        $q->where('school_id', request()->school_id);
                     });
                 })
                 ->when(request()->classroom_id, function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->where('classroom_id', request()->classroom_id);
-                    });
+                    $query->where('classroom_id', request()->classroom_id);
                 })
-                ->latest()
-                ->get();
+                ->latest();
             return DataTables::of($data)
                 ->editColumn('grade', function ($data) {
                     if ($data->grade >= $data->kkm) {

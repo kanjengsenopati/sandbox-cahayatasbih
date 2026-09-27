@@ -24,8 +24,9 @@ class SaldoBankController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = School::with(['topupBank' => function ($query) {
-                $query->where('type', TopupBank::TYPE_SALDO);
+                $query->where('type', TopupBank::TYPE_SALDO)->with('bank');
             }])->orderBy('name', 'asc');
             return DataTables::of($data)
                 ->addColumn('banks', function ($query) {

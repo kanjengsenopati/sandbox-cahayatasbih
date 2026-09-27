@@ -20,6 +20,7 @@ class ReportAppFeeController extends Controller
         $start_date = request('start_date', Carbon::now()->startOfYear()->format('Y-m-d'));
         $end_date = request('end_date', Carbon::now()->format('Y-m-d'));
         if (request()->ajax() && request('type') == 'app_fee') {
+            session()->save();
             $data = Transaction::whereNotNull('app_fee')
                 ->where('status', Transaction::STATUS_PAID)
                 ->where('app_fee', '>', 0)
@@ -28,11 +29,10 @@ class ReportAppFeeController extends Controller
                         ->whereDate('created_at', '<=', $end_date);
                 })
                 ->when(request('school'), function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request('school'));
-                        });
-                    });
+                    $studentIds = \App\Models\Student::join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                        ->where('classrooms.school_id', request('school'))
+                        ->pluck('students.id');
+                    $query->whereIn('student_id', $studentIds);
                 })
                 ->latest();
             return DataTables::of($data)
@@ -68,24 +68,25 @@ class ReportAppFeeController extends Controller
                         ->whereDate('created_at', '<=', $end_date);
                 })
                 ->when(request('school'), function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request('school'));
-                        });
-                    });
-                })
-                ->latest();
-            // Calculate totals
-            $total_app_fee = $data->sum('app_fee');
-            $total_bill = $data->clone()->where('type', Transaction::TYPE_BILL)->sum('app_fee');
-            $total_saldo = $data->clone()->where('type', Transaction::TYPE_SALDO)->sum('app_fee');
-            $total_saving = $data->clone()->where('type', Transaction::TYPE_SAVING)->sum('app_fee');
+                    $studentIds = \App\Models\Student::join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                        ->where('classrooms.school_id', request('school'))
+                        ->pluck('students.id');
+                    $query->whereIn('student_id', $studentIds);
+                });
+
+            // Calculate totals in a single fast SQL query
+            $totals = $data->selectRaw("
+                SUM(app_fee) as total_app_fee,
+                SUM(CASE WHEN type = '" . Transaction::TYPE_BILL . "' THEN app_fee ELSE 0 END) as total_bill,
+                SUM(CASE WHEN type = '" . Transaction::TYPE_SALDO . "' THEN app_fee ELSE 0 END) as total_saldo,
+                SUM(CASE WHEN type = '" . Transaction::TYPE_SAVING . "' THEN app_fee ELSE 0 END) as total_saving
+            ")->first();
 
             return response()->json([
-                'total' => number_format($total_app_fee, 0, ',', '.'),
-                'bill' => number_format($total_bill, 0, ',', '.'),
-                'saldo' => number_format($total_saldo, 0, ',', '.'),
-                'saving' => number_format($total_saving, 0, ',', '.')
+                'total' => number_format($totals->total_app_fee ?? 0, 0, ',', '.'),
+                'bill' => number_format($totals->total_bill ?? 0, 0, ',', '.'),
+                'saldo' => number_format($totals->total_saldo ?? 0, 0, ',', '.'),
+                'saving' => number_format($totals->total_saving ?? 0, 0, ',', '.')
             ]);
         }
         $schools = School::hasSchool()->orderBy('name')->get();

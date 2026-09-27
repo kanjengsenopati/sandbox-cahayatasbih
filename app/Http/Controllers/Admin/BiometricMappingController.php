@@ -20,7 +20,8 @@ class BiometricMappingController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = BiometricMapping::latest()->get();
+            session()->save();
+            $data = BiometricMapping::with('presensiable')->latest();
             return DataTables::of($data)
                 ->addColumn('user_name', function ($row) {
                     return $row->presensiable ? $row->presensiable->name : '-';

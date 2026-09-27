@@ -108,6 +108,11 @@ class Student extends Model
         return $this->hasMany(SaldoHistory::class);
     }
 
+    public function studentSubStatus()
+    {
+        return $this->belongsTo(StudentSubStatus::class, 'student_sub_status_id');
+    }
+
     public function latestSaldoHistory()
     {
         return $this->hasOne(SaldoHistory::class)->latestOfMany('created_at');

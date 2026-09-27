@@ -26,6 +26,7 @@ class ReportStudentController extends Controller
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
 
         if (request()->ajax()) {
+            session()->save();
             $baseQuery = Student::select('students.*')
                 ->selectRaw("(SELECT COUNT(*) FROM bills WHERE bills.student_id = students.id AND bills.status = 'UNPAID' AND bills.deleted_at IS NULL) as unpaid_bills_count")
                 ->hasSchool()
@@ -64,18 +65,30 @@ class ReportStudentController extends Controller
                 $dataQuery->where('students.status', Student::STATUS_DROPPED_OUT);
             }
 
+            $counts = (clone $dataQuery)->selectRaw("
+                COUNT(*) as total,
+                COUNT(CASE WHEN students.gender = 'L' THEN 1 END) as total_male,
+                COUNT(CASE WHEN students.gender = 'P' THEN 1 END) as total_female
+            ")->first();
+
             $summary = [
-                'total' => (clone $dataQuery)->count(),
-                'total_male' => (clone $dataQuery)->where('students.gender', 'L')->count(),
-                'total_female' => (clone $dataQuery)->where('students.gender', 'P')->count(),
+                'total' => (int)($counts->total ?? 0),
+                'total_male' => (int)($counts->total_male ?? 0),
+                'total_female' => (int)($counts->total_female ?? 0),
             ];
 
-            $data = $dataQuery->with(['classroom', 'school', 'bills.billType'])
-                ->orderBy('students.name', 'asc');
+            $data = $dataQuery->with([
+                'classroom',
+                'school',
+                'bills' => function ($q) {
+                    $q->where('status', \App\Models\Bill::STATUS_UNPAID)->with('billType');
+                }
+            ])
+            ->orderBy('students.name', 'asc');
 
             return DataTables::of($data)
                 ->addColumn('unpaid_bills', function ($data) {
-                    $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
+                    $unpaid = $data->bills;
                     if ($unpaid->isEmpty()) {
                         $billsJson = json_encode([]);
                         return '<span class="badge bg-light-success text-success cursor-pointer btn-show-tunggakan" style="font-weight: 700;" data-name="' . e($data->name) . '" data-bills="' . e($billsJson) . '">Tunggakan (0)</span>';

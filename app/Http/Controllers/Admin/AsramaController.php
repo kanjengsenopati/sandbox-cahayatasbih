@@ -27,9 +27,15 @@ class AsramaController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = Asrama::with(['hostAdmin', 'students' => function ($q) {
-                $q->with('classroom')->orderBy('name', 'asc');
-            }])->withCount('students')->latest();
+            session()->save();
+            $data = Asrama::with([
+                'hostAdmin:id,name,phone',
+                'students' => function ($q) {
+                    $q->select('id', 'name', 'asrama_id', 'classroom_id')
+                      ->with('classroom:id,name')
+                      ->orderBy('name', 'asc');
+                }
+            ])->withCount('students')->latest();
             return DataTables::of($data)
                 ->addColumn('host_name', function ($row) {
                     return $row->hostAdmin ? $row->hostAdmin->name : '-';

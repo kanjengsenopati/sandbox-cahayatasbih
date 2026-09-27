@@ -110,6 +110,8 @@ class OrderItemController extends Controller
 
     private function getItemsDataTable()
     {
+        session()->save();
+
         $admin = auth()->user();
         $authOutletIds = $admin->getOutletIds();
 
@@ -117,6 +119,7 @@ class OrderItemController extends Controller
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
         $data = Item::where('is_active', true)->with('categoryItem')
+            ->withSum('pointOfSaleTransactionDetails as total_selling', 'quantity')
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
                 $q->where(function($query) use ($authOutletIds, $koperasiId) {
                     $query->whereIn('outlet_id', $authOutletIds);
@@ -125,7 +128,7 @@ class OrderItemController extends Controller
                     }
                 });
             })
-            ->get()->sortByDesc('total_selling');
+            ->orderByDesc('total_selling');
 
         return DataTables::of($data)
             ->addColumn('status', function ($data) {
@@ -838,7 +841,8 @@ class OrderItemController extends Controller
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
         // Ambil transaksi yang sesuai dengan admin, outlet, dan tanggal hari ini
-        $transactions = PointOfSaleTransaction::whereDate('paid_at', now())
+        $transactions = PointOfSaleTransaction::with(['student', 'pointOfSaleTransactionDetails.item'])
+            ->whereDate('paid_at', now())
             ->where('admin_id', auth()->user()->id)
             ->where('outlet_id', $outletId)
             ->latest()

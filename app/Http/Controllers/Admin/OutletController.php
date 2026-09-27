@@ -17,7 +17,8 @@ class OutletController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
         }
         if (request()->ajax()) {
-            $data = Outlet::with('adminOutlet.admin')->latest()->get();
+            session()->save();
+            $data = Outlet::with('adminOutlet.admin')->latest();
             return DataTables::of($data)
                 ->addColumn('is_active', function ($data) {
                     return $data->is_active 

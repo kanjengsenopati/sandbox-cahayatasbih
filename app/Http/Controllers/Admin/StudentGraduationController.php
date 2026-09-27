@@ -24,7 +24,14 @@ class StudentGraduationController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with(['user', 'classroom.school', 'bills.billType', 'bills.academicYear'])
+            session()->save();
+            $data = Student::with([
+                'user',
+                'classroom.school',
+                'bills' => function ($q) {
+                    $q->where('status', \App\Models\Bill::STATUS_UNPAID)->with(['billType', 'academicYear']);
+                }
+            ])
                 ->whereHas('classroom.school', function ($query) {
                     $query->whereIn('type', [School::TYPE_SMP, School::TYPE_MA]);
                 })
@@ -85,7 +92,7 @@ class StudentGraduationController extends Controller
                     }
                 })
                 ->addColumn('unpaid_bills', function ($data) {
-                    $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
+                    $unpaid = $data->bills;
                     if ($unpaid->isEmpty()) {
                         return '<span class="badge bg-light-success text-success fw-bolder px-3 py-1">Lunas / Bersih</span>';
                     }

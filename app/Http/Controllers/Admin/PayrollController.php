@@ -27,6 +27,7 @@ class PayrollController extends Controller
         }
 
         if ($request->ajax()) {
+            session()->save();
             if ($request->input('mode') === 'outlet') {
                 $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
                 $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
@@ -48,13 +49,13 @@ class PayrollController extends Controller
                     }
                 }
 
-                $data = SalarySlip::whereHasMorph('presensiable', [\App\Models\Admin::class], function($q) use ($outletId) {
+                $data = SalarySlip::with('presensiable')->whereHasMorph('presensiable', [\App\Models\Admin::class], function($q) use ($outletId) {
                     if ($outletId) {
                         $q->where('outlet_id', $outletId);
                     }
                 })->latest();
             } else {
-                $data = SalarySlip::latest();
+                $data = SalarySlip::with('presensiable')->latest();
             }
 
             return DataTables::of($data)

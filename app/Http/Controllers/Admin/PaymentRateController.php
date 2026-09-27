@@ -627,6 +627,21 @@ class PaymentRateController extends Controller
                 ->keyBy('student_id');
         }
 
+        $transferRateStudentIds = [];
+        if ($paymentRate->type === PaymentRate::TYPE_REGULAR && !empty($studentIds)) {
+            $transferRateStudentIds = DB::table('payment_rate_students')
+                ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                ->whereIn('payment_rate_students.student_id', $studentIds)
+                ->whereNull('payment_rate_students.deleted_at')
+                ->whereNull('payment_rates.deleted_at')
+                ->pluck('payment_rate_students.student_id')
+                ->flip()
+                ->toArray();
+        }
+
+        session()->save();
+
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
             ->addColumn('total_unpaid', function ($student) use ($billAggregates) {
@@ -643,11 +658,11 @@ class PaymentRateController extends Controller
                 $agg = $billAggregates->get($student->id);
                 return $this->formatCurrency($agg?->total ?? 0);
             })
-            ->addColumn('status', function ($student) use ($paymentRate, $billAggregates) {
+            ->addColumn('status', function ($student) use ($paymentRate, $billAggregates, $transferRateStudentIds) {
                 $agg = $billAggregates->get($student->id);
                 $totalPaid = $agg?->total_paid ?? 0;
                 $total = $agg?->total ?? 0;
-                return $this->getPaymentStatus($totalPaid, $total, $student, $paymentRate);
+                return $this->getPaymentStatus($totalPaid, $total, $student, $paymentRate, $transferRateStudentIds);
             })
             ->addColumn('action', fn($student) => $this->renderActions($student, $paymentRate->bill_type_id))
             ->addColumn('id', fn($student) => $student->id)
@@ -701,17 +716,19 @@ class PaymentRateController extends Controller
         }
     }
 
-    private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null)
+    private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null, $transferRateStudentIds = [])
     {
         if ($total == 0 || $total === null) {
             if ($student && $paymentRate && $paymentRate->type === PaymentRate::TYPE_REGULAR) {
-                $hasTransferRate = DB::table('payment_rate_students')
-                    ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
-                    ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
-                    ->where('payment_rate_students.student_id', $student->id)
-                    ->whereNull('payment_rate_students.deleted_at')
-                    ->whereNull('payment_rates.deleted_at')
-                    ->exists();
+                $hasTransferRate = !empty($transferRateStudentIds)
+                    ? isset($transferRateStudentIds[$student->id])
+                    : DB::table('payment_rate_students')
+                        ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                        ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                        ->where('payment_rate_students.student_id', $student->id)
+                        ->whereNull('payment_rate_students.deleted_at')
+                        ->whereNull('payment_rates.deleted_at')
+                        ->exists();
 
                 if ($hasTransferRate) {
                     return '<span class="badge badge-light-warning text-dark fw-bolder px-2 py-1" title="Siswa ini terdaftar di Tarif Susulan / Pindahan (Lihat Tab Siswa Pindahan)"><i class="fas fa-user-tag text-warning me-1"></i>Tarif Susulan</span>';

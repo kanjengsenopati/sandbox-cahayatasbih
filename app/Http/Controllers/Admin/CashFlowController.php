@@ -43,7 +43,10 @@ class CashFlowController extends Controller
                 ->when(!auth()->user()->outlet_id && request()->filled('outlet_id'), function($q) {
                     $q->where('outlet_id', request()->outlet_id);
                 })
+                ->with(['cashflow_category', 'sender', 'receiver'])
                 ->latest();
+
+            session()->save();
 
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
@@ -654,15 +657,25 @@ class CashFlowController extends Controller
                 ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
                 ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
                 ->groupBy('admins.id', 'admins.name')
-                ->get()
-                ->map(function ($officer) use ($outletId) {
-                    $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
-                    $handedOver = CashFlow::where('sender_id', $officer->id)
-                        ->where('status', CashFlow::STATUS_APPROVED)
-                        ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
-                        ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
-                        ->sum('amount');
-                    
+                ->get();
+
+            // Pre-fetch category and batch-fetch handover sums to avoid N+1 per officer
+            $catPiketForMap = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
+            $officerIds = $piketOfficers->pluck('id')->toArray();
+            $handedOverMap = [];
+            if (!empty($officerIds) && $catPiketForMap) {
+                $handedOverMap = CashFlow::whereIn('sender_id', $officerIds)
+                    ->where('status', CashFlow::STATUS_APPROVED)
+                    ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+                    ->where('cash_flow_category_id', $catPiketForMap->id)
+                    ->groupBy('sender_id')
+                    ->selectRaw('sender_id, SUM(amount) as total_handed')
+                    ->pluck('total_handed', 'sender_id')
+                    ->toArray();
+            }
+
+            $piketOfficers = $piketOfficers->map(function ($officer) use ($handedOverMap) {
+                    $handedOver = (int)($handedOverMap[$officer->id] ?? 0);
                     $cashInHand = max($officer->total_cash - $handedOver, 0);
                     
                     return [

@@ -65,14 +65,16 @@ class ReportBillController extends Controller
             }
 
             // Group by and finalize the query
-            $data->groupBy('bill_types.id')->latest();
+            $data->selectRaw('COUNT(bills.id) as total_bill_count')
+                ->selectRaw('COUNT(DISTINCT bills.student_id) as unique_student_count')
+                ->groupBy('bill_types.id')->latest();
 
             if (request()->type == 'bill') {
                 return DataTables::of($data)
                     ->addColumn('academic_year', fn($data) => $data->academicYear->name)
                     ->editColumn('name', fn($data) => $data->formatted_name)
-                    ->addColumn('total_bill', fn($data) => $data->bills->count())
-                    ->addColumn('student_count', fn($data) => $data->bills->pluck('student_id')->unique()->count())
+                    ->addColumn('total_bill', fn($data) => $data->total_bill_count)
+                    ->addColumn('student_count', fn($data) => $data->unique_student_count)
                     ->editColumn('type', fn($data) => $data->type === BillType::TYPE_MONTHLY
                         ? '<span class="badge badge-primary">Bulanan</span>'
                         : '<span class="badge badge-secondary">Bebas</span>')

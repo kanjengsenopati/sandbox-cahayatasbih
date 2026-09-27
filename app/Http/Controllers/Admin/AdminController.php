@@ -29,7 +29,8 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Admin::with('roles', 'adminSchool')->latest();
+            session()->save();
+            $data = Admin::with('roles', 'adminSchool.school')->latest();
             return DataTables::of($data)
                 ->addColumn('role', function ($query) {
                     $role = "";

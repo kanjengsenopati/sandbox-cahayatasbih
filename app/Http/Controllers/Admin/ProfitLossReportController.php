@@ -37,13 +37,16 @@ class ProfitLossReportController extends Controller
      */
     private function ensureExpenseCategoriesExist()
     {
-        $categories = ['Listrik', 'Honor Kasir', 'Server Aplikasi', 'IT Support', 'Lainnya'];
-        foreach ($categories as $catName) {
-            CashFlowCategory::firstOrCreate(
-                ['name' => $catName],
-                ['description' => "Kategori pengeluaran operasional: $catName"]
-            );
-        }
+        \Illuminate\Support\Facades\Cache::rememberForever('profit_loss_categories_seeded', function () {
+            $categories = ['Listrik', 'Honor Kasir', 'Server Aplikasi', 'IT Support', 'Lainnya'];
+            foreach ($categories as $catName) {
+                CashFlowCategory::firstOrCreate(
+                    ['name' => $catName],
+                    ['description' => "Kategori pengeluaran operasional: $catName"]
+                );
+            }
+            return true;
+        });
     }
 
     public function index(Request $request)
@@ -147,7 +150,10 @@ class ProfitLossReportController extends Controller
         
         // Custom breakdown grouping to separate custom "Lainnya" subcategories
         $cashExpensesBreakdown = [];
-        $rawExpenses = (clone $cashExpensesQuery)->with('cashflow_category')->get();
+        $rawExpenses = (clone $cashExpensesQuery)
+            ->select('id', 'cash_flow_category_id', 'description', 'amount')
+            ->with('cashflow_category:id,name')
+            ->get();
         
         foreach ($rawExpenses as $exp) {
             $catName = $exp->cashflow_category?->name ?? 'Lainnya';
