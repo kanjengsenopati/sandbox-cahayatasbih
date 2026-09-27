@@ -77,6 +77,8 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         $localStudentIds = $localConn->table('students')->pluck('id')->keyBy(fn($id) => (string)$id);
         $localClassroomIds = $localConn->table('classrooms')->pluck('id')->keyBy(fn($id) => (string)$id);
@@ -87,7 +89,7 @@ class MasterIngestionBridgeService
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
             $idStr = (string)$mRec->id;
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -151,10 +153,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("classrooms")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('classrooms')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -191,10 +195,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("schools")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('schools')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -231,10 +237,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("academic_years")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('academic_years')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -275,6 +283,8 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("bill_types")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         $masterItems = $masterConn->table('bill_items')->pluck('name', 'id')->toArray();
         $localItems = $localConn->table('bill_items')->pluck('name', 'id')->toArray();
@@ -284,7 +294,7 @@ class MasterIngestionBridgeService
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('bill_types')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $posName = $masterItems[$mRec->bill_item_id] ?? ($localItems[$mRec->bill_item_id] ?? '');
             $posPrefix = $posName ? "[{$posName}] " : "";
@@ -350,10 +360,12 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -441,6 +453,8 @@ class MasterIngestionBridgeService
         }
 
         $masterStudents = $query->get();
+        $masterIds = $masterStudents->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
         $studentIds = $masterStudents->pluck('id')->toArray();
 
         // 1. Bulk query for Master DB bills summary
@@ -539,7 +553,7 @@ class MasterIngestionBridgeService
             $className = $masterClassrooms[$cId] ?? 'Non-Kelas';
             $schoolName = $masterSchools[$sId] ?? 'Non-Sekolah';
 
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $sidStr = (string) $mRec->id;
             $mSum = $masterBillsGroup[$sidStr] ?? ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
