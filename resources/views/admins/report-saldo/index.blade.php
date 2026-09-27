@@ -1,4 +1,15 @@
 @extends('layouts.master', ['title' => 'Laporan Transaksi Saldo'])
+
+@push('css')
+<style>
+    #classroom_mega_menu.show {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -85,12 +96,12 @@
                                       </div>
                                       <div>
                                           <label class="form-label">Kelas</label>
-                                          <div class="dropdown">
-                                              <button class="btn btn-light dropdown-toggle" style="background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                          <div class="dropdown" id="report_saldo_classroom_dropdown_container" style="position: relative !important;">
+                                              <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                              <button class="btn btn-light dropdown-toggle" style="background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278; cursor: pointer;" type="button" id="filter_classroom_btn" aria-expanded="false">
                                                   Semua Kelas
                                               </button>
-                                              <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
-                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 540px; max-width: 95vw; max-height: 420px; overflow-y: auto;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 540px; max-width: 95vw; max-height: 420px; overflow-y: auto; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
                                               </div>
                                           </div>
@@ -443,8 +454,41 @@
             container.append(row);
         }
 
+        // Explicit toggle handler for classroom dropdown button
+        $(document).on('click', '#filter_classroom_btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var $menu = $('#classroom_mega_menu');
+            var isShown = $menu.hasClass('show');
+
+            if (isShown) {
+                $menu.removeClass('show');
+                $btn.removeClass('show').attr('aria-expanded', 'false');
+            } else {
+                $('.dropdown-menu.show').not($menu).removeClass('show');
+                $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
+                $menu.addClass('show');
+                $btn.addClass('show').attr('aria-expanded', 'true');
+            }
+        });
+
+        // Prevent clicks inside dropdown menu from closing it prematurely
+        $(document).on('click', '#classroom_mega_menu', function(e) {
+            e.stopPropagation();
+        });
+
+        // Close when clicking anywhere outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#report_saldo_classroom_dropdown_container').length) {
+                $('#classroom_mega_menu').removeClass('show');
+                $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+            }
+        });
+
         $(document).on('click', '.classroom-item', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             const id = $(this).data('id');
             const name = $(this).data('name');
             $('#filter_classroom_id').val(id);
@@ -459,23 +503,8 @@
             $(this).addClass('active bg-primary text-white').removeClass('btn-light text-slate-700');
             $(this).find('.class-check-icon').removeClass('d-none');
 
-            // Close dropdown cleanly
-            var dropBtn = document.getElementById('filter_classroom_btn');
-            try {
-                if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                    var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
-                    if (inst) inst.hide();
-                } else if (typeof $ !== 'undefined' && $.fn.dropdown) {
-                    $('#filter_classroom_btn').dropdown('hide');
-                }
-            } catch (err) {
-                if (dropBtn) {
-                    var menu = dropBtn.closest('.dropdown').querySelector('.dropdown-menu');
-                    if (menu) menu.classList.remove('show');
-                    dropBtn.classList.remove('show');
-                    dropBtn.setAttribute('aria-expanded', 'false');
-                }
-            }
+            $('#classroom_mega_menu').removeClass('show');
+            $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
 
             reloadTable();
         });

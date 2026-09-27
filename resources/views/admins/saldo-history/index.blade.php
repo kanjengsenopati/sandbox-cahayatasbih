@@ -52,9 +52,20 @@
         outline: none;
         box-shadow: none;
     }
-    #myTabContent {
-        position: relative;
-        z-index: 1;
+    #myTabContent,
+    #penyesuaian-saldo,
+    #penyesuaian-saldo .card-header,
+    #penyesuaian-saldo .card-title {
+        overflow: visible !important;
+    }
+    #penyesuaian_classroom_dropdown_container {
+        position: relative !important;
+        z-index: 1050 !important;
+    }
+    #penyesuaian_classroom_menu.show {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 </style>
 @endpush
@@ -244,7 +255,7 @@
                                         <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari santri (min. 3 huruf)..." />
                                     </div>
             
-                                    <div class="dropdown" style="z-index: 105;">
+                                    <div class="dropdown" id="penyesuaian_classroom_dropdown_container" style="position: relative !important; z-index: 1050;">
                                         @php
                                             $groupedClasses = [
                                                 'Kelas 7' => [],
@@ -270,11 +281,11 @@
                                                 else $groupedClasses['Pondok'][] = $cls;
                                             }
                                         @endphp
-                                        <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="penyesuaian_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                        <input type="hidden" id="filter-classroom" value="">
+                                        <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278; cursor: pointer;" type="button" id="penyesuaian_classroom_btn" aria-expanded="false">
                                             Semua Kelas
                                         </button>
-                                        <input type="hidden" id="filter-classroom" value="">
-                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; max-width: 95vw; overflow-x: auto; border: 1px solid #e2e8f0; margin-top: 5px; z-index: 9999;" aria-labelledby="penyesuaian_classroom_btn">
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" id="penyesuaian_classroom_menu" style="min-width: 850px; max-width: 95vw; overflow-x: auto; border: 1px solid #e2e8f0; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
                                                 <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
                                                 <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="resetPenyesuaianClassFilter()">Reset Filter</button>
@@ -1169,22 +1180,47 @@
                 $('#penyesuaian_classroom_btn').text('Semua Kelas');
                 $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
                 $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
-                var dropBtn = document.getElementById('penyesuaian_classroom_btn');
-                try {
-                    if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                        var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
-                        if (inst) inst.hide();
-                    } else if ($.fn.dropdown) {
-                        $('#penyesuaian_classroom_btn').dropdown('hide');
-                    }
-                } catch (err) {
-                    $('#penyesuaian_classroom_btn').closest('.dropdown').find('.dropdown-menu').removeClass('show');
+                $('#penyesuaian_classroom_menu').removeClass('show');
+                $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+            };
+
+            // Explicit toggle handler for classroom dropdown button
+            $(document).on('click', '#penyesuaian_classroom_btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var $btn = $(this);
+                var $menu = $('#penyesuaian_classroom_menu');
+                var isShown = $menu.hasClass('show');
+
+                if (isShown) {
+                    $menu.removeClass('show');
+                    $btn.removeClass('show').attr('aria-expanded', 'false');
+                } else {
+                    // Close any other open dropdowns first
+                    $('.dropdown-menu.show').not($menu).removeClass('show');
+                    $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
+                    
+                    $menu.addClass('show');
+                    $btn.addClass('show').attr('aria-expanded', 'true');
+                }
+            });
+
+            // Prevent clicks inside the dropdown menu from closing it prematurely
+            $(document).on('click', '#penyesuaian_classroom_menu', function(e) {
+                e.stopPropagation();
+            });
+
+            // Close when clicking anywhere outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#penyesuaian_classroom_dropdown_container').length) {
+                    $('#penyesuaian_classroom_menu').removeClass('show');
                     $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
                 }
-            };
+            });
 
             $(document).on('click', '.penyesuaian-class-item', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 var id = $(this).data('id');
                 var name = $(this).data('name');
                 $('#filter-classroom').val(id).trigger('change');
@@ -1196,18 +1232,8 @@
                 $(this).addClass('active bg-primary text-white border-primary').removeClass('btn-light text-slate-700 border-gray-200');
                 $(this).find('.class-check-icon').removeClass('d-none');
                 
-                var dropBtn = document.getElementById('penyesuaian_classroom_btn');
-                try {
-                    if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                        var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
-                        if (inst) inst.hide();
-                    } else if ($.fn.dropdown) {
-                        $('#penyesuaian_classroom_btn').dropdown('hide');
-                    }
-                } catch (err) {
-                    $('#penyesuaian_classroom_btn').closest('.dropdown').find('.dropdown-menu').removeClass('show');
-                    $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
-                }
+                $('#penyesuaian_classroom_menu').removeClass('show');
+                $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
             });
 
             var searchTimer;
