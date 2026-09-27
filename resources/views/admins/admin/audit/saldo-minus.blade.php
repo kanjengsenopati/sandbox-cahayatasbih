@@ -1,6 +1,11 @@
 @extends('layouts.master', ['title' => 'Audit Saldo Minus'])
 
 @section('content')
+<!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
@@ -237,18 +242,18 @@
                 <!--begin::Card Body-->
                 <div class="card-body pt-0">
                     <div class="table-responsive">
-                        <table id="table-saldo-minus" class="table table-row-bordered table-row-dashed align-middle gy-4 gs-4 border rounded">
-                            <thead class="bg-light fw-bolder fs-7 text-gray-700 text-uppercase gs-0">
-                                <tr>
-                                    <th class="w-40px text-center">No</th>
-                                    <th>Nama Siswa & NIS</th>
-                                    <th>Lembaga</th>
-                                    <th>Kelas</th>
-                                    <th>Riwayat Saldo</th>
-                                    <th>Mulai Minus Sejak</th>
-                                    <th class="text-end">Minus Berapa</th>
-                                    <th>Pemicu & Nominal Transaksi</th>
-                                    <th class="text-center w-120px">Aksi</th>
+                        <table id="table-saldo-minus" class="table table-row-bordered align-middle gy-3 gs-4 border rounded-3 w-100">
+                            <thead>
+                                <tr class="fw-bolder text-gray-700 text-uppercase gs-0">
+                                    <th class="w-45px text-center">No</th>
+                                    <th style="min-width: 220px;">Nama Siswa & NIS</th>
+                                    <th style="min-width: 120px;">Lembaga</th>
+                                    <th style="min-width: 75px;">Kelas</th>
+                                    <th style="min-width: 160px;">Riwayat Saldo</th>
+                                    <th style="min-width: 155px;">Mulai Minus Sejak</th>
+                                    <th style="min-width: 140px;" class="text-end">Minus Berapa</th>
+                                    <th style="min-width: 250px;">Pemicu & Nominal Awal</th>
+                                    <th style="min-width: 110px;" class="text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="fw-semibold text-gray-600 fs-7">
@@ -612,38 +617,115 @@
 <!--end::Modal Detail Log Kronologis-->
 
 <style>
+    /* ============================================================== */
+    /* PLUS JAKARTA SANS & MODERN TYPOGRAPHY                          */
+    /* ============================================================== */
+    body, 
+    #kt_content, 
+    #kt_content_container,
+    .card, 
+    .table, 
+    .modal, 
+    .btn, 
+    .form-control, 
+    .form-select, 
+    .badge,
+    .toolbar,
+    .page-title,
+    .alert,
+    #table-saldo-minus,
+    #table-saldo-minus * {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    }
+
+    .font-mono {
+        font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+    }
+
+    /* ============================================================== */
+    /* CRISP, PROFESSIONAL ENTERPRISE TABLE STYLING                  */
+    /* ============================================================== */
+    #table-saldo-minus {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+    }
+
+    #table-saldo-minus thead th {
+        background-color: #f8fafc !important;
+        color: #334155 !important;
+        font-weight: 700 !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.05em !important;
+        text-transform: uppercase !important;
+        border-bottom: 2px solid #e2e8f0 !important;
+        padding: 14px 16px !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+
+    #table-saldo-minus tbody td {
+        padding: 13px 16px !important;
+        vertical-align: middle !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        background-color: #ffffff;
+        transition: background-color 0.15s ease;
+    }
+
+    #table-saldo-minus tbody tr:hover td {
+        background-color: #f8fafc !important;
+    }
+
+    /* Clean subtle shadow for card table */
+    .card-table-shadow {
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    /* ============================================================== */
+    /* FORM CONTROLS & FILTER BAR                                     */
+    /* ============================================================== */
     .filter-control {
         cursor: pointer !important;
-        height: 38px !important;
-        min-height: 38px !important;
-        border: 1px solid #e4e6ef !important;
-        border-radius: 0.475rem !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        font-size: 0.825rem !important;
+        font-weight: 500 !important;
+        color: #1e293b !important;
+        background-color: #ffffff !important;
+        transition: all 0.2s ease !important;
     }
     .filter-control:focus {
-        border-color: #009ef7 !important;
-        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+        outline: none !important;
     }
     #search_keyword {
-        height: 38px !important;
-        min-height: 38px !important;
-        border: 1px solid #e4e6ef !important;
-        border-radius: 0.475rem !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        font-size: 0.825rem !important;
+        font-weight: 500 !important;
+        color: #1e293b !important;
         background-color: #ffffff !important;
-        transition: border-color 0.2s, box-shadow 0.2s !important;
+        transition: all 0.2s ease !important;
     }
     #search_keyword:focus {
-        border-color: #009ef7 !important;
-        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
         outline: none !important;
     }
     #btn-apply-filter, #btn-reset-filter {
-        height: 38px !important;
-        min-height: 38px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
     }
-    .font-mono {
-        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-    }
+
+    /* Modal Tweaks */
     .modal-audit-dialog {
         max-width: 95vw !important;
         width: 95vw !important;
@@ -668,7 +750,7 @@
         width: 6px;
     }
     .column-scroll-container::-webkit-scrollbar-thumb {
-        background: #d5d5d5;
+        background: #cbd5e1;
         border-radius: 4px;
     }
 </style>
@@ -684,11 +766,13 @@
     }
 
     $(document).ready(function() {
-        // Initialize DataTables
+        // Initialize DataTables with clean enterprise non-collapsing layout
         saldoMinusTable = $('#table-saldo-minus').DataTable({
             processing: true,
             serverSide: true,
-            responsive: true,
+            responsive: false, // MATIKAN responsive agar TIDAK me-collapse kolom jadi child row jelek
+            scrollX: true,     // Aktifkan scroll horizontal mulus agar semua data muat rapi
+            autoWidth: false,
             ajax: {
                 url: "{{ route('admin.audit.saldo-minus.data') }}",
                 data: function(d) {
@@ -699,15 +783,26 @@
                 }
             },
             columns: [
-                { data: 'no', name: 'no', orderable: false, searchable: false, className: 'text-center font-mono' },
+                { data: 'no', name: 'no', orderable: false, searchable: false, className: 'text-center font-mono text-muted fs-8' },
                 { data: 'student', name: 'student', orderable: true, searchable: true },
                 { data: 'school', name: 'school', orderable: true, searchable: true },
                 { data: 'classroom', name: 'classroom', orderable: true, searchable: true },
                 { data: 'saldo_status', name: 'saldo_status', orderable: false, searchable: false },
-                { data: 'last_trans_date', name: 'last_trans_date', orderable: true, searchable: false, className: 'font-mono fs-8' },
-                { data: 'minus_amount', name: 'minus_amount', orderable: true, searchable: false },
+                { data: 'last_trans_date', name: 'last_trans_date', orderable: true, searchable: false },
+                { data: 'minus_amount', name: 'minus_amount', orderable: true, searchable: false, className: 'text-end' },
                 { data: 'root_cause', name: 'root_cause', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
+            ],
+            columnDefs: [
+                { targets: 0, width: '45px' },
+                { targets: 1, width: '240px' },
+                { targets: 2, width: '130px' },
+                { targets: 3, width: '80px' },
+                { targets: 4, width: '165px' },
+                { targets: 5, width: '160px' },
+                { targets: 6, width: '145px' },
+                { targets: 7, width: '280px' },
+                { targets: 8, width: '110px' }
             ],
             order: [[6, 'asc']], // Order by minus_amount asc (most negative first)
             pageLength: 25,
