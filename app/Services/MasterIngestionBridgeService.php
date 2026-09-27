@@ -780,6 +780,7 @@ class MasterIngestionBridgeService
                                 }
                             }
 
+
                             // Match Local Bill by student_id, mapped bill_type_id, month, year, and academic_year_id
                             $localBill = null;
                             $stuLocalBills = $lb_bills_by_student[$mBill->student_id] ?? [];
@@ -792,6 +793,19 @@ class MasterIngestionBridgeService
                                     break;
                                 }
                             }
+
+                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, month, academic_year_id, dan year
+                            $localBill = $localConn->table('bills')
+                                ->where('student_id', $mBill->student_id)
+                                ->where('bill_type_id', $targetBillTypeId)
+                                ->where('month', $mBill->month)
+                                ->where('academic_year_id', $mBill->academic_year_id)
+                                ->where('year', $mBill->year)
+                                ->whereNull('deleted_at')
+                                ->first();
+
+                            $targetBillId = $mBill->id;
+
 
                             $targetBillId = null;
                             if ($localBill) {
