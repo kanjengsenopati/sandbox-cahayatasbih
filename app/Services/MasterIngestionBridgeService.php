@@ -652,24 +652,97 @@ class MasterIngestionBridgeService
 
             $targetTable = ($module === 'saldo' || $module === 'billing_status') ? 'students' : $module;
 
+            // BULK FETCH FOR BILLING_STATUS TO AVOID N+1
+            $mb_bills_by_student = [];
+            $lb_bills_by_student = [];
+            $mb_bill_types_by_id = [];
+            $lb_bill_types_by_match = [];
+            $mb_tx_details_by_bill = [];
+            $mb_txs_by_id = [];
+            $mb_saldo_histories_by_student = [];
+            
+            if ($module === 'billing_status' && !empty($selectedIds)) {
+                $chunks = array_chunk($selectedIds, 500);
+                
+                // Fetch Master Bills
+                $mBillsColl = collect();
+                foreach ($chunks as $chunk) {
+                    $q = $masterConn->table('bills')
+                        ->whereIn('student_id', $chunk)
+                        ->where('active_status', 1)
+                        ->whereNull('deleted_at');
+                    if (!empty($academicYearId)) $q->where('academic_year_id', $academicYearId);
+                    if (!empty($billTypeId)) $q->where('bill_type_id', $billTypeId);
+                    $mBillsColl = $mBillsColl->merge($q->get());
+                }
+                $mb_bills_by_student = $mBillsColl->groupBy('student_id')->toArray();
+                
+                // Fetch Local Bills
+                $lBillsColl = collect();
+                foreach ($chunks as $chunk) {
+                    $q = $localConn->table('bills')
+                        ->whereIn('student_id', $chunk)
+                        ->whereNull('deleted_at');
+                    if (!empty($academicYearId)) $q->where('academic_year_id', $academicYearId);
+                    if (!empty($billTypeId)) $q->where('bill_type_id', $billTypeId);
+                    $lBillsColl = $lBillsColl->merge($q->get());
+                }
+                $lb_bills_by_student = $lBillsColl->groupBy('student_id')->toArray();
+
+                // Fetch Bill Types
+                $mBtIds = $mBillsColl->pluck('bill_type_id')->filter()->unique()->values()->toArray();
+                if (!empty($mBtIds)) {
+                    $mb_bill_types = $masterConn->table('bill_types')->whereIn('id', $mBtIds)->get();
+                    $mb_bill_types_by_id = $mb_bill_types->keyBy('id')->toArray();
+                    
+                    $ayIds = $mb_bill_types->pluck('academic_year_id')->filter()->unique()->values()->toArray();
+                    if (!empty($ayIds)) {
+                        $lb_bill_types = $localConn->table('bill_types')->whereIn('academic_year_id', $ayIds)->get();
+                        foreach ($lb_bill_types as $lbt) {
+                            $cleanName = str_replace(' ', '', $lbt->name);
+                            $key = $cleanName . '_' . $lbt->academic_year_id;
+                            $lb_bill_types_by_match[$key] = $lbt;
+                        }
+                    }
+                }
+                
+                // Fetch Transaction Details for PAID bills
+                $paidBillIds = $mBillsColl->where('status', 'PAID')->pluck('id')->filter()->unique()->values()->toArray();
+                if (!empty($paidBillIds)) {
+                    $tdChunks = array_chunk($paidBillIds, 500);
+                    $mTxDetailsColl = collect();
+                    foreach ($tdChunks as $tdChunk) {
+                        $mTxDetailsColl = $mTxDetailsColl->merge($masterConn->table('transaction_details')->whereIn('bill_id', $tdChunk)->get());
+                    }
+                    $mb_tx_details_by_bill = $mTxDetailsColl->groupBy('bill_id')->toArray();
+                    
+                    // Fetch Transactions
+                    $txIds = $mTxDetailsColl->pluck('transaction_id')->filter()->unique()->values()->toArray();
+                    if (!empty($txIds)) {
+                        $txChunks = array_chunk($txIds, 500);
+                        $mTxColl = collect();
+                        foreach ($txChunks as $txChunk) {
+                            $mTxColl = $mTxColl->merge($masterConn->table('transactions')->whereIn('id', $txChunk)->get());
+                        }
+                        $mb_txs_by_id = $mTxColl->keyBy('id')->toArray();
+                    }
+                }
+                
+                // Fetch Saldo Histories
+                $shColl = collect();
+                foreach ($chunks as $chunk) {
+                    $shColl = $shColl->merge($masterConn->table('saldo_histories')->whereIn('student_id', $chunk)->get());
+                }
+                $mb_saldo_histories_by_student = $shColl->groupBy('student_id')->toArray();
+            }
+
             $masterRecords = $masterConn->table($targetTable)
                 ->whereIn('id', $selectedIds)
                 ->get();
 
             foreach ($masterRecords as $mRec) {
                 if ($module === 'billing_status') {
-                    // Ingest / upsert bills for selected student IDs matching filters
-                    $mQuery = $masterConn->table('bills')->where('student_id', $mRec->id)->whereNull('deleted_at');
-                    if (!empty($academicYearId)) {
-                        $mQuery->where('academic_year_id', $academicYearId);
-                    }
-                    if (!empty($billTypeId)) {
-                        $mQuery->where('bill_type_id', $billTypeId);
-                    }
-                    // Handle duplicate bills in Master DB: prioritize PAID status
-                    $rawMasterBills = $mQuery->get();
-                    file_put_contents('debug_counts.log', "student: " . $mRec->id . " - rawMasterBills: " . count($rawMasterBills) . "
-", FILE_APPEND);
+                    $rawMasterBills = $mb_bills_by_student[$mRec->id] ?? [];
                     $masterBills = [];
                     foreach ($rawMasterBills as $b) {
                         if (!isset($masterBills[$b->month])) {
@@ -687,20 +760,18 @@ class MasterIngestionBridgeService
                             $targetBillTypeId = $mBill->bill_type_id;
 
                             // Smart UUID Mapping
-                            $masterBillType = $masterConn->table('bill_types')->where('id', $mBill->bill_type_id)->first();
+                            $masterBillType = $mb_bill_types_by_id[$mBill->bill_type_id] ?? null;
                             if ($masterBillType) {
                                 $masterCleanName = str_replace(' ', '', $masterBillType->name);
-                                $localBillType = $localConn->table('bill_types')
-                                    ->whereRaw("REPLACE(name, ' ', '') = ?", [$masterCleanName])
-                                    ->where('academic_year_id', $masterBillType->academic_year_id)
-                                    ->first();
+                                $key = $masterCleanName . '_' . $masterBillType->academic_year_id;
+                                $localBillType = $lb_bill_types_by_match[$key] ?? null;
                                 if ($localBillType) {
                                     $targetBillTypeId = $localBillType->id;
                                 }
                             }
                             $row['bill_type_id'] = $targetBillTypeId;
 
-                            // Injeksi manual paid_amount karena database Master tidak memiliki field paid_amount
+                            // Injeksi manual paid_amount
                             if (isset($row['status'])) {
                                 if ($row['status'] === 'PAID') {
                                     $row['paid_amount'] = isset($row['amount']) ? $row['amount'] : 0;
@@ -709,22 +780,23 @@ class MasterIngestionBridgeService
                                 }
                             }
 
-                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, month, academic_year_id, dan year
-                            $localBill = $localConn->table('bills')
-                                ->where('student_id', $mBill->student_id)
-                                ->where('bill_type_id', $targetBillTypeId)
-                                ->where('month', $mBill->month)
-                                ->where('academic_year_id', $mBill->academic_year_id)
-                                ->where('year', $mBill->year)
-                                ->whereNull('deleted_at')
-                                ->first();
+                            // Match Local Bill by student_id, mapped bill_type_id, month, year, and academic_year_id
+                            $localBill = null;
+                            $stuLocalBills = $lb_bills_by_student[$mBill->student_id] ?? [];
+                            foreach ($stuLocalBills as $slb) {
+                                if ($slb->bill_type_id === $targetBillTypeId && 
+                                    $slb->month === $mBill->month && 
+                                    $slb->academic_year_id === $mBill->academic_year_id &&
+                                    $slb->year === $mBill->year) {
+                                    $localBill = $slb;
+                                    break;
+                                }
+                            }
 
-                            $targetBillId = $mBill->id;
-
+                            $targetBillId = null;
                             if ($localBill) {
                                 $targetBillId = $localBill->id;
                                 unset($row['id']);
-                                file_put_contents('debug_sync.log', json_encode($row) . PHP_EOL, FILE_APPEND);
                                 $localConn->table('bills')->where('id', $targetBillId)->update($row);
                             } else {
                                 $targetBillId = $row['id'];
@@ -733,9 +805,9 @@ class MasterIngestionBridgeService
 
                             // Enforce Transactional Atomicity: Copy transactions when paid
                             if ($mBill->status === 'PAID') {
-                                $mDetails = $masterConn->table('transaction_details')->where('bill_id', $mBill->id)->get();
+                                $mDetails = $mb_tx_details_by_bill[$mBill->id] ?? [];
                                 foreach ($mDetails as $mDetail) {
-                                    $mTx = $masterConn->table('transactions')->where('id', $mDetail->transaction_id)->first();
+                                    $mTx = $mb_txs_by_id[$mDetail->transaction_id] ?? null;
                                     
                                     if ($mTx && !$localConn->table('transactions')->where('id', $mTx->id)->exists()) {
                                         $localConn->table('transactions')->insert((array) $mTx);
@@ -744,18 +816,19 @@ class MasterIngestionBridgeService
                                         if ($mTx->payment_method_id) {
                                             try {
                                                 // Attempt to find by description or amount since transaction_id is missing
-                                                $mSaldoHist = $masterConn->table('saldo_histories')
-                                                    ->where('student_id', $mTx->student_id)
-                                                    ->where('amount', $mTx->amount)
-                                                    ->where('created_at', '>=', $mTx->created_at)
-                                                    ->get();
+                                                $allSH = $mb_saldo_histories_by_student[$mTx->student_id] ?? [];
+                                                $mSaldoHist = [];
+                                                foreach ($allSH as $sh) {
+                                                    if ($sh->amount == $mTx->amount && $sh->created_at >= $mTx->created_at) {
+                                                        $mSaldoHist[] = $sh;
+                                                    }
+                                                }
                                                 foreach ($mSaldoHist as $sh) {
                                                     if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
                                                         $localConn->table('saldo_histories')->insert((array) $sh);
                                                     }
                                                 }
                                             } catch (\Exception $e) {
-                                                // Log securely, don't crash the bill update
                                                 \Illuminate\Support\Facades\Log::warning("Could not sync saldo_histories for tx {$mTx->id}: " . $e->getMessage());
                                             }
                                         }
