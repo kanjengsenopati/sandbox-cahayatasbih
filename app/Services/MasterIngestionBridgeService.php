@@ -615,7 +615,7 @@ class MasterIngestionBridgeService
             $result['items'][] = [
                 'id' => $mRec->id,
                 'code_or_nis' => $mRec->nis ?: Str::limit($mRec->id, 8, ''),
-                'name' => "{$mRec->name} [{$schoolName} - {$className}]",
+                'name' => $mRec->name,
                 'status' => $status,
                 'diffs' => $diffs,
                 'raw_master' => (array) $mRec,
@@ -709,11 +709,13 @@ class MasterIngestionBridgeService
                                 }
                             }
 
-                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, dan month
+                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, month, academic_year_id, dan year
                             $localBill = $localConn->table('bills')
                                 ->where('student_id', $mBill->student_id)
                                 ->where('bill_type_id', $targetBillTypeId)
                                 ->where('month', $mBill->month)
+                                ->where('academic_year_id', $mBill->academic_year_id)
+                                ->where('year', $mBill->year)
                                 ->whereNull('deleted_at')
                                 ->first();
 
