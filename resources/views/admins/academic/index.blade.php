@@ -71,38 +71,48 @@
         .btn-select-target-class {
             color: #2563eb !important;
             background-color: #f1f5f9 !important;
-            border: 1px solid transparent !important;
+            border: 1px solid #e2e8f0 !important;
             transition: all 0.15s ease-in-out !important;
         }
         .btn-select-current-class *,
         .btn-select-target-class * {
             color: inherit !important;
         }
-        .btn-select-current-class:hover,
-        .btn-select-target-class:hover,
-        .btn-select-current-class:focus,
-        .btn-select-target-class:focus,
+        .btn-select-current-class:not(:disabled):not(.disabled):hover,
+        .btn-select-target-class:not(:disabled):not(.disabled):hover,
+        .btn-select-current-class:not(:disabled):not(.disabled):focus,
+        .btn-select-target-class:not(:disabled):not(.disabled):focus,
         .btn-select-current-class.active,
         .btn-select-target-class.active {
             color: #ffffff !important;
             background-color: #2563eb !important;
+            border-color: #2563eb !important;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
         }
-        .btn-select-current-class:hover *,
-        .btn-select-target-class:hover *,
-        .btn-select-current-class:focus *,
-        .btn-select-target-class:focus *,
+        .btn-select-current-class:not(:disabled):not(.disabled):hover *,
+        .btn-select-target-class:not(:disabled):not(.disabled):hover *,
+        .btn-select-current-class:not(:disabled):not(.disabled):focus *,
+        .btn-select-target-class:not(:disabled):not(.disabled):focus *,
         .btn-select-current-class.active *,
         .btn-select-target-class.active * {
             color: #ffffff !important;
         }
+        .btn-select-current-class:disabled,
+        .btn-select-target-class:disabled,
         .btn-select-current-class.disabled,
         .btn-select-target-class.disabled {
             color: #94a3b8 !important;
             background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
             opacity: 0.55 !important;
             box-shadow: none !important;
             cursor: not-allowed !important;
+        }
+        .btn-select-current-class:disabled *,
+        .btn-select-target-class:disabled *,
+        .btn-select-current-class.disabled *,
+        .btn-select-target-class.disabled * {
+            color: #94a3b8 !important;
         }
     </style>
 @endpush
@@ -410,7 +420,7 @@
                                                     <span id="label_selected_current_classroom" class="text-muted fs-7">Pilih Kelas</span>
                                                 </button>
                                                 
-                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_current_classroom" style="width: 360px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_current_classroom" style="min-width: 520px; width: 540px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
                                                     <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
                                                         <span class="fw-bolder fs-8 text-gray-800"><i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>Pilih Kelas Saat Ini</span>
                                                         <span class="badge bg-light-primary text-primary fs-9 fw-bold px-2 py-1 rounded-pill">3 Kolom</span>
@@ -422,7 +432,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-primary text-primary fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col1_current_title">Kelas 7</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col1_current_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col1_current_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
                                                             </div>
                                                         </div>
@@ -432,7 +442,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-info text-info fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col2_current_title">Kelas 8</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col2_current_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col2_current_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
                                                             </div>
                                                         </div>
@@ -442,7 +452,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-success text-success fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col3_current_title">Kelas 9</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col3_current_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col3_current_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
                                                             </div>
                                                         </div>
@@ -457,7 +467,7 @@
                                                     <span id="label_selected_target_classroom" class="text-muted fs-7">Pilih Kelas Tujuan</span>
                                                 </button>
                                                 
-                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_target_classroom" style="width: 360px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_target_classroom" style="min-width: 520px; width: 540px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
                                                     <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
                                                         <span class="fw-bolder fs-8 text-gray-800"><i class="fa-solid fa-layer-group me-1 text-primary"></i>Pilih Kelas Tujuan</span>
                                                         <span class="badge bg-light-primary text-primary fs-9 fw-bold px-2 py-1 rounded-pill" id="target_class_mode_badge">3 Kolom</span>
@@ -469,7 +479,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-primary text-primary fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col1_title">Kelas 7</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col1_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col1_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
@@ -479,7 +489,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-info text-info fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col2_title">Kelas 8</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col2_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col2_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
@@ -489,7 +499,7 @@
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                                 <span class="badge bg-light-success text-success fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col3_title">Kelas 9</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col3_class_list" style="max-height: 200px;">
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1 style-slim-scroll" id="col3_class_list" style="max-height: 240px;">
                                                                 <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
@@ -829,20 +839,23 @@
                 }
 
                 var btnClass = '';
+                var disabledAttr = '';
                 if (isCurrent) {
-                    btnClass = 'btn-light-warning text-warning border border-warning border-opacity-25 opacity-75 disabled';
+                    btnClass = 'btn-light-warning text-warning border border-warning border-opacity-25 opacity-75';
+                    disabledAttr = 'disabled style="cursor: not-allowed; min-height: 36px;" title="Kelas Saat Ini"';
                 } else if (isSelectable) {
-                    btnClass = 'btn-light-primary text-primary hover-elevate-up';
+                    btnClass = 'btn-light-primary text-primary';
+                    disabledAttr = 'style="cursor: pointer; min-height: 36px; transition: all 0.15s ease-in-out;"';
                 } else {
-                    btnClass = 'btn-light text-muted opacity-40 disabled';
+                    btnClass = 'btn-light text-muted opacity-50';
+                    var reason = (mode === 'transfer') ? 'Tidak dapat dipilih' : 'Hanya kelas level ' + (currentLevel + 1) + ' yang dapat dipilih pada Kenaikan Kelas';
+                    disabledAttr = 'disabled style="cursor: not-allowed; min-height: 36px;" title="' + reason + '"';
                 }
 
-                var disabledAttr = (isSelectable && !isCurrent) ? '' : 'disabled';
-
                 var itemHtml = `
-                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-1 px-1 btn-select-target-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}" ${disabledAttr}>
-                        <span>${cls.name}</span>
-                        ${isCurrent ? '<i class="fa-solid fa-user-lock ms-1 fs-9" title="Kelas Saat Ini"></i>' : ''}
+                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-2 px-2 btn-select-target-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}" ${disabledAttr}>
+                        <span class="text-truncate" style="pointer-events: none;">${cls.name}</span>
+                        ${isCurrent ? '<i class="fa-solid fa-user-lock ms-1 fs-9" style="pointer-events: none;"></i>' : ''}
                     </button>
                 `;
 
@@ -923,11 +936,11 @@
                 var clsLevel = extractClassLevel(cls.name);
                 var isSelected = (cls.id == selectedCurrentId);
 
-                var btnClass = isSelected ? 'active bg-primary text-white shadow-xs' : 'btn-light-primary text-primary hover-elevate-up';
+                var btnClass = isSelected ? 'active bg-primary text-white shadow-xs' : 'btn-light-primary text-primary';
 
                 var itemHtml = `
-                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-1 px-1 btn-select-current-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}">
-                        <span>${cls.name}</span>
+                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-2 px-2 btn-select-current-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}" style="cursor: pointer; min-height: 36px; transition: all 0.15s ease-in-out;">
+                        <span class="text-truncate" style="pointer-events: none;">${cls.name}</span>
                     </button>
                 `;
 
@@ -1397,11 +1410,16 @@
 
                 // Hide Bootstrap Dropdown Menu
                 var $triggerBtn = $('#btn_trigger_current_classroom');
-                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                    var dropdownInstance = bootstrap.Dropdown.getInstance($triggerBtn[0]) || new bootstrap.Dropdown($triggerBtn[0]);
-                    if (dropdownInstance) dropdownInstance.hide();
-                } else if ($.fn.dropdown) {
-                    $triggerBtn.dropdown('hide');
+                try {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                        var dropdownInstance = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance($triggerBtn[0]) : bootstrap.Dropdown.getInstance($triggerBtn[0]));
+                        if (dropdownInstance) dropdownInstance.hide();
+                    } else if ($.fn.dropdown) {
+                        $triggerBtn.dropdown('hide');
+                    }
+                } catch (err) {
+                    $triggerBtn.closest('.dropdown').find('.dropdown-menu').removeClass('show');
+                    $triggerBtn.removeClass('show').attr('aria-expanded', 'false');
                 }
 
                 selectedStudentIds.clear();
@@ -1428,11 +1446,16 @@
 
                 // Hide Bootstrap Dropdown Menu
                 var $triggerBtn = $('#btn_trigger_target_classroom');
-                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
-                    var dropdownInstance = bootstrap.Dropdown.getInstance($triggerBtn[0]) || new bootstrap.Dropdown($triggerBtn[0]);
-                    if (dropdownInstance) dropdownInstance.hide();
-                } else if ($.fn.dropdown) {
-                    $triggerBtn.dropdown('hide');
+                try {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                        var dropdownInstance = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance($triggerBtn[0]) : bootstrap.Dropdown.getInstance($triggerBtn[0]));
+                        if (dropdownInstance) dropdownInstance.hide();
+                    } else if ($.fn.dropdown) {
+                        $triggerBtn.dropdown('hide');
+                    }
+                } catch (err) {
+                    $triggerBtn.closest('.dropdown').find('.dropdown-menu').removeClass('show');
+                    $triggerBtn.removeClass('show').attr('aria-expanded', 'false');
                 }
             });
 

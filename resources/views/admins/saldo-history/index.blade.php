@@ -274,19 +274,22 @@
                                             Semua Kelas
                                         </button>
                                         <input type="hidden" id="filter-classroom" value="">
-                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; border: 1px solid #e2e8f0; margin-top: 5px; z-index: 9999;" aria-labelledby="penyesuaian_classroom_btn">
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; max-width: 95vw; overflow-x: auto; border: 1px solid #e2e8f0; margin-top: 5px; z-index: 9999;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
                                                 <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
-                                                <button class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
+                                                <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="resetPenyesuaianClassFilter()">Reset Filter</button>
                                             </div>
-                                            <div class="row flex-nowrap">
+                                            <div class="row flex-nowrap g-3">
                                                 @foreach($groupedClasses as $groupName => $classes)
                                                     @if(count($classes) > 0)
-                                                    <div class="col" style="min-width: 100px;">
+                                                    <div class="col" style="min-width: 110px;">
                                                         <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-7">{{ $groupName }}</div>
                                                         <div class="d-flex flex-column gap-1">
                                                             @foreach($classes as $cls)
-                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium py-1 d-block w-100" style="position: relative; z-index: 10000;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
+                                                            <button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 penyesuaian-class-item border border-gray-200 mb-1 fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">
+                                                                <span class="text-truncate" style="pointer-events: none;">{{ $cls->name }}</span>
+                                                                <i class="fas fa-check text-white fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                                                            </button>
                                                             @endforeach
                                                         </div>
                                                     </div>
@@ -1161,13 +1164,50 @@
                 adjustTable.ajax.reload();
             });
 
-            $(document).on('click', '.penyesuaian-class-item', function() {
+            window.resetPenyesuaianClassFilter = function() {
+                $('#filter-classroom').val('').trigger('change');
+                $('#penyesuaian_classroom_btn').text('Semua Kelas');
+                $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
+                $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
+                var dropBtn = document.getElementById('penyesuaian_classroom_btn');
+                try {
+                    if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                        var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
+                        if (inst) inst.hide();
+                    } else if ($.fn.dropdown) {
+                        $('#penyesuaian_classroom_btn').dropdown('hide');
+                    }
+                } catch (err) {
+                    $('#penyesuaian_classroom_btn').closest('.dropdown').find('.dropdown-menu').removeClass('show');
+                    $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                }
+            };
+
+            $(document).on('click', '.penyesuaian-class-item', function(e) {
+                e.preventDefault();
                 var id = $(this).data('id');
                 var name = $(this).data('name');
                 $('#filter-classroom').val(id).trigger('change');
-                $('#penyesuaian_classroom_btn').text(name);
-                var dropdownBtn = bootstrap.Dropdown.getInstance(document.getElementById('penyesuaian_classroom_btn')) || new bootstrap.Dropdown(document.getElementById('penyesuaian_classroom_btn'));
-                dropdownBtn.hide();
+                $('#penyesuaian_classroom_btn').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+                
+                $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
+                $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
+                
+                $(this).addClass('active bg-primary text-white border-primary').removeClass('btn-light text-slate-700 border-gray-200');
+                $(this).find('.class-check-icon').removeClass('d-none');
+                
+                var dropBtn = document.getElementById('penyesuaian_classroom_btn');
+                try {
+                    if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                        var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
+                        if (inst) inst.hide();
+                    } else if ($.fn.dropdown) {
+                        $('#penyesuaian_classroom_btn').dropdown('hide');
+                    }
+                } catch (err) {
+                    $('#penyesuaian_classroom_btn').closest('.dropdown').find('.dropdown-menu').removeClass('show');
+                    $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                }
             });
 
             var searchTimer;

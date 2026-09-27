@@ -145,14 +145,14 @@
                                     <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher text-danger me-1"></i> Filter Kelas:</label>
                                         <div class="dropdown w-100">
-                                            <button class="btn btn-sm btn-outline btn-outline-danger w-100 text-start fw-bold d-flex justify-content-between align-items-center bg-white" type="button" id="dropdownMenuClassroom" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <button class="btn btn-sm btn-outline btn-outline-danger w-100 text-start fw-bold d-flex justify-content-between align-items-center bg-white" type="button" id="dropdownMenuClassroom" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                                 <span id="btn-classroom-text">Semua Kelas</span>
                                                 <i class="fas fa-chevron-down fs-8"></i>
                                             </button>
                                             <input type="hidden" id="select-filter-classroom" value="">
-                                            <div class="dropdown-menu p-3 shadow" aria-labelledby="dropdownMenuClassroom" style="min-width: 450px; max-height: 400px; overflow-y: auto;">
-                                                <a class="dropdown-item fw-bold text-danger mb-3 p-2 rounded-2 bg-light-danger" href="#" onclick="selectClassroom('', 'Semua Kelas'); return false;">
-                                                    <i class="fas fa-times-circle me-2"></i> Reset Filter Kelas
+                                            <div class="dropdown-menu p-3 shadow" aria-labelledby="dropdownMenuClassroom" style="min-width: 480px; max-width: 95vw; max-height: 420px; overflow-y: auto;">
+                                                <a class="dropdown-item fw-bold text-danger mb-3 p-2 rounded-2 bg-light-danger" href="#" onclick="selectClassroom('', 'Semua Kelas'); return false;" style="cursor: pointer;">
+                                                    <i class="fas fa-times-circle me-2" style="pointer-events: none;"></i> Reset Filter Kelas
                                                 </a>
                                                 @foreach($schools ?? [] as $sch)
                                                     <div class="school-group-header mb-3" data-school="{{ $sch->id }}">
@@ -167,8 +167,9 @@
                                                                     <div class="fw-bolder text-muted fs-8 mb-2 border-bottom pb-1 text-uppercase" style="letter-spacing: 0.5px;">{{ $groupName }}</div>
                                                                     <div class="d-flex flex-column gap-2">
                                                                         @foreach($classesInGroup as $cls)
-                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;" title="Pilih kelas {{ $cls->name }}">
-                                                                                <i class="fas fa-door-open text-primary me-1"></i> {{ $cls->name }}
+                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item py-1.5 px-2 rounded-2 d-flex align-items-center justify-content-between" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;" title="Pilih kelas {{ $cls->name }}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">
+                                                                                <span class="text-truncate" style="pointer-events: none;"><i class="fas fa-door-open text-primary me-1" style="pointer-events: none;"></i> {{ $cls->name }}</span>
+                                                                                <i class="fas fa-check text-white fs-9 d-none sync-class-check" style="pointer-events: none;"></i>
                                                                             </button>
                                                                         @endforeach
                                                                     </div>
@@ -998,6 +999,43 @@
         function selectClassroom(id, name) {
             document.getElementById('select-filter-classroom').value = id;
             document.getElementById('btn-classroom-text').innerText = name;
+
+            // Update active states on classroom buttons
+            document.querySelectorAll('.classroom-item').forEach(function(btn) {
+                btn.classList.remove('active', 'bg-primary', 'text-white');
+                btn.classList.add('btn-outline-primary');
+                var check = btn.querySelector('.sync-class-check');
+                if (check) check.classList.add('d-none');
+            });
+
+            if (id) {
+                var activeBtn = document.querySelector(`.classroom-item[onclick*="'${id}'"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('active', 'bg-primary', 'text-white');
+                    activeBtn.classList.remove('btn-outline-primary');
+                    var check = activeBtn.querySelector('.sync-class-check');
+                    if (check) check.classList.remove('d-none');
+                }
+            }
+
+            // Close dropdown cleanly
+            var dropBtn = document.getElementById('dropdownMenuClassroom');
+            try {
+                if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
+                    if (inst) inst.hide();
+                } else if (typeof $ !== 'undefined' && $.fn.dropdown) {
+                    $('#dropdownMenuClassroom').dropdown('hide');
+                }
+            } catch (err) {
+                if (dropBtn) {
+                    var menu = dropBtn.closest('.dropdown').querySelector('.dropdown-menu');
+                    if (menu) menu.classList.remove('show');
+                    dropBtn.classList.remove('show');
+                    dropBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 

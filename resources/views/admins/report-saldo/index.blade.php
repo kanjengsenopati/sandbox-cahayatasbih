@@ -90,7 +90,7 @@
                                                   Semua Kelas
                                               </button>
                                               <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
-                                              <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 540px; max-width: 95vw; max-height: 420px; overflow-y: auto;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
                                               </div>
                                           </div>
@@ -424,14 +424,19 @@
 
             const row = $('<div class="row g-2"></div>');
             
-            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 classroom-item" data-id="" data-name="Semua Kelas">Semua Kelas</a>'));
+            container.append($('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>'));
 
             Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
                 const col = $('<div class="col-4"></div>');
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">Kelas ${key}</h6>`);
+                const list = $('<div class="d-flex flex-column gap-1"></div>');
                 groups[key].forEach(c => {
-                    col.append(`<a class="dropdown-item classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
+                    list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">
+                        <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                        <i class="fas fa-check text-white fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                    </button>`);
                 });
+                col.append(list);
                 row.append(col);
             });
 
@@ -443,8 +448,35 @@
             const id = $(this).data('id');
             const name = $(this).data('name');
             $('#filter_classroom_id').val(id);
-            $('#filter_classroom_btn').text(name);
-            $('#filter_classroom_btn').dropdown('toggle'); // close dropdown manually
+            if (id) {
+                $('#filter_classroom_btn').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#filter_classroom_btn').text(name);
+            }
+
+            $('.classroom-item').removeClass('active bg-primary text-white').addClass('btn-light text-slate-700');
+            $('.classroom-item .class-check-icon').addClass('d-none');
+            $(this).addClass('active bg-primary text-white').removeClass('btn-light text-slate-700');
+            $(this).find('.class-check-icon').removeClass('d-none');
+
+            // Close dropdown cleanly
+            var dropBtn = document.getElementById('filter_classroom_btn');
+            try {
+                if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
+                    if (inst) inst.hide();
+                } else if (typeof $ !== 'undefined' && $.fn.dropdown) {
+                    $('#filter_classroom_btn').dropdown('hide');
+                }
+            } catch (err) {
+                if (dropBtn) {
+                    var menu = dropBtn.closest('.dropdown').querySelector('.dropdown-menu');
+                    if (menu) menu.classList.remove('show');
+                    dropBtn.classList.remove('show');
+                    dropBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+
             reloadTable();
         });
 
