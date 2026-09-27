@@ -148,7 +148,7 @@
                             return true;
                         }
 
-                        if ($user->isKoordinatorCahayaMart() || $user->isKasirKoperasi()) {
+                        if ($currentUser->isKoordinatorCahayaMart() || $currentUser->isKasirKoperasi()) {
                             if (str_contains($sub->url, '/karyawan') || str_contains(strtolower($sub->name), 'karyawan') || str_contains(strtolower($sub->name), 'payroll')) {
                                 return false;
                             }
@@ -157,7 +157,7 @@
                             }
                         }
 
-                        if ($user->isKoordinatorCahayaMart()) {
+                        if ($currentUser->isKoordinatorCahayaMart()) {
                             $isKoperasiModule = str_contains($sub->url, '/item') || 
                                                 str_contains($sub->url, '/order-item') || 
                                                 str_contains($sub->url, '/pos-transaction');
@@ -180,10 +180,10 @@
                         }
 
                         if (str_contains($sub->url, 'pos-transaction')) {
-                            if ($user->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
+                            if ($currentUser->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
-                            if ($user->isKasirKoperasi() && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis'))) {
+                            if ($currentUser->isKasirKoperasi() && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
                         }

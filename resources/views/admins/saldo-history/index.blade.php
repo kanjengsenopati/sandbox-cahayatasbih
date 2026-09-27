@@ -62,6 +62,31 @@
         position: relative !important;
         z-index: 1050 !important;
     }
+    #penyesuaian_classroom_btn {
+        width: 250px !important;
+        min-width: 250px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        background-color: #f5f8fa !important;
+        border: 1px solid #f5f8fa !important;
+        border-radius: 20px !important;
+        color: #5e6278 !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    #penyesuaian_classroom_btn:hover {
+        background-color: #eef3f7 !important;
+        border-color: #eef3f7 !important;
+        color: #181c32 !important;
+    }
+    #penyesuaian_classroom_menu:not(.show) {
+        display: none !important;
+    }
     #penyesuaian_classroom_menu.show {
         display: block !important;
         visibility: visible !important;
@@ -282,8 +307,9 @@
                                             }
                                         @endphp
                                         <input type="hidden" id="filter-classroom" value="">
-                                        <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278; cursor: pointer;" type="button" id="penyesuaian_classroom_btn" aria-expanded="false">
-                                            Semua Kelas
+                                        <button class="btn btn-light fs-7" type="button" id="penyesuaian_classroom_btn" aria-expanded="false">
+                                            <span id="penyesuaian_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                            <i class="fas fa-chevron-down fs-8 text-gray-500 penyesuaian-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                         </button>
                                         <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" id="penyesuaian_classroom_menu" style="min-width: 850px; max-width: 95vw; overflow-x: auto; border: 1px solid #e2e8f0; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
@@ -1177,14 +1203,15 @@
 
             window.resetPenyesuaianClassFilter = function() {
                 $('#filter-classroom').val('').trigger('change');
-                $('#penyesuaian_classroom_btn').text('Semua Kelas');
+                $('#penyesuaian_classroom_btn_text').text('Semua Kelas');
                 $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
                 $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
                 $('#penyesuaian_classroom_menu').removeClass('show');
                 $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
             };
 
-            // Explicit toggle handler for classroom dropdown button
+            // Full hitbox toggle handler for classroom dropdown button
             $(document).on('click', '#penyesuaian_classroom_btn', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1195,6 +1222,7 @@
                 if (isShown) {
                     $menu.removeClass('show');
                     $btn.removeClass('show').attr('aria-expanded', 'false');
+                    $btn.find('.penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
                 } else {
                     // Close any other open dropdowns first
                     $('.dropdown-menu.show').not($menu).removeClass('show');
@@ -1202,6 +1230,7 @@
                     
                     $menu.addClass('show');
                     $btn.addClass('show').attr('aria-expanded', 'true');
+                    $btn.find('.penyesuaian-classroom-arrow').css('transform', 'rotate(180deg)');
                 }
             });
 
@@ -1215,6 +1244,7 @@
                 if (!$(e.target).closest('#penyesuaian_classroom_dropdown_container').length) {
                     $('#penyesuaian_classroom_menu').removeClass('show');
                     $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                    $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
                 }
             });
 
@@ -1224,7 +1254,7 @@
                 var id = $(this).data('id');
                 var name = $(this).data('name');
                 $('#filter-classroom').val(id).trigger('change');
-                $('#penyesuaian_classroom_btn').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+                $('#penyesuaian_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
                 
                 $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
                 $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
@@ -1234,6 +1264,7 @@
                 
                 $('#penyesuaian_classroom_menu').removeClass('show');
                 $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
             });
 
             var searchTimer;

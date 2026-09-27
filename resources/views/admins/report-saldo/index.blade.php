@@ -2,6 +2,30 @@
 
 @push('css')
 <style>
+    #filter_classroom_btn {
+        min-width: 180px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        background-color: #f5f8fa !important;
+        border: 1px solid #f5f8fa !important;
+        border-radius: 0.475rem !important;
+        color: #5e6278 !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    #filter_classroom_btn:hover {
+        background-color: #eef3f7 !important;
+        border-color: #eef3f7 !important;
+        color: #181c32 !important;
+    }
+    #classroom_mega_menu:not(.show) {
+        display: none !important;
+    }
     #classroom_mega_menu.show {
         display: block !important;
         visibility: visible !important;
@@ -98,8 +122,9 @@
                                           <label class="form-label">Kelas</label>
                                           <div class="dropdown" id="report_saldo_classroom_dropdown_container" style="position: relative !important;">
                                               <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
-                                              <button class="btn btn-light dropdown-toggle" style="background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278; cursor: pointer;" type="button" id="filter_classroom_btn" aria-expanded="false">
-                                                  Semua Kelas
+                                              <button class="btn btn-light fs-7" type="button" id="filter_classroom_btn" aria-expanded="false">
+                                                  <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                  <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                               </button>
                                               <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 540px; max-width: 95vw; max-height: 420px; overflow-y: auto; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
@@ -454,7 +479,7 @@
             container.append(row);
         }
 
-        // Explicit toggle handler for classroom dropdown button
+        // Full hitbox toggle handler for classroom dropdown button
         $(document).on('click', '#filter_classroom_btn', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -465,11 +490,13 @@
             if (isShown) {
                 $menu.removeClass('show');
                 $btn.removeClass('show').attr('aria-expanded', 'false');
+                $btn.find('.filter-classroom-arrow').css('transform', 'rotate(0deg)');
             } else {
                 $('.dropdown-menu.show').not($menu).removeClass('show');
                 $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
                 $menu.addClass('show');
                 $btn.addClass('show').attr('aria-expanded', 'true');
+                $btn.find('.filter-classroom-arrow').css('transform', 'rotate(180deg)');
             }
         });
 
@@ -483,6 +510,7 @@
             if (!$(e.target).closest('#report_saldo_classroom_dropdown_container').length) {
                 $('#classroom_mega_menu').removeClass('show');
                 $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#filter_classroom_btn .filter-classroom-arrow').css('transform', 'rotate(0deg)');
             }
         });
 
@@ -493,9 +521,9 @@
             const name = $(this).data('name');
             $('#filter_classroom_id').val(id);
             if (id) {
-                $('#filter_classroom_btn').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+                $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
             } else {
-                $('#filter_classroom_btn').text(name);
+                $('#filter_classroom_btn_text').text(name);
             }
 
             $('.classroom-item').removeClass('active bg-primary text-white').addClass('btn-light text-slate-700');
@@ -505,6 +533,7 @@
 
             $('#classroom_mega_menu').removeClass('show');
             $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+            $('#filter_classroom_btn .filter-classroom-arrow').css('transform', 'rotate(0deg)');
 
             reloadTable();
         });
