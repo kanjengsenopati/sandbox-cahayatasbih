@@ -262,13 +262,13 @@ class AuditSaldoMinusController extends Controller
 
         $studentIds = $students->pluck('id')->toArray();
 
-        // Batch query histories for root cause & last transaction date
+        // Batch query histories for root cause & first negative date (ascending chronological)
         $histories = collect();
         if (!empty($studentIds)) {
             $histories = $conn->table('saldo_histories')
                 ->whereIn('student_id', $studentIds)
-                ->select('student_id', 'amount', 'type', 'description', 'created_at')
-                ->orderBy('created_at', 'desc')
+                ->select('id', 'student_id', 'amount', 'type', 'description', 'created_at')
+                ->orderBy('created_at', 'asc')
                 ->get()
                 ->groupBy('student_id');
         }
@@ -279,42 +279,157 @@ class AuditSaldoMinusController extends Controller
             ->get(['id', 'saldo'])
             ->keyBy('id');
 
+        // First pass: identify origin event and collect origin history IDs for batch officer & detail lookup
+        $studentOrigins = [];
+        $originHistoryIds = [];
+        $studentCalculations = [];
+
+        foreach ($students as $s) {
+            $studentHistories = $histories->get($s->id, collect());
+            $lastMutation = $studentHistories->last();
+
+            $running = 0;
+            $totalIn = 0;
+            $totalOut = 0;
+            $firstEverMinus = null;
+            $streakMinus = null;
+
+            foreach ($studentHistories as $item) {
+                $prev = $running;
+                $amt = (int)$item->amount;
+                $cat = $this->categorizeMutation($item->type, $item->description ?? '');
+
+                if ($item->type === 'IN') {
+                    $running += $amt;
+                    $totalIn += $amt;
+                } else {
+                    $running -= $amt;
+                    $totalOut += $amt;
+                }
+
+                if ($running < 0 && $prev >= 0) {
+                    $ev = [
+                        'id' => $item->id,
+                        'date' => Carbon::parse($item->created_at)->translatedFormat('d M Y H:i'),
+                        'raw_date' => $item->created_at,
+                        'amount' => $amt,
+                        'amount_formatted' => 'Rp ' . number_format($amt, 0, ',', '.'),
+                        'description' => $item->description ?? '-',
+                        'category' => $cat,
+                        'prev' => $prev,
+                        'prev_formatted' => ($prev < 0 ? '- Rp ' : 'Rp ') . number_format(abs($prev), 0, ',', '.'),
+                        'after' => $running,
+                        'after_formatted' => '- Rp ' . number_format(abs($running), 0, ',', '.')
+                    ];
+                    $streakMinus = $ev;
+                    if (!$firstEverMinus) {
+                        $firstEverMinus = $ev;
+                    }
+                } elseif ($running >= 0) {
+                    $streakMinus = null;
+                }
+            }
+
+            $originEvent = $firstEverMinus ?? $streakMinus;
+            $studentOrigins[$s->id] = $originEvent;
+            $studentCalculations[$s->id] = [
+                'total_in' => $totalIn,
+                'total_out' => $totalOut,
+                'last_mutation' => $lastMutation
+            ];
+
+            if ($originEvent && !empty($originEvent['id'])) {
+                $originHistoryIds[] = $originEvent['id'];
+            }
+        }
+
+        // Batch preload petugas & nama spesifik tagihan untuk origin events
+        $billOriginMap = [];
+        $posOriginMap = [];
+        if (!empty($originHistoryIds)) {
+            try {
+                $billRows = $conn->table('transaction_details')
+                    ->leftJoin('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+                    ->leftJoin('admins', 'transactions.admin_id', '=', 'admins.id')
+                    ->leftJoin('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                    ->leftJoin('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
+                    ->whereIn('transaction_details.saldo_history_id', $originHistoryIds)
+                    ->select([
+                        'transaction_details.saldo_history_id',
+                        'transactions.payment_code',
+                        'admins.name as admin_name',
+                        'bills.month',
+                        'bills.year',
+                        'bill_types.name as bill_type_name'
+                    ])
+                    ->get()
+                    ->groupBy('saldo_history_id');
+
+                foreach ($billRows as $shId => $bGroup) {
+                    $firstB = $bGroup->first();
+                    $adminName = $firstB->admin_name ?: 'Petugas Keuangan';
+                    $names = [];
+                    foreach ($bGroup as $bg) {
+                        if ($bg->bill_type_name) {
+                            $period = ($bg->month && $bg->year) ? " (Bulan {$bg->month}/{$bg->year})" : '';
+                            $names[] = $bg->bill_type_name . $period;
+                        }
+                    }
+                    $billName = !empty($names) ? implode(', ', array_unique($names)) : 'SPP Bulanan Pesantren';
+
+                    $billOriginMap[$shId] = [
+                        'admin_name' => $adminName,
+                        'payment_code' => $firstB->payment_code,
+                        'bill_name' => $billName
+                    ];
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                $posRows = $conn->table('point_of_sale_transactions')
+                    ->leftJoin('admins', 'point_of_sale_transactions.admin_id', '=', 'admins.id')
+                    ->whereIn('point_of_sale_transactions.saldo_history_id', $originHistoryIds)
+                    ->select([
+                        'point_of_sale_transactions.saldo_history_id',
+                        'point_of_sale_transactions.payment_code',
+                        'admins.name as cashier_name'
+                    ])
+                    ->get()
+                    ->keyBy('saldo_history_id');
+
+                foreach ($posRows as $shId => $pd) {
+                    $posOriginMap[$shId] = [
+                        'cashier_name' => $pd->cashier_name ?: 'Petugas Kasir',
+                        'payment_code' => $pd->payment_code
+                    ];
+                }
+            } catch (\Throwable $e) {}
+        }
+
         $rows = [];
         $no = $start + 1;
 
         foreach ($students as $s) {
-            $studentHistories = $histories->get($s->id, collect());
-            $lastMutation = $studentHistories->first();
+            $originEvent = $studentOrigins[$s->id] ?? null;
+            $calc = $studentCalculations[$s->id] ?? ['total_in' => 0, 'total_out' => 0, 'last_mutation' => null];
+            $totalIn = $calc['total_in'];
+            $totalOut = $calc['total_out'];
+            $lastMutation = $calc['last_mutation'];
 
-            // Hitung total pemotongan tagihan vs jajan vs top up
-            $totalIn = $studentHistories->where('type', 'IN')->sum('amount');
-            $totalOut = $studentHistories->whereIn('type', ['OUT', 'WITHDRAW'])->sum('amount');
-
-            $totalBillDeductions = 0;
-            $totalPosDeductions = 0;
-            $totalAdjustments = 0;
-
-            foreach ($studentHistories as $item) {
-                if ($item->type === 'IN') continue;
-                $cat = $this->categorizeMutation($item->type, $item->description ?? '');
-                $amt = (int)$item->amount;
-                if ($cat === 'spp') {
-                    $totalBillDeductions += $amt;
-                } elseif ($cat === 'adjustment') {
-                    $totalAdjustments += $amt;
-                } else {
-                    $totalPosDeductions += $amt;
-                }
-            }
-
-            // Format tanggal transaksi terakhir
-            $lastDate = '-';
-            if ($lastMutation && !empty($lastMutation->created_at)) {
-                try {
-                    $lastDate = Carbon::parse($lastMutation->created_at)->translatedFormat('d M Y H:i');
-                } catch (\Throwable $e) {
-                    $lastDate = (string)$lastMutation->created_at;
-                }
+            // Format tanggal titik awal mulai minus (Timestamp)
+            $originDateCol = '-';
+            if ($originEvent) {
+                $originDateCol = '
+                    <div class="d-flex flex-column">
+                        <span class="text-danger fw-bolder font-mono fs-8 d-flex align-items-center">
+                            <i class="fas fa-calendar-times text-danger me-1 fs-9"></i> ' . $originEvent['date'] . '
+                        </span>
+                        <span class="text-muted fs-9 mt-0.5">
+                            Saldo: <span class="font-mono text-gray-700">' . $originEvent['prev_formatted'] . '</span> &rarr; <span class="font-mono text-danger fw-bold">' . $originEvent['after_formatted'] . '</span>
+                        </span>
+                    </div>';
+            } elseif ($lastMutation) {
+                $originDateCol = '<span class="text-muted font-mono fs-8">' . Carbon::parse($lastMutation->created_at)->translatedFormat('d M Y H:i') . '</span>';
             }
 
             // Status siswa
@@ -359,48 +474,62 @@ class AuditSaldoMinusController extends Controller
                     <span class="text-muted fs-9 mt-1">Defisit Mutasi</span>
                 </div>';
 
-            // Kolom Log Kenapa Bisa Minus
-            $sppPercent = $totalOut > 0 ? round(($totalBillDeductions / $totalOut) * 100) : 0;
-            $posPercent = $totalOut > 0 ? round(($totalPosDeductions / $totalOut) * 100) : 0;
-            $adjPercent = $totalOut > 0 ? round(($totalAdjustments / $totalOut) * 100) : 0;
+            // Kolom Disebabkan Oleh Apa & Berapa Nominalnya
+            $logCol = '';
+            if ($originEvent) {
+                $officerName = null;
+                $friendlyTitle = $originEvent['description'];
 
-            $rootCauseBadges = '';
-            if ($totalPosDeductions > 0) {
-                $rootCauseBadges .= '
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="badge badge-light-warning text-dark fw-bolder fs-8">
-                            <i class="fas fa-shopping-basket text-warning me-1"></i> Kasir PoS: Rp ' . number_format($totalPosDeductions, 0, ',', '.') . '
-                        </span>
-                        <span class="text-muted fs-9 font-mono ms-1">(' . $posPercent . '%)</span>
-                    </div>';
-            }
-            if ($totalBillDeductions > 0) {
-                $rootCauseBadges .= '
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="badge badge-light-danger fw-bolder fs-8">
-                            <i class="fas fa-file-invoice-dollar text-danger me-1"></i> SPP: Rp ' . number_format($totalBillDeductions, 0, ',', '.') . '
-                        </span>
-                        <span class="text-muted fs-9 font-mono ms-1">(' . $sppPercent . '%)</span>
-                    </div>';
-            }
-            if ($totalAdjustments > 0 && empty($rootCauseBadges)) {
-                $rootCauseBadges .= '
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="badge badge-light-secondary text-gray-700 fw-bolder fs-8">
-                            <i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian: Rp ' . number_format($totalAdjustments, 0, ',', '.') . '
-                        </span>
-                        <span class="text-muted fs-9 font-mono ms-1">(' . $adjPercent . '%)</span>
-                    </div>';
-            }
+                if ($originEvent['category'] === 'spp') {
+                    $badgeClass = 'badge-light-danger text-danger';
+                    $badgeIcon = '<i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP';
+                    if (isset($billOriginMap[$originEvent['id']])) {
+                        $friendlyTitle = $billOriginMap[$originEvent['id']]['bill_name'];
+                        $officerName = $billOriginMap[$originEvent['id']]['admin_name'];
+                    } else {
+                        $friendlyTitle = 'Potong SPP';
+                    }
+                } elseif ($originEvent['category'] === 'adjustment') {
+                    $badgeClass = 'badge-light-secondary text-gray-700';
+                    $badgeIcon = '<i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian';
+                    $friendlyTitle = 'Penyesuaian Saldo Sistem';
+                } else {
+                    $badgeClass = 'badge-light-warning text-dark';
+                    $badgeIcon = '<i class="fas fa-shopping-basket text-warning me-1"></i> Kasir PoS';
+                    if (stripos($originEvent['description'], 'pembelian barang') !== false) {
+                        $friendlyTitle = 'Belanja Kasir (PoS Keranjang)';
+                    } elseif (stripos($originEvent['description'], 'tarik cash') !== false) {
+                        $friendlyTitle = 'Tarik Kasbon Tunai Kasir';
+                    }
+                    if (isset($posOriginMap[$originEvent['id']])) {
+                        $officerName = $posOriginMap[$originEvent['id']]['cashier_name'];
+                    }
+                }
 
-            if (empty($rootCauseBadges)) {
-                $rootCauseBadges = '<span class="text-muted fs-8 fst-italic">Pengeluaran kasir melebihi saldo</span>';
-            }
+                $rawDesc = ($friendlyTitle !== $originEvent['description']) 
+                    ? '<span class="text-muted fs-9 font-mono text-truncate" style="max-width: 260px;" title="' . htmlspecialchars($originEvent['description']) . '">Tercatat: ' . htmlspecialchars($originEvent['description']) . '</span>' 
+                    : '';
 
-            $logCol = '
-                <div class="d-flex flex-column py-1">
-                    ' . $rootCauseBadges . '
-                </div>';
+                $officerHtml = '';
+                if (!empty($officerName)) {
+                    $officerHtml = '<div class="text-primary fs-9 fw-semibold mt-0.5"><i class="fas fa-user-check me-1"></i>Petugas: ' . htmlspecialchars($officerName) . '</div>';
+                }
+
+                $logCol = '
+                    <div class="d-flex flex-column py-1">
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="badge ' . $badgeClass . ' fw-bolder fs-8">' . $badgeIcon . '</span>
+                            <span class="badge badge-light-danger fw-bolder font-mono fs-8">' . $originEvent['amount_formatted'] . '</span>
+                        </div>
+                        <span class="text-gray-900 fs-8 fw-bolder text-truncate" style="max-width: 260px;" title="' . htmlspecialchars($friendlyTitle) . '">
+                            ' . htmlspecialchars($friendlyTitle) . '
+                        </span>
+                        ' . $officerHtml . '
+                        ' . $rawDesc . '
+                    </div>';
+            } else {
+                $logCol = '<span class="text-muted fs-8 fst-italic">Pengeluaran kasir melebihi saldo</span>';
+            }
 
             // Tombol Aksi
             $actionBtn = '
@@ -421,7 +550,7 @@ class AuditSaldoMinusController extends Controller
                 'school' => htmlspecialchars($s->school_name ?? '-'),
                 'classroom' => htmlspecialchars($s->classroom_name ?? '-'),
                 'saldo_status' => $saldoStatusCol,
-                'last_trans_date' => $lastDate,
+                'last_trans_date' => $originDateCol,
                 'minus_amount' => $minusCol,
                 'root_cause' => $logCol,
                 'action' => $actionBtn,
@@ -471,6 +600,79 @@ class AuditSaldoMinusController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
+        $historyIds = $histories->pluck('id')->toArray();
+
+        // 1. Preload rincian nama tagihan & admin/petugas pemroses dari tabel transaction_details & bills
+        $billDetailsMap = [];
+        if (!empty($historyIds)) {
+            try {
+                $billRows = $conn->table('transaction_details')
+                    ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+                    ->leftJoin('admins', 'transactions.admin_id', '=', 'admins.id')
+                    ->leftJoin('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                    ->leftJoin('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
+                    ->whereIn('transaction_details.saldo_history_id', $historyIds)
+                    ->select([
+                        'transaction_details.saldo_history_id',
+                        'transactions.payment_code',
+                        'transactions.admin_id',
+                        'admins.name as admin_name',
+                        'bills.month',
+                        'bills.year',
+                        'bill_types.name as bill_type_name'
+                    ])
+                    ->get()
+                    ->groupBy('saldo_history_id');
+
+                foreach ($billRows as $shId => $bGroup) {
+                    $firstB = $bGroup->first();
+                    $adminName = $firstB->admin_name ?: 'Petugas Keuangan';
+                    $names = [];
+                    foreach ($bGroup as $bg) {
+                        if ($bg->bill_type_name) {
+                            $period = ($bg->month && $bg->year) ? " (Bulan {$bg->month}/{$bg->year})" : '';
+                            $names[] = $bg->bill_type_name . $period;
+                        }
+                    }
+                    $billName = !empty($names) ? implode(', ', array_unique($names)) : 'SPP Bulanan Pesantren';
+
+                    $billDetailsMap[$shId] = [
+                        'admin_name' => $adminName,
+                        'payment_code' => $firstB->payment_code,
+                        'bill_name' => $billName
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // fallback
+            }
+        }
+
+        // 2. Preload rincian kasir & nama petugas kasir dari tabel point_of_sale_transactions
+        $posDetailsMap = [];
+        if (!empty($historyIds)) {
+            try {
+                $posRows = $conn->table('point_of_sale_transactions')
+                    ->leftJoin('admins', 'point_of_sale_transactions.admin_id', '=', 'admins.id')
+                    ->whereIn('point_of_sale_transactions.saldo_history_id', $historyIds)
+                    ->select([
+                        'point_of_sale_transactions.saldo_history_id',
+                        'point_of_sale_transactions.payment_code',
+                        'admins.name as cashier_name'
+                    ])
+                    ->get()
+                    ->keyBy('saldo_history_id');
+
+                foreach ($posRows as $shId => $pd) {
+                    $posDetailsMap[$shId] = [
+                        'cashier_name' => $pd->cashier_name ?: 'Petugas Kasir',
+                        'payment_code' => $pd->payment_code
+                    ];
+                }
+            } catch (\Throwable $e) {
+                // fallback
+            }
+        }
+
         $running = 0;
         $totalIn = 0;
         $totalOut = 0;
@@ -496,14 +698,29 @@ class AuditSaldoMinusController extends Controller
             }
 
             $category = $this->categorizeMutation($item->type, $desc);
+            $officerName = null;
+            $paymentCode = null;
 
-            // Friendly description if it is old system's ambiguous text
+            // Friendly description & officer mapping
             $friendlyDesc = $desc;
-            if ($category === 'pos') {
+            if ($category === 'spp') {
+                if (isset($billDetailsMap[$item->id])) {
+                    $friendlyDesc = $billDetailsMap[$item->id]['bill_name'];
+                    $officerName = $billDetailsMap[$item->id]['admin_name'];
+                    $paymentCode = $billDetailsMap[$item->id]['payment_code'];
+                } else {
+                    $friendlyDesc = 'SPP Bulanan Pesantren';
+                }
+            } elseif ($category === 'pos') {
                 if (stripos($desc, 'pembelian barang') !== false) {
                     $friendlyDesc = 'Belanja Kasir (PoS Keranjang)';
                 } elseif (stripos($desc, 'tarik cash') !== false) {
                     $friendlyDesc = 'Tarik Kasbon Tunai Kasir';
+                }
+
+                if (isset($posDetailsMap[$item->id])) {
+                    $officerName = $posDetailsMap[$item->id]['cashier_name'];
+                    $paymentCode = $posDetailsMap[$item->id]['payment_code'];
                 }
             } elseif ($category === 'adjustment') {
                 $friendlyDesc = 'Penyesuaian Saldo Sistem Lama';
@@ -521,6 +738,8 @@ class AuditSaldoMinusController extends Controller
                     'amount_formatted' => '+ Rp ' . number_format($amt, 0, ',', '.'),
                     'description' => $desc,
                     'friendly_desc' => $friendlyDesc,
+                    'officer_name' => $officerName,
+                    'payment_code' => $paymentCode,
                     'balance_after' => $running,
                     'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.')
                 ];
@@ -539,6 +758,8 @@ class AuditSaldoMinusController extends Controller
                         'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
                         'description' => $desc,
                         'friendly_desc' => $friendlyDesc,
+                        'officer_name' => $officerName,
+                        'payment_code' => $paymentCode,
                         'balance_after' => $running,
                         'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                         'is_negative' => $running < 0
@@ -554,6 +775,8 @@ class AuditSaldoMinusController extends Controller
                         'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
                         'description' => $desc,
                         'friendly_desc' => $friendlyDesc,
+                        'officer_name' => $officerName,
+                        'payment_code' => $paymentCode,
                         'balance_after' => $running,
                         'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                         'is_negative' => $running < 0,
@@ -570,6 +793,8 @@ class AuditSaldoMinusController extends Controller
                         'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
                         'description' => $desc,
                         'friendly_desc' => $friendlyDesc,
+                        'officer_name' => $officerName,
+                        'payment_code' => $paymentCode,
                         'balance_after' => $running,
                         'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                         'is_negative' => $running < 0
@@ -584,14 +809,17 @@ class AuditSaldoMinusController extends Controller
                     'date' => $dateFormatted,
                     'raw_date' => $item->created_at,
                     'prev' => $prev,
-                    'prev_formatted' => 'Rp ' . number_format($prev, 0, ',', '.'),
+                    'prev_formatted' => ($prev < 0 ? '- Rp ' : 'Rp ') . number_format(abs($prev), 0, ',', '.'),
                     'amount' => $amt,
                     'amount_formatted' => 'Rp ' . number_format($amt, 0, ',', '.'),
                     'desc' => $desc,
                     'friendly_desc' => $friendlyDesc,
+                    'officer_name' => $officerName,
+                    'payment_code' => $paymentCode,
                     'after' => $running,
                     'after_formatted' => '- Rp ' . number_format(abs($running), 0, ',', '.'),
-                    'category' => $category
+                    'category' => $category,
+                    'timeline_index' => $idx + 1
                 ];
             }
 
@@ -605,6 +833,8 @@ class AuditSaldoMinusController extends Controller
                 'amount_formatted' => ($item->type === 'IN' ? '+ Rp ' : '- Rp ') . number_format($amt, 0, ',', '.'),
                 'description' => $desc,
                 'friendly_desc' => $friendlyDesc,
+                'officer_name' => $officerName,
+                'payment_code' => $paymentCode,
                 'prev_balance' => $prev,
                 'prev_balance_formatted' => ($prev < 0 ? '- Rp ' : 'Rp ') . number_format(abs($prev), 0, ',', '.'),
                 'balance_after' => $running,
@@ -621,9 +851,9 @@ class AuditSaldoMinusController extends Controller
 
         // Diagnosis yang akurat
         if ($totalBillDeductions > $totalPosDeductions) {
-            $diagnosis = "Saldo minus terutama akibat pemotongan tagihan SPP bulanan (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%) yang menyerap dana melebihi top up masuk.";
+            $diagnosis = "Saldo minus terutama akibat pemotongan SPP bulanan (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%) yang menyerap dana melebihi top up masuk.";
         } elseif ($totalBillDeductions > 0 && $totalPosDeductions > 0) {
-            $diagnosis = "Saldo minus akibat kombinasi belanja Kasir (PoS) keranjang belanja (Rp " . number_format($totalPosDeductions, 0, ',', '.') . " / {$posPercent}%) dan tagihan SPP (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%).";
+            $diagnosis = "Saldo minus akibat kombinasi belanja Kasir (PoS) keranjang belanja (Rp " . number_format($totalPosDeductions, 0, ',', '.') . " / {$posPercent}%) dan pemotongan SPP (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%).";
         } else {
             $diagnosis = "Saldo minus murni akibat transaksi jajan lewat fitur Kasir (PoS keranjang belanja) sebesar Rp " . number_format($totalPosDeductions, 0, ',', '.') . " tanpa batasan kasbon saat saldo tidak mencukupi.";
         }
@@ -719,7 +949,7 @@ class AuditSaldoMinusController extends Controller
                 'Kelas',
                 'Status Siswa',
                 'Saldo Minus (Rp)',
-                'Total Potong Tagihan SPP (Rp)',
+                'Total Potong SPP (Rp)',
                 'Total Jajan Kasir POS (Rp)',
                 'Akar Penyebab Utama'
             ]);
@@ -746,7 +976,7 @@ class AuditSaldoMinusController extends Controller
                 }
 
                 $mainCause = ($bills > 0)
-                    ? 'Autodebit Tagihan SPP saat saldo tidak mencukupi (Rp ' . number_format($bills, 0, ',', '.') . ')'
+                    ? 'Pemotongan SPP saat saldo tidak mencukupi (Rp ' . number_format($bills, 0, ',', '.') . ')'
                     : 'Akumulasi Belanja Jajan Kasir PoS (Rp ' . number_format($jajan, 0, ',', '.') . ')';
 
                 fputcsv($handle, [

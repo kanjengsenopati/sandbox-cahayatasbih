@@ -58,7 +58,7 @@
                                 </span>
                             </div>
                             <p class="text-gray-700 fs-7 mb-2">
-                                Saldo minus santri di sistem lama terjadi terutama akibat <strong>transaksi belanja santri lewat fitur Kasir (PoS keranjang belanja)</strong> tanpa batasan kasbon (mencakup 73% santri), serta <strong>autodebit tagihan SPP / bulanan</strong> yang mengeksekusi pelunasan tanpa memvalidasi kecukupan saldo. Di aplikasi HP wali santri, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
+                                Saldo minus santri di sistem lama terjadi terutama akibat <strong>transaksi belanja santri lewat fitur Kasir (PoS keranjang belanja)</strong> tanpa batasan kasbon (mencakup 73% santri), serta <strong>pemotongan SPP bulanan</strong> yang mengeksekusi pelunasan tanpa memvalidasi kecukupan saldo. Di aplikasi HP wali santri, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
                             </p>
                             <div class="d-flex flex-wrap gap-3 fs-8 text-gray-600">
                                 <span><i class="fas fa-database text-primary me-1"></i> Sumber Audit: <strong class="text-primary">{{ $connName }}</strong></span>
@@ -140,9 +140,9 @@
                         <div class="card-body p-5">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted fw-bold fs-7 mb-1">Penyedot Tagihan SPP</div>
+                                    <div class="text-muted fw-bold fs-7 mb-1">Pemotongan SPP</div>
                                     <div class="text-primary fs-2x fw-bolder font-mono">{{ number_format($summary['spp_victims_count']) }}</div>
-                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% ada autodebit tagihan SPP</div>
+                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% ada pemotongan SPP</div>
                                 </div>
                                 <div class="symbol symbol-50px symbol-light-primary">
                                     <span class="symbol-label">
@@ -245,9 +245,9 @@
                                     <th>Lembaga</th>
                                     <th>Kelas</th>
                                     <th>Riwayat Saldo</th>
-                                    <th>Tanggal Transaksi</th>
+                                    <th>Mulai Minus Sejak</th>
                                     <th class="text-end">Minus Berapa</th>
-                                    <th>Log Kenapa Bisa Minus</th>
+                                    <th>Pemicu & Nominal Transaksi</th>
                                     <th class="text-center w-120px">Aksi</th>
                                 </tr>
                             </thead>
@@ -317,7 +317,48 @@
                 <!--Content Container-->
                 <div id="modal-content" class="d-none">
 
-                    <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
+                    <!--begin::Hero Spotlight: 2 Hal Pokok (Kapan Mulai Minus & Pemicu/Petugas)-->
+                    <div id="hero-spotlight-card" class="card mb-4 border-0 rounded-3 shadow-sm overflow-hidden" style="background: linear-gradient(135deg, #1e1e2d 0%, #252538 100%);">
+                        <div class="card-body p-4 text-white">
+                            <div class="row align-items-center g-3">
+                                <!-- Box A: Sejak Kapan Minus Muncul -->
+                                <div class="col-md-6 border-end-md border-gray-700 pe-md-4">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge badge-danger p-1.5 px-2.5 fw-bolder fs-9 text-uppercase">
+                                            <i class="fas fa-clock text-white me-1"></i> 1. Kapan Saldo Mulai Minus?
+                                        </span>
+                                    </div>
+                                    <div class="text-white fs-4 fw-bolder font-mono" id="hero-first-minus-date">-</div>
+                                    <div class="text-gray-300 fs-8 mt-1" id="hero-first-minus-shift">
+                                        Pergeseran Saldo: <span class="font-mono text-gray-400" id="hero-prev-saldo">-</span> &rarr; <span class="font-mono text-danger fw-bolder" id="hero-after-saldo">-</span>
+                                    </div>
+                                </div>
+
+                                <!-- Box B: Disebabkan Oleh Apa & Berapa Nominalnya & Siapa Petugasnya -->
+                                <div class="col-md-6 ps-md-4">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge badge-warning text-dark p-1.5 px-2.5 fw-bolder fs-9 text-uppercase">
+                                            <i class="fas fa-exclamation-triangle text-dark me-1"></i> 2. Transaksi Pemicu & Petugas
+                                        </span>
+                                        <span class="badge badge-light-danger font-mono fs-8 fw-bolder" id="hero-trigger-amount">- Rp 0</span>
+                                    </div>
+                                    <div class="fs-6 fw-bolder text-white text-truncate" id="hero-trigger-title" title="-">
+                                        -
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-3 mt-1 fs-8 text-gray-300">
+                                        <div id="hero-trigger-officer-wrap">
+                                            <i class="fas fa-user-check text-info me-1"></i> Petugas: <strong class="text-white" id="hero-trigger-officer">-</strong>
+                                        </div>
+                                        <div class="font-mono text-gray-400 fs-9" id="hero-trigger-code-wrap">
+                                            <i class="fas fa-receipt text-gray-500 me-1"></i> Ref: <span class="text-gray-300" id="hero-trigger-code">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Hero Spotlight-->
+
                     <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
                     <div class="card mb-4 border border-gray-200 rounded-3 p-4 bg-light shadow-xs">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 text-center mb-3">
@@ -335,7 +376,7 @@
                             <!-- Box 2: Potongan SPP -->
                             <div class="flex-grow-1 p-3 bg-white rounded-3 border border-gray-200 shadow-xs" style="min-width: 180px;">
                                 <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
-                                    <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan SPP
+                                    <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP
                                 </div>
                                 <div class="text-gray-900 fs-3 fw-bolder font-mono" id="stat-bill-deductions">Rp 0</div>
                                 <div class="text-muted fs-8 mt-0.5" id="stat-bill-count">0 transaksi</div>
@@ -401,21 +442,21 @@
                                 </div>
                             </div>
 
-                            <!-- Kolom 2: Potongan SPP / Tagihan (Merah) -->
+                            <!-- Kolom 2: Potongan SPP (Merah) -->
                             <div class="col-lg-4 col-md-12">
                                 <div class="card h-100 border border-gray-200 shadow-xs">
                                     <div class="card-header border-bottom border-gray-100 py-3 px-4 bg-white d-flex align-items-center justify-content-between min-h-auto">
                                         <div>
                                             <span class="fs-7 fw-bolder text-gray-900 d-flex align-items-center">
-                                                <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong SPP / Tagihan
+                                                <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong SPP
                                             </span>
-                                            <span class="text-muted fs-9" id="col-spp-count-label">0 Transaksi Autodebit</span>
+                                            <span class="text-muted fs-9" id="col-spp-count-label">0 Pemotongan SPP</span>
                                         </div>
                                         <span class="badge badge-light-danger text-danger font-mono fs-8 fw-bolder px-2.5 py-1" id="col-spp-badge">Rp 0</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="mb-2">
-                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari tagihan / bulan..." style="font-size: 0.8rem;">
+                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari nama SPP / bulan..." style="font-size: 0.8rem;">
                                         </div>
                                         <div id="list-col-spp" class="column-scroll-container pe-1" style="max-height: 520px; overflow-y: auto;">
                                             <!-- List populated via JS -->
@@ -519,7 +560,7 @@
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="pos">🛒 Kasir (PoS) Jajan</button>
                                             </li>
                                             <li class="nav-item">
-                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 Tagihan SPP</button>
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 SPP</button>
                                             </li>
                                             <li class="nav-item">
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="topup">📥 Top Up</button>
@@ -797,7 +838,7 @@
 
         // Render cardlet for 3-column view
         function renderCardlet(item, type) {
-            var searchData = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + item.amount).toLowerCase();
+            var searchData = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + (item.officer_name || '') + ' ' + item.amount).toLowerCase();
             var badgeClass = 'badge-light-success text-success';
             var borderClass = 'border-gray-200';
 
@@ -816,15 +857,24 @@
                 ? '<div class="text-muted fs-9 font-mono mt-0.5" title="' + item.description + '">Tercatat: ' + item.description + '</div>'
                 : '';
 
+            var officerHtml = '';
+            if (item.officer_name) {
+                var officerIcon = (type === 'spp') ? 'fa-user-check text-primary' : 'fa-cash-register text-warning';
+                var officerLabel = (type === 'spp') ? 'Petugas' : 'Kasir';
+                var refCode = item.payment_code ? ' &bull; <span class="font-mono text-muted fs-9">' + item.payment_code + '</span>' : '';
+                officerHtml = `<div class="text-gray-800 fs-9 mt-1 fw-semibold"><i class="fas ${officerIcon} me-1"></i>${officerLabel}: <strong class="text-primary">${item.officer_name}</strong>${refCode}</div>`;
+            }
+
             return `
                 <div class="card mb-2 border ${borderClass} rounded-2 p-2.5 shadow-none bg-white col-item" data-search="${searchData}">
                     <div class="d-flex align-items-center justify-content-between mb-1">
                         <span class="text-muted fs-9 font-mono">${item.created_at}</span>
                         <span class="badge ${badgeClass} font-mono fs-8 fw-bolder">${item.amount_formatted}</span>
                     </div>
-                    <div class="text-gray-900 fs-8 fw-semibold text-truncate" title="${titleDesc}">
+                    <div class="text-gray-900 fs-8 fw-bolder text-truncate" title="${titleDesc}">
                         ${titleDesc}
                     </div>
+                    ${officerHtml}
                     ${rawNote}
                     <div class="d-flex align-items-center justify-content-between fs-9 text-muted pt-1 mt-1 border-top border-gray-100">
                         <span class="text-gray-500">Saldo berjalan:</span>
@@ -866,12 +916,33 @@
 
                     var summary = res.summary;
 
+                    // 0. Hero Spotlight Card (2 Hal Pokok: Timestamp Kapan Mulai Minus & Pemicu/Petugas)
+                    if (summary.first_negative_event) {
+                        var fn = summary.first_negative_event;
+                        $('#hero-spotlight-card').removeClass('d-none');
+                        $('#hero-first-minus-date').text(fn.date);
+                        $('#hero-prev-saldo').text(fn.prev_formatted);
+                        $('#hero-after-saldo').text(fn.after_formatted);
+                        $('#hero-trigger-amount').text('- ' + fn.amount_formatted);
+                        $('#hero-trigger-title').text(fn.friendly_desc || fn.desc).attr('title', fn.desc);
+                        var defaultRole = (fn.category === 'spp') ? 'Petugas Keuangan' : 'Petugas Kasir';
+                        $('#hero-trigger-officer').text(fn.officer_name || defaultRole);
+                        if (fn.payment_code) {
+                            $('#hero-trigger-code').text(fn.payment_code);
+                            $('#hero-trigger-code-wrap').removeClass('d-none');
+                        } else {
+                            $('#hero-trigger-code-wrap').addClass('d-none');
+                        }
+                    } else {
+                        $('#hero-spotlight-card').addClass('d-none');
+                    }
+
                     // 1. Header Formula Strip
                     $('#stat-topup').text(summary.total_in_formatted);
                     $('#stat-topup-count').text(summary.topup_count + ' transaksi');
 
                     $('#stat-bill-deductions').text(summary.total_bill_formatted);
-                    $('#stat-bill-count').text(summary.spp_count + ' transaksi');
+                    $('#stat-bill-count').text(summary.spp_count + ' pemotongan');
 
                     $('#stat-pos-deductions').text(summary.total_pos_formatted);
                     $('#stat-pos-count').text(summary.pos_count + ' transaksi');
@@ -897,14 +968,14 @@
                     }
 
                     $('#col-spp-badge').text(summary.total_bill_formatted);
-                    $('#col-spp-count-label').text(summary.spp_count + ' Transaksi Autodebit');
+                    $('#col-spp-count-label').text(summary.spp_count + ' Pemotongan SPP');
                     var listSpp = $('#list-col-spp').empty();
                     if (res.items_spp && res.items_spp.length > 0) {
                         $.each(res.items_spp, function(i, it) {
                             listSpp.append(renderCardlet(it, 'spp'));
                         });
                     } else {
-                        listSpp.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada pemotongan tagihan SPP.</div>');
+                        listSpp.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada pemotongan SPP.</div>');
                     }
 
                     $('#col-pos-badge').text(summary.total_pos_formatted);
@@ -932,9 +1003,10 @@
                     if (summary.first_negative_event) {
                         var fn = summary.first_negative_event;
                         $('#box-first-negative-2col').removeClass('d-none');
+                        var officerNote = fn.officer_name ? ' oleh petugas <strong>' + fn.officer_name + '</strong>' : '';
                         $('#text-first-negative-2col').html(
                             'Pada <strong>' + fn.date + '</strong>, saldo santri (' + fn.prev_formatted + ') ' +
-                            'dipotong <strong>' + fn.amount_formatted + '</strong> (' + (fn.friendly_desc || fn.desc) + '), ' +
+                            'dipotong <strong>' + fn.amount_formatted + '</strong> (' + (fn.friendly_desc || fn.desc) + ')' + officerNote + ', ' +
                             'mengakibatkan saldo pertama kali anjlok ke <strong class="text-danger">' + fn.after_formatted + '</strong>.'
                         );
                     } else {
@@ -949,7 +1021,7 @@
                             if (item.type === 'IN') {
                                 typeBadge = '<span class="badge badge-light-success fw-bolder fs-8"><i class="fas fa-arrow-down text-success me-1"></i> Top Up</span>';
                             } else if (item.category === 'spp') {
-                                typeBadge = '<span class="badge badge-light-danger fw-bolder fs-8"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Tagihan SPP</span>';
+                                typeBadge = '<span class="badge badge-light-danger fw-bolder fs-8"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP</span>';
                             } else if (item.category === 'adjustment') {
                                 typeBadge = '<span class="badge badge-light-secondary text-gray-700 fw-bolder fs-8"><i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian</span>';
                             } else {
@@ -962,11 +1034,15 @@
                                 : '<span class="text-success font-mono fw-bold fs-8">' + item.balance_after_formatted + '</span>';
 
                             var indicator = item.is_first_negative ? '<span class="badge badge-danger ms-1 fs-9">Awal Minus!</span>' : '';
-                            var searchStr = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + item.amount_formatted + ' ' + item.category).toLowerCase();
+                            var searchStr = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + (item.officer_name || '') + ' ' + item.amount_formatted + ' ' + item.category).toLowerCase();
 
                             var displayTitle = item.friendly_desc || item.description;
                             var rawDescNote = (item.friendly_desc && item.friendly_desc !== item.description)
                                 ? '<div class="text-muted fs-9 font-mono mt-0.5"><i class="fas fa-info-circle text-gray-400 me-1"></i>Tercatat: <span class="text-gray-700">' + item.description + '</span></div>'
+                                : '';
+
+                            var officerInfo = item.officer_name 
+                                ? `<div class="text-primary fs-9 mt-0.5 fw-semibold"><i class="fas fa-user-check me-1"></i>Petugas: <strong>${item.officer_name}</strong> ${item.payment_code ? '&bull; <span class="font-mono text-muted fs-9">(' + item.payment_code + ')</span>' : ''}</div>`
                                 : '';
 
                             var tr = `
@@ -977,6 +1053,7 @@
                                     <td class="text-end font-mono fw-bolder">${item.amount_formatted}</td>
                                     <td>
                                         <div class="fw-bold text-gray-900">${displayTitle} ${indicator}</div>
+                                        ${officerInfo}
                                         ${rawDescNote}
                                     </td>
                                     <td class="text-end">${balanceBadge}</td>
