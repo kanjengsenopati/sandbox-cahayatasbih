@@ -58,13 +58,13 @@
                                 </span>
                             </div>
                             <p class="text-gray-700 fs-7 mb-2">
-                                Saldo minus santri di sistem lama terjadi terutama akibat <strong>transaksi belanja santri lewat fitur Kasir (PoS keranjang belanja)</strong> tanpa batasan kasbon (mencakup 73% santri), serta <strong>pemotongan SPP bulanan</strong> yang mengeksekusi pelunasan tanpa memvalidasi kecukupan saldo. Di aplikasi HP wali santri, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
+                                Saldo minus santri di sistem lama terjadi terutama akibat <strong>transaksi belanja santri lewat fitur Kasir (PoS keranjang belanja)</strong> tanpa batasan kasbon (mencakup 73% santri), serta <strong>pemotongan tagihan</strong> yang mengeksekusi pelunasan tanpa memvalidasi kecukupan saldo. Di aplikasi HP wali santri, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
                             </p>
                             <div class="d-flex flex-wrap gap-3 fs-8 text-gray-600">
                                 <span><i class="fas fa-database text-primary me-1"></i> Sumber Audit: <strong class="text-primary">{{ $connName }}</strong></span>
                                 <span><i class="fas fa-users text-danger me-1"></i> Total Korban Minus: <strong class="text-danger">{{ number_format($summary['total_count']) }} Santri</strong></span>
                                 <span><i class="fas fa-shopping-basket text-warning me-1"></i> Belanja Kasir (PoS) Murni: <strong class="text-warning">{{ number_format($summary['pos_only_count']) }} Santri ({{ round(($summary['pos_only_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
-                                <span><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Terpotong SPP Bulanan: <strong class="text-primary">{{ number_format($summary['spp_victims_count']) }} Santri ({{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
+                                <span><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Terpotong Tagihan: <strong class="text-primary">{{ number_format($summary['spp_victims_count']) }} Santri ({{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
                             </div>
                         </div>
                     </div>
@@ -122,7 +122,7 @@
                                 <div>
                                     <div class="text-muted fw-bold fs-7 mb-1">Kasir (PoS) Belanja Murni</div>
                                     <div class="text-success fs-2x fw-bolder font-mono">{{ number_format($summary['pos_only_count']) }}</div>
-                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['pos_only_count'] / max(1, $summary['total_count'])) * 100) }}% jajan kasir keranjang tanpa SPP</div>
+                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['pos_only_count'] / max(1, $summary['total_count'])) * 100) }}% jajan kasir keranjang tanpa tagihan</div>
                                 </div>
                                 <div class="symbol symbol-50px symbol-light-success">
                                     <span class="symbol-label">
@@ -134,15 +134,15 @@
                     </div>
                 </div>
 
-                <!--Card 4: Korban Pemotongan SPP-->
+                <!--Card 4: Korban Pemotongan Tagihan-->
                 <div class="col-sm-6 col-xl-3">
                     <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
                         <div class="card-body p-5">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted fw-bold fs-7 mb-1">Pemotongan SPP</div>
+                                    <div class="text-muted fw-bold fs-7 mb-1">Pemotongan Tagihan</div>
                                     <div class="text-primary fs-2x fw-bolder font-mono">{{ number_format($summary['spp_victims_count']) }}</div>
-                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% ada pemotongan SPP</div>
+                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% ada pemotongan tagihan</div>
                                 </div>
                                 <div class="symbol symbol-50px symbol-light-primary">
                                     <span class="symbol-label">
@@ -311,7 +311,7 @@
                 <div id="modal-loading" class="text-center py-12">
                     <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
                     <div class="text-gray-800 fs-6 fw-bold">Membedah aliran dana dan jejak mutasi saldo santri...</div>
-                    <div class="text-muted fs-8 mt-1">Mengelompokkan top up, pemotongan SPP autodebit, dan transaksi kantin.</div>
+                    <div class="text-muted fs-8 mt-1">Mengelompokkan top up, pemotongan tagihan, dan transaksi kantin.</div>
                 </div>
 
                 <!--Content Container-->
@@ -359,7 +359,7 @@
                     </div>
                     <!--end::Hero Spotlight-->
 
-                    <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
+                    <!--Top Equation Formula Strip: Masuk - Tagihan - Jajan = Saldo Minus-->
                     <div class="card mb-4 border border-gray-200 rounded-3 p-4 bg-light shadow-xs">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 text-center mb-3">
                             <!-- Box 1: Pemasukan Top Up -->
@@ -373,10 +373,10 @@
 
                             <div class="fs-2 fw-normal text-gray-400 px-1">−</div>
 
-                            <!-- Box 2: Potongan SPP -->
+                            <!-- Box 2: Potongan Tagihan -->
                             <div class="flex-grow-1 p-3 bg-white rounded-3 border border-gray-200 shadow-xs" style="min-width: 180px;">
                                 <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
-                                    <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP
+                                    <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan
                                 </div>
                                 <div class="text-gray-900 fs-3 fw-bolder font-mono" id="stat-bill-deductions">Rp 0</div>
                                 <div class="text-muted fs-8 mt-0.5" id="stat-bill-count">0 transaksi</div>
@@ -442,21 +442,21 @@
                                 </div>
                             </div>
 
-                            <!-- Kolom 2: Potongan SPP (Merah) -->
+                            <!-- Kolom 2: Potongan Tagihan (Merah) -->
                             <div class="col-lg-4 col-md-12">
                                 <div class="card h-100 border border-gray-200 shadow-xs">
                                     <div class="card-header border-bottom border-gray-100 py-3 px-4 bg-white d-flex align-items-center justify-content-between min-h-auto">
                                         <div>
                                             <span class="fs-7 fw-bolder text-gray-900 d-flex align-items-center">
-                                                <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong SPP
+                                                <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong Tagihan
                                             </span>
-                                            <span class="text-muted fs-9" id="col-spp-count-label">0 Pemotongan SPP</span>
+                                            <span class="text-muted fs-9" id="col-spp-count-label">0 Pemotongan Tagihan</span>
                                         </div>
                                         <span class="badge badge-light-danger text-danger font-mono fs-8 fw-bolder px-2.5 py-1" id="col-spp-badge">Rp 0</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="mb-2">
-                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari nama SPP / bulan..." style="font-size: 0.8rem;">
+                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari nama tagihan / bulan..." style="font-size: 0.8rem;">
                                         </div>
                                         <div id="list-col-spp" class="column-scroll-container pe-1" style="max-height: 520px; overflow-y: auto;">
                                             <!-- List populated via JS -->
@@ -502,9 +502,9 @@
                                         <i class="fas fa-chart-pie text-primary me-2"></i> Komposisi Pengeluaran
                                     </h5>
 
-                                    <!-- Progress Bar SPP vs POS -->
+                                    <!-- Progress Bar Tagihan vs POS -->
                                     <div class="d-flex align-items-center justify-content-between fs-8 mb-1">
-                                        <span class="text-danger fw-bolder" id="label-percent-spp">SPP: 0%</span>
+                                        <span class="text-danger fw-bolder" id="label-percent-spp">Tagihan: 0%</span>
                                         <span class="text-warning fw-bolder" id="label-percent-pos">Kasir (PoS): 0%</span>
                                     </div>
                                     <div class="progress h-8px mb-4">
@@ -519,7 +519,7 @@
                                             <span class="font-mono fw-bolder text-gray-900" id="val-side-topup">Rp 0</span>
                                         </div>
                                         <div class="d-flex justify-content-between p-2.5 rounded-2 bg-light-danger border border-danger border-opacity-20">
-                                            <span class="text-danger fw-bold"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Potongan SPP</span>
+                                            <span class="text-danger fw-bold"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Potongan Tagihan</span>
                                             <span class="font-mono fw-bolder text-gray-900" id="val-side-spp">Rp 0</span>
                                         </div>
                                         <div class="d-flex justify-content-between p-2.5 rounded-2 bg-light-warning border border-warning border-opacity-20">
@@ -560,7 +560,7 @@
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="pos">🛒 Kasir (PoS) Jajan</button>
                                             </li>
                                             <li class="nav-item">
-                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 SPP</button>
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 Tagihan</button>
                                             </li>
                                             <li class="nav-item">
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="topup">📥 Top Up</button>
@@ -968,14 +968,14 @@
                     }
 
                     $('#col-spp-badge').text(summary.total_bill_formatted);
-                    $('#col-spp-count-label').text(summary.spp_count + ' Pemotongan SPP');
+                    $('#col-spp-count-label').text(summary.spp_count + ' Pemotongan Tagihan');
                     var listSpp = $('#list-col-spp').empty();
                     if (res.items_spp && res.items_spp.length > 0) {
                         $.each(res.items_spp, function(i, it) {
                             listSpp.append(renderCardlet(it, 'spp'));
                         });
                     } else {
-                        listSpp.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada pemotongan SPP.</div>');
+                        listSpp.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada pemotongan tagihan.</div>');
                     }
 
                     $('#col-pos-badge').text(summary.total_pos_formatted);
@@ -995,7 +995,7 @@
                     $('#val-side-pos').text(summary.total_pos_formatted);
                     $('#val-side-deficit').text(summary.final_saldo_formatted);
 
-                    $('#label-percent-spp').text('SPP: ' + summary.spp_percent + '%');
+                    $('#label-percent-spp').text('Tagihan: ' + summary.spp_percent + '%');
                     $('#label-percent-pos').text('Kasir (PoS): ' + summary.pos_percent + '%');
                     $('#progress-bar-spp').css('width', summary.spp_percent + '%');
                     $('#progress-bar-pos').css('width', summary.pos_percent + '%');
@@ -1021,7 +1021,7 @@
                             if (item.type === 'IN') {
                                 typeBadge = '<span class="badge badge-light-success fw-bolder fs-8"><i class="fas fa-arrow-down text-success me-1"></i> Top Up</span>';
                             } else if (item.category === 'spp') {
-                                typeBadge = '<span class="badge badge-light-danger fw-bolder fs-8"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP</span>';
+                                typeBadge = '<span class="badge badge-light-danger fw-bolder fs-8"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan</span>';
                             } else if (item.category === 'adjustment') {
                                 typeBadge = '<span class="badge badge-light-secondary text-gray-700 fw-bolder fs-8"><i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian</span>';
                             } else {

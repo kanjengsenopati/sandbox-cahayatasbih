@@ -482,12 +482,12 @@ class AuditSaldoMinusController extends Controller
 
                 if ($originEvent['category'] === 'spp') {
                     $badgeClass = 'badge-light-danger text-danger';
-                    $badgeIcon = '<i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong SPP';
+                    $badgeIcon = '<i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan';
                     if (isset($billOriginMap[$originEvent['id']])) {
                         $friendlyTitle = $billOriginMap[$originEvent['id']]['bill_name'];
                         $officerName = $billOriginMap[$originEvent['id']]['admin_name'];
                     } else {
-                        $friendlyTitle = 'Potong SPP';
+                        $friendlyTitle = 'Potong Tagihan';
                     }
                 } elseif ($originEvent['category'] === 'adjustment') {
                     $badgeClass = 'badge-light-secondary text-gray-700';
@@ -949,7 +949,7 @@ class AuditSaldoMinusController extends Controller
                 'Kelas',
                 'Status Siswa',
                 'Saldo Minus (Rp)',
-                'Total Potong SPP (Rp)',
+                'Total Potong Tagihan (Rp)',
                 'Total Jajan Kasir POS (Rp)',
                 'Akar Penyebab Utama'
             ]);
@@ -976,7 +976,7 @@ class AuditSaldoMinusController extends Controller
                 }
 
                 $mainCause = ($bills > 0)
-                    ? 'Pemotongan SPP saat saldo tidak mencukupi (Rp ' . number_format($bills, 0, ',', '.') . ')'
+                    ? 'Pemotongan tagihan saat saldo tidak mencukupi (Rp ' . number_format($bills, 0, ',', '.') . ')'
                     : 'Akumulasi Belanja Jajan Kasir PoS (Rp ' . number_format($jajan, 0, ',', '.') . ')';
 
                 fputcsv($handle, [
