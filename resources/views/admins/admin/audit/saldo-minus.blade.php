@@ -58,12 +58,13 @@
                                 </span>
                             </div>
                             <p class="text-gray-700 fs-7 mb-2">
-                                Saldo minus santri di database lama terjadi terutama akibat <strong>Autodebit Tagihan SPP / Bulanan Pesantren</strong> yang mengeksekusi pelunasan tanpa mengecek kecukupan saldo (saldo Rp 0 dipaksa potong hingga jutaan rupiah), serta belanja kasir kantin lama tanpa batasan kasbon. Di aplikasi HP orang tua, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
+                                Saldo minus santri di sistem lama terjadi terutama akibat <strong>transaksi belanja santri lewat fitur Kasir (PoS keranjang belanja)</strong> tanpa batasan kasbon (mencakup 73% santri), serta <strong>autodebit tagihan SPP / bulanan</strong> yang mengeksekusi pelunasan tanpa memvalidasi kecukupan saldo. Di aplikasi HP wali santri, kartu saldo dinonaktifkan sehingga orang tua tidak melihat angka minus.
                             </p>
                             <div class="d-flex flex-wrap gap-3 fs-8 text-gray-600">
                                 <span><i class="fas fa-database text-primary me-1"></i> Sumber Audit: <strong class="text-primary">{{ $connName }}</strong></span>
                                 <span><i class="fas fa-users text-danger me-1"></i> Total Korban Minus: <strong class="text-danger">{{ number_format($summary['total_count']) }} Santri</strong></span>
-                                <span><i class="fas fa-file-invoice text-warning me-1"></i> Korban Autodebit SPP: <strong class="text-warning">{{ number_format($summary['spp_victims_count']) }} Santri ({{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
+                                <span><i class="fas fa-shopping-basket text-warning me-1"></i> Belanja Kasir (PoS) Murni: <strong class="text-warning">{{ number_format($summary['pos_only_count']) }} Santri ({{ round(($summary['pos_only_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
+                                <span><i class="fas fa-file-invoice-dollar text-primary me-1"></i> Terpotong SPP Bulanan: <strong class="text-primary">{{ number_format($summary['spp_victims_count']) }} Santri ({{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}%)</strong></span>
                             </div>
                         </div>
                     </div>
@@ -113,19 +114,19 @@
                     </div>
                 </div>
 
-                <!--Card 3: Korban Pemotongan SPP-->
+                <!--Card 3: Belanja Kasir PoS Murni-->
                 <div class="col-sm-6 col-xl-3">
-                    <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
+                    <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
                         <div class="card-body p-5">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted fw-bold fs-7 mb-1">Penyedot SPP Bulanan</div>
-                                    <div class="text-primary fs-2x fw-bolder font-mono">{{ number_format($summary['spp_victims_count']) }}</div>
-                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% akibat autodebit SPP</div>
+                                    <div class="text-muted fw-bold fs-7 mb-1">Kasir (PoS) Belanja Murni</div>
+                                    <div class="text-success fs-2x fw-bolder font-mono">{{ number_format($summary['pos_only_count']) }}</div>
+                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['pos_only_count'] / max(1, $summary['total_count'])) * 100) }}% jajan kasir keranjang tanpa SPP</div>
                                 </div>
-                                <div class="symbol symbol-50px symbol-light-primary">
+                                <div class="symbol symbol-50px symbol-light-success">
                                     <span class="symbol-label">
-                                        <i class="fas fa-file-invoice-dollar text-primary fs-1"></i>
+                                        <i class="fas fa-shopping-basket text-success fs-1"></i>
                                     </span>
                                 </div>
                             </div>
@@ -133,19 +134,19 @@
                     </div>
                 </div>
 
-                <!--Card 4: Kasbon Kantin Murni-->
+                <!--Card 4: Korban Pemotongan SPP-->
                 <div class="col-sm-6 col-xl-3">
-                    <div class="card h-100 shadow-sm border-0 border-start border-4 border-success">
+                    <div class="card h-100 shadow-sm border-0 border-start border-4 border-primary">
                         <div class="card-body p-5">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted fw-bold fs-7 mb-1">Jajan Kantin Murni</div>
-                                    <div class="text-success fs-2x fw-bolder font-mono">{{ number_format($summary['pos_only_count']) }}</div>
-                                    <div class="text-muted fs-8 mt-1">Hanya belanja receh tanpa SPP</div>
+                                    <div class="text-muted fw-bold fs-7 mb-1">Penyedot Tagihan SPP</div>
+                                    <div class="text-primary fs-2x fw-bolder font-mono">{{ number_format($summary['spp_victims_count']) }}</div>
+                                    <div class="text-muted fs-8 mt-1">{{ round(($summary['spp_victims_count'] / max(1, $summary['total_count'])) * 100) }}% ada autodebit tagihan SPP</div>
                                 </div>
-                                <div class="symbol symbol-50px symbol-light-success">
+                                <div class="symbol symbol-50px symbol-light-primary">
                                     <span class="symbol-label">
-                                        <i class="fas fa-shopping-cart text-success fs-1"></i>
+                                        <i class="fas fa-file-invoice-dollar text-primary fs-1"></i>
                                     </span>
                                 </div>
                             </div>
@@ -267,7 +268,7 @@
 
 <!--begin::Modal Detail Log Kronologis (3 Kolom & 2 Kolom)-->
 <div class="modal fade" id="modal-log-timeline" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
+    <div class="modal-dialog modal-dialog-centered modal-audit-dialog modal-fullscreen-lg-down">
         <div class="modal-content rounded-4 border-0 shadow-lg">
             <!--Modal Header-->
             <div class="modal-header border-bottom py-4 px-6 bg-light">
@@ -317,55 +318,56 @@
                 <div id="modal-content" class="d-none">
 
                     <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
-                    <div class="card mb-5 border border-dashed rounded-3 p-4 bg-light">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 text-center mb-3">
+                    <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
+                    <div class="card mb-4 border border-gray-200 rounded-3 p-4 bg-light shadow-xs">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 text-center mb-3">
                             <!-- Box 1: Pemasukan Top Up -->
-                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-success border-dashed shadow-xs" style="min-width: 170px;">
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-gray-200 shadow-xs" style="min-width: 180px;">
                                 <div class="text-success fs-8 fw-bolder text-uppercase mb-1">
                                     <i class="fas fa-arrow-down text-success me-1"></i> Total Top Up Masuk
                                 </div>
-                                <div class="text-success fs-4 fw-bolder font-mono" id="stat-topup">Rp 0</div>
-                                <div class="text-muted fs-8" id="stat-topup-count">0 transaksi</div>
+                                <div class="text-gray-900 fs-3 fw-bolder font-mono" id="stat-topup">Rp 0</div>
+                                <div class="text-muted fs-8 mt-0.5" id="stat-topup-count">0 transaksi</div>
                             </div>
 
-                            <div class="fs-2 fw-bolder text-gray-400 px-1">−</div>
+                            <div class="fs-2 fw-normal text-gray-400 px-1">−</div>
 
                             <!-- Box 2: Potongan SPP -->
-                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-danger border-dashed shadow-xs" style="min-width: 170px;">
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-gray-200 shadow-xs" style="min-width: 180px;">
                                 <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
                                     <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan SPP
                                 </div>
-                                <div class="text-danger fs-4 fw-bolder font-mono" id="stat-bill-deductions">Rp 0</div>
-                                <div class="text-muted fs-8" id="stat-bill-count">0 transaksi</div>
+                                <div class="text-gray-900 fs-3 fw-bolder font-mono" id="stat-bill-deductions">Rp 0</div>
+                                <div class="text-muted fs-8 mt-0.5" id="stat-bill-count">0 transaksi</div>
                             </div>
 
-                            <div class="fs-2 fw-bolder text-gray-400 px-1">−</div>
+                            <div class="fs-2 fw-normal text-gray-400 px-1">−</div>
 
                             <!-- Box 3: Belanja POS -->
-                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-warning border-dashed shadow-xs" style="min-width: 170px;">
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-gray-200 shadow-xs" style="min-width: 180px;">
                                 <div class="text-warning fs-8 fw-bolder text-uppercase mb-1">
                                     <i class="fas fa-shopping-basket text-warning me-1"></i> Belanja Jajan POS
                                 </div>
-                                <div class="text-warning fs-4 fw-bolder font-mono" id="stat-pos-deductions">Rp 0</div>
-                                <div class="text-muted fs-8" id="stat-pos-count">0 transaksi</div>
+                                <div class="text-gray-900 fs-3 fw-bolder font-mono" id="stat-pos-deductions">Rp 0</div>
+                                <div class="text-muted fs-8 mt-0.5" id="stat-pos-count">0 transaksi</div>
                             </div>
 
-                            <div class="fs-2 fw-bolder text-gray-400 px-1">=</div>
+                            <div class="fs-2 fw-normal text-gray-400 px-1">=</div>
 
                             <!-- Box 4: Saldo Akhir (Defisit) -->
-                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-danger shadow-xs" style="min-width: 190px;">
+                            <div class="flex-grow-1 p-3 bg-light-danger rounded-3 border border-danger border-opacity-30 shadow-xs" style="min-width: 200px;">
                                 <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
                                     <i class="fas fa-exclamation-triangle text-danger me-1"></i> Saldo Akhir Tercatat
                                 </div>
-                                <div class="badge badge-danger fs-5 fw-bolder font-mono px-3 py-1.5" id="stat-final-saldo">- Rp 0</div>
-                                <div class="text-muted fs-8 mt-1">Defisit Mutasi</div>
+                                <div class="text-danger fs-3 fw-bolder font-mono" id="stat-final-saldo">- Rp 0</div>
+                                <div class="text-danger fs-9 fw-semibold mt-0.5">Defisit Mutasi</div>
                             </div>
                         </div>
 
                         <!-- Diagnosis Alert Box -->
-                        <div class="alert alert-light-danger d-flex align-items-center p-3 mb-0 border border-danger border-dashed rounded-3">
-                            <i class="fas fa-info-circle text-danger fs-3 me-3"></i>
-                            <div class="fs-7 text-gray-800" id="stat-diagnosis-text">
+                        <div class="alert alert-light-secondary d-flex align-items-center p-3 mb-0 border border-gray-200 rounded-3 bg-white">
+                            <i class="fas fa-info-circle text-primary fs-3 me-3 flex-shrink-0"></i>
+                            <div class="fs-7 text-gray-800 lh-base" id="stat-diagnosis-text">
                                 Memuat analisa keuangan santri...
                             </div>
                         </div>
@@ -378,21 +380,21 @@
                         <div class="row g-4">
                             <!-- Kolom 1: Pemasukan Top Up (Hijau) -->
                             <div class="col-lg-4 col-md-12">
-                                <div class="card h-100 border border-success border-top-4 shadow-xs">
-                                    <div class="card-header border-0 py-3 px-4 bg-light-success d-flex align-items-center justify-content-between min-h-auto">
+                                <div class="card h-100 border border-gray-200 shadow-xs">
+                                    <div class="card-header border-bottom border-gray-100 py-3 px-4 bg-white d-flex align-items-center justify-content-between min-h-auto">
                                         <div>
-                                            <span class="fs-7 fw-bolder text-success d-flex align-items-center">
+                                            <span class="fs-7 fw-bolder text-gray-900 d-flex align-items-center">
                                                 <i class="fas fa-arrow-circle-down text-success me-2 fs-6"></i> 1. Uang Masuk (Top Up)
                                             </span>
                                             <span class="text-muted fs-9" id="col-topup-count-label">0 Transaksi</span>
                                         </div>
-                                        <span class="badge badge-success font-mono fs-8 fw-bolder" id="col-topup-badge">Rp 0</span>
+                                        <span class="badge badge-light-success text-success font-mono fs-8 fw-bolder px-2.5 py-1" id="col-topup-badge">Rp 0</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="mb-2">
                                             <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-topup" placeholder="Cari tanggal / nominal top up..." style="font-size: 0.8rem;">
                                         </div>
-                                        <div id="list-col-topup" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                        <div id="list-col-topup" class="column-scroll-container pe-1" style="max-height: 520px; overflow-y: auto;">
                                             <!-- List populated via JS -->
                                         </div>
                                     </div>
@@ -401,21 +403,21 @@
 
                             <!-- Kolom 2: Potongan SPP / Tagihan (Merah) -->
                             <div class="col-lg-4 col-md-12">
-                                <div class="card h-100 border border-danger border-top-4 shadow-xs">
-                                    <div class="card-header border-0 py-3 px-4 bg-light-danger d-flex align-items-center justify-content-between min-h-auto">
+                                <div class="card h-100 border border-gray-200 shadow-xs">
+                                    <div class="card-header border-bottom border-gray-100 py-3 px-4 bg-white d-flex align-items-center justify-content-between min-h-auto">
                                         <div>
-                                            <span class="fs-7 fw-bolder text-danger d-flex align-items-center">
+                                            <span class="fs-7 fw-bolder text-gray-900 d-flex align-items-center">
                                                 <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong SPP / Tagihan
                                             </span>
                                             <span class="text-muted fs-9" id="col-spp-count-label">0 Transaksi Autodebit</span>
                                         </div>
-                                        <span class="badge badge-danger font-mono fs-8 fw-bolder" id="col-spp-badge">Rp 0</span>
+                                        <span class="badge badge-light-danger text-danger font-mono fs-8 fw-bolder px-2.5 py-1" id="col-spp-badge">Rp 0</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="mb-2">
                                             <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari tagihan / bulan..." style="font-size: 0.8rem;">
                                         </div>
-                                        <div id="list-col-spp" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                        <div id="list-col-spp" class="column-scroll-container pe-1" style="max-height: 520px; overflow-y: auto;">
                                             <!-- List populated via JS -->
                                         </div>
                                     </div>
@@ -424,21 +426,21 @@
 
                             <!-- Kolom 3: Belanja Kasir / Kantin (Oranye/Kuning) -->
                             <div class="col-lg-4 col-md-12">
-                                <div class="card h-100 border border-warning border-top-4 shadow-xs">
-                                    <div class="card-header border-0 py-3 px-4 bg-light-warning d-flex align-items-center justify-content-between min-h-auto">
+                                <div class="card h-100 border border-gray-200 shadow-xs">
+                                    <div class="card-header border-bottom border-gray-100 py-3 px-4 bg-white d-flex align-items-center justify-content-between min-h-auto">
                                         <div>
-                                            <span class="fs-7 fw-bolder text-warning d-flex align-items-center">
-                                                <i class="fas fa-shopping-basket text-warning me-2 fs-6"></i> 3. Belanja Kantin & POS
+                                            <span class="fs-7 fw-bolder text-gray-900 d-flex align-items-center">
+                                                <i class="fas fa-shopping-basket text-warning me-2 fs-6"></i> 3. Jajan Kasir (PoS) Keranjang Belanja
                                             </span>
                                             <span class="text-muted fs-9" id="col-pos-count-label">0 Belanja Kasir</span>
                                         </div>
-                                        <span class="badge badge-warning font-mono fs-8 fw-bolder" id="col-pos-badge">Rp 0</span>
+                                        <span class="badge badge-light text-gray-800 border border-gray-200 font-mono fs-8 fw-bolder px-2.5 py-1" id="col-pos-badge">Rp 0</span>
                                     </div>
                                     <div class="card-body p-3">
                                         <div class="mb-2">
                                             <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-pos" placeholder="Cari nama barang / jajan..." style="font-size: 0.8rem;">
                                         </div>
-                                        <div id="list-col-pos" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                        <div id="list-col-pos" class="column-scroll-container pe-1" style="max-height: 520px; overflow-y: auto;">
                                             <!-- List populated via JS -->
                                         </div>
                                     </div>
@@ -462,7 +464,7 @@
                                     <!-- Progress Bar SPP vs POS -->
                                     <div class="d-flex align-items-center justify-content-between fs-8 mb-1">
                                         <span class="text-danger fw-bolder" id="label-percent-spp">SPP: 0%</span>
-                                        <span class="text-warning fw-bolder" id="label-percent-pos">Kantin: 0%</span>
+                                        <span class="text-warning fw-bolder" id="label-percent-pos">Kasir (PoS): 0%</span>
                                     </div>
                                     <div class="progress h-8px mb-4">
                                         <div id="progress-bar-spp" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
@@ -471,21 +473,21 @@
 
                                     <!-- Ringkasan Nilai -->
                                     <div class="d-flex flex-column gap-2 fs-7 mb-4">
-                                        <div class="d-flex justify-content-between p-2 rounded bg-light-success">
+                                        <div class="d-flex justify-content-between p-2.5 rounded-2 bg-light-success border border-success border-opacity-20">
                                             <span class="text-success fw-bold"><i class="fas fa-plus-circle me-1 text-success"></i> Uang Masuk</span>
-                                            <span class="font-mono fw-bolder text-success" id="val-side-topup">Rp 0</span>
+                                            <span class="font-mono fw-bolder text-gray-900" id="val-side-topup">Rp 0</span>
                                         </div>
-                                        <div class="d-flex justify-content-between p-2 rounded bg-light-danger">
+                                        <div class="d-flex justify-content-between p-2.5 rounded-2 bg-light-danger border border-danger border-opacity-20">
                                             <span class="text-danger fw-bold"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Potongan SPP</span>
-                                            <span class="font-mono fw-bolder text-danger" id="val-side-spp">Rp 0</span>
+                                            <span class="font-mono fw-bolder text-gray-900" id="val-side-spp">Rp 0</span>
                                         </div>
-                                        <div class="d-flex justify-content-between p-2 rounded bg-light-warning">
-                                            <span class="text-warning fw-bold"><i class="fas fa-shopping-basket me-1 text-warning"></i> Jajan Kantin</span>
-                                            <span class="font-mono fw-bolder text-warning" id="val-side-pos">Rp 0</span>
+                                        <div class="d-flex justify-content-between p-2.5 rounded-2 bg-light-warning border border-warning border-opacity-20">
+                                            <span class="text-gray-800 fw-bold"><i class="fas fa-shopping-basket me-1 text-warning"></i> Jajan Kasir (PoS)</span>
+                                            <span class="font-mono fw-bolder text-gray-900" id="val-side-pos">Rp 0</span>
                                         </div>
-                                        <div class="d-flex justify-content-between p-2 rounded bg-danger text-white">
-                                            <span class="fw-bolder"><i class="fas fa-exclamation-circle me-1 text-white"></i> Selisih Minus</span>
-                                            <span class="font-mono fw-bolder text-white" id="val-side-deficit">- Rp 0</span>
+                                        <div class="d-flex justify-content-between p-2.5 rounded-2 bg-danger bg-opacity-10 border border-danger border-opacity-30">
+                                            <span class="text-danger fw-bolder"><i class="fas fa-exclamation-circle me-1 text-danger"></i> Selisih Minus</span>
+                                            <span class="font-mono fw-bolder text-danger" id="val-side-deficit">- Rp 0</span>
                                         </div>
                                     </div>
 
@@ -514,10 +516,10 @@
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn text-danger" data-filter="negative">🔴 Saat Saldo Minus</button>
                                             </li>
                                             <li class="nav-item">
-                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 SPP</button>
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="pos">🛒 Kasir (PoS) Jajan</button>
                                             </li>
                                             <li class="nav-item">
-                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="pos">🛒 Belanja</button>
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 Tagihan SPP</button>
                                             </li>
                                             <li class="nav-item">
                                                 <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="topup">📥 Top Up</button>
@@ -532,15 +534,15 @@
 
                                     <!-- Timeline Table -->
                                     <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-                                        <table class="table table-sm table-row-bordered align-middle gs-3 gy-2 fs-8">
-                                            <thead class="bg-dark text-white sticky-top">
-                                                <tr>
-                                                    <th class="w-35px text-center">No</th>
-                                                    <th>Tanggal & Waktu</th>
-                                                    <th>Tipe</th>
-                                                    <th class="text-end">Nominal</th>
-                                                    <th>Keterangan / Transaksi</th>
-                                                    <th class="text-end">Saldo Akhir</th>
+                                        <table class="table table-sm table-row-bordered align-middle gs-3 gy-2 fs-8 mb-0">
+                                            <thead class="sticky-top bg-light" style="z-index: 2;">
+                                                <tr class="fw-bolder fs-9 text-uppercase text-gray-700 bg-light border-bottom border-gray-200">
+                                                    <th class="w-35px text-center py-2.5 bg-light">No</th>
+                                                    <th class="py-2.5 bg-light">Tanggal & Waktu</th>
+                                                    <th class="py-2.5 bg-light">Tipe</th>
+                                                    <th class="text-end py-2.5 bg-light">Nominal</th>
+                                                    <th class="py-2.5 bg-light">Keterangan / Transaksi</th>
+                                                    <th class="text-end py-2.5 pe-3 bg-light">Saldo Akhir</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="modal-timeline-body">
@@ -601,12 +603,22 @@
     .font-mono {
         font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
+    .modal-audit-dialog {
+        max-width: 95vw !important;
+        width: 95vw !important;
+    }
+    @media (min-width: 1600px) {
+        .modal-audit-dialog {
+            max-width: 1560px !important;
+        }
+    }
     .col-item {
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
     }
     .col-item:hover {
-        background-color: #fcfcfc !important;
-        border-color: #b5b5c3 !important;
+        background-color: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
     }
     .border-top-4 {
         border-top-width: 4px !important;
@@ -785,20 +797,24 @@
 
         // Render cardlet for 3-column view
         function renderCardlet(item, type) {
-            var searchData = (item.created_at + ' ' + item.description + ' ' + item.amount).toLowerCase();
+            var searchData = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + item.amount).toLowerCase();
             var badgeClass = 'badge-light-success text-success';
             var borderClass = 'border-gray-200';
-            var balanceBadge = '<span class="text-gray-700 font-mono fw-bold">' + item.balance_after_formatted + '</span>';
 
             if (type === 'spp') {
                 badgeClass = 'badge-light-danger text-danger';
             } else if (type === 'pos') {
-                badgeClass = 'badge-light-warning text-gray-800';
+                badgeClass = 'badge-light-warning text-dark border border-warning border-opacity-30';
             }
 
-            if (item.is_negative) {
-                balanceBadge = '<span class="badge badge-danger fs-9 px-1.5 py-0 font-mono">' + item.balance_after_formatted + '</span>';
-            }
+            var balanceBadge = item.is_negative
+                ? '<span class="text-danger font-mono fw-bold fs-9">' + item.balance_after_formatted + '</span>'
+                : '<span class="text-gray-600 font-mono fs-9">' + item.balance_after_formatted + '</span>';
+
+            var titleDesc = item.friendly_desc || item.description;
+            var rawNote = (item.friendly_desc && item.friendly_desc !== item.description)
+                ? '<div class="text-muted fs-9 font-mono mt-0.5" title="' + item.description + '">Tercatat: ' + item.description + '</div>'
+                : '';
 
             return `
                 <div class="card mb-2 border ${borderClass} rounded-2 p-2.5 shadow-none bg-white col-item" data-search="${searchData}">
@@ -806,11 +822,12 @@
                         <span class="text-muted fs-9 font-mono">${item.created_at}</span>
                         <span class="badge ${badgeClass} font-mono fs-8 fw-bolder">${item.amount_formatted}</span>
                     </div>
-                    <div class="text-gray-800 fs-8 fw-semibold text-truncate mb-1" title="${item.description}">
-                        ${item.description}
+                    <div class="text-gray-900 fs-8 fw-semibold text-truncate" title="${titleDesc}">
+                        ${titleDesc}
                     </div>
-                    <div class="d-flex align-items-center justify-content-between fs-9 text-muted pt-1 border-top border-gray-100">
-                        <span>Saldo berjalan:</span>
+                    ${rawNote}
+                    <div class="d-flex align-items-center justify-content-between fs-9 text-muted pt-1 mt-1 border-top border-gray-100">
+                        <span class="text-gray-500">Saldo berjalan:</span>
                         ${balanceBadge}
                     </div>
                 </div>
@@ -898,7 +915,7 @@
                             listPos.append(renderCardlet(it, 'pos'));
                         });
                     } else {
-                        listPos.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada belanja kasir kantin.</div>');
+                        listPos.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada transaksi jajan kasir PoS.</div>');
                     }
 
                     // 3. Populasi Tampilan 2 Kolom (Side panel)
@@ -908,7 +925,7 @@
                     $('#val-side-deficit').text(summary.final_saldo_formatted);
 
                     $('#label-percent-spp').text('SPP: ' + summary.spp_percent + '%');
-                    $('#label-percent-pos').text('Kantin: ' + summary.pos_percent + '%');
+                    $('#label-percent-pos').text('Kasir (PoS): ' + summary.pos_percent + '%');
                     $('#progress-bar-spp').css('width', summary.spp_percent + '%');
                     $('#progress-bar-pos').css('width', summary.pos_percent + '%');
 
@@ -917,7 +934,7 @@
                         $('#box-first-negative-2col').removeClass('d-none');
                         $('#text-first-negative-2col').html(
                             'Pada <strong>' + fn.date + '</strong>, saldo santri (' + fn.prev_formatted + ') ' +
-                            'dipotong <strong>' + fn.amount_formatted + '</strong> (' + fn.desc + '), ' +
+                            'dipotong <strong>' + fn.amount_formatted + '</strong> (' + (fn.friendly_desc || fn.desc) + '), ' +
                             'mengakibatkan saldo pertama kali anjlok ke <strong class="text-danger">' + fn.after_formatted + '</strong>.'
                         );
                     } else {
@@ -928,17 +945,29 @@
                     var tbody = $('#modal-timeline-body').empty();
                     if (res.timeline && res.timeline.length > 0) {
                         $.each(res.timeline, function(i, item) {
-                            var typeBadge = item.type === 'IN' 
-                                ? '<span class="badge badge-light-success fw-bold">TOPUP</span>'
-                                : (item.category === 'spp' ? '<span class="badge badge-light-danger fw-bold">SPP</span>' : '<span class="badge badge-light-warning fw-bold text-dark">KANTIN</span>');
+                            var typeBadge = '';
+                            if (item.type === 'IN') {
+                                typeBadge = '<span class="badge badge-light-success fw-bolder fs-8"><i class="fas fa-arrow-down text-success me-1"></i> Top Up</span>';
+                            } else if (item.category === 'spp') {
+                                typeBadge = '<span class="badge badge-light-danger fw-bolder fs-8"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Tagihan SPP</span>';
+                            } else if (item.category === 'adjustment') {
+                                typeBadge = '<span class="badge badge-light-secondary text-gray-700 fw-bolder fs-8"><i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian</span>';
+                            } else {
+                                typeBadge = '<span class="badge badge-light-warning text-dark fw-bolder fs-8"><i class="fas fa-shopping-basket text-warning me-1"></i> Kasir (PoS)</span>';
+                            }
 
                             var rowClass = item.is_first_negative ? 'table-danger' : '';
                             var balanceBadge = item.is_negative 
-                                ? '<span class="badge badge-danger fs-9 font-mono px-2 py-0.5">' + item.balance_after_formatted + '</span>'
-                                : '<span class="text-success font-mono fw-bold">' + item.balance_after_formatted + '</span>';
+                                ? '<span class="text-danger font-mono fw-bolder fs-8">' + item.balance_after_formatted + '</span>'
+                                : '<span class="text-success font-mono fw-bold fs-8">' + item.balance_after_formatted + '</span>';
 
                             var indicator = item.is_first_negative ? '<span class="badge badge-danger ms-1 fs-9">Awal Minus!</span>' : '';
-                            var searchStr = (item.created_at + ' ' + item.description + ' ' + item.amount_formatted + ' ' + item.category).toLowerCase();
+                            var searchStr = (item.created_at + ' ' + item.description + ' ' + (item.friendly_desc || '') + ' ' + item.amount_formatted + ' ' + item.category).toLowerCase();
+
+                            var displayTitle = item.friendly_desc || item.description;
+                            var rawDescNote = (item.friendly_desc && item.friendly_desc !== item.description)
+                                ? '<div class="text-muted fs-9 font-mono mt-0.5"><i class="fas fa-info-circle text-gray-400 me-1"></i>Tercatat: <span class="text-gray-700">' + item.description + '</span></div>'
+                                : '';
 
                             var tr = `
                                 <tr class="${rowClass}" data-category="${item.category}" data-negative="${item.is_negative}" data-search="${searchStr}">
@@ -946,7 +975,10 @@
                                     <td class="font-mono text-nowrap">${item.created_at}</td>
                                     <td>${typeBadge}</td>
                                     <td class="text-end font-mono fw-bolder">${item.amount_formatted}</td>
-                                    <td>${item.description} ${indicator}</td>
+                                    <td>
+                                        <div class="fw-bold text-gray-900">${displayTitle} ${indicator}</div>
+                                        ${rawDescNote}
+                                    </td>
                                     <td class="text-end">${balanceBadge}</td>
                                 </tr>
                             `;

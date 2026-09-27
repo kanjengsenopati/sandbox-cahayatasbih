@@ -49,6 +49,51 @@ class AuditSaldoMinusController extends Controller
     }
 
     /**
+     * Klasifikasikan jenis mutasi transaksi:
+     * - 'topup': Pemasukan (type == 'IN')
+     * - 'spp': Pemotongan Tagihan SPP / Bulanan Pesantren murni
+     * - 'pos': Transaksi Belanja Jajan Kasir PoS / Keranjang Belanja
+     * - 'adjustment': Penyesuaian saldo sistem lama
+     */
+    public function categorizeMutation($type, $description)
+    {
+        if ($type === 'IN') {
+            return 'topup';
+        }
+
+        $descLower = strtolower($description ?? '');
+
+        // 1. Kasir (PoS) Jajan / Keranjang Belanja
+        if (str_contains($descLower, 'pembelian barang') ||
+            str_contains($descLower, 'barang') ||
+            str_contains($descLower, 'kantin') ||
+            str_contains($descLower, 'pos') ||
+            str_contains($descLower, 'jajan') ||
+            str_contains($descLower, 'tarik cash') ||
+            str_contains($descLower, 'tarik tunai')) {
+            return 'pos';
+        }
+
+        // 2. Tagihan SPP Bulanan
+        if (str_contains($descLower, 'tagihan') ||
+            str_contains($descLower, 'spp') ||
+            str_contains($descLower, 'sms') ||
+            str_contains($descLower, 'zarkasi')) {
+            return 'spp';
+        }
+
+        // 3. Adjustment Sistem
+        if (str_contains($descLower, 'adjustment') ||
+            str_contains($descLower, 'sinkronisasi master') ||
+            str_contains($descLower, 'selisih saldo')) {
+            return 'adjustment';
+        }
+
+        // Default pengeluaran kasir belanja jika tidak termasuk tagihan/adjustment
+        return 'pos';
+    }
+
+    /**
      * Tampilkan halaman utama Audit Saldo Minus
      */
     public function index(Request $request)
@@ -77,7 +122,7 @@ class AuditSaldoMinusController extends Controller
             $minusSedang = (clone $baseQuery)->where('saldo', '<', -50000)->where('saldo', '>=', -200000)->count();
             $minusBerat  = (clone $baseQuery)->where('saldo', '<', -200000)->count();
 
-            // Hitung estimasi santri yang saldonya terpotong tagihan SPP
+            // Hitung santri yang saldonya terpotong tagihan SPP bulanan (HANYA tagihan/spp murni, BUKAN pembelian barang kasir)
             $studentIds = (clone $baseQuery)->pluck('id')->toArray();
             $sppVictimsCount = 0;
             if (!empty($studentIds)) {
@@ -88,10 +133,9 @@ class AuditSaldoMinusController extends Controller
                         $q->where('description', 'like', '%Tagihan%')
                           ->orWhere('description', 'like', '%SPP%')
                           ->orWhere('description', 'like', '%Sms%')
-                          ->orWhere('description', 'like', '%Zarkasi%')
-                          ->orWhere('description', 'like', '%Pembayaran%')
-                          ->orWhere('description', 'like', '%Adjustment%');
+                          ->orWhere('description', 'like', '%Zarkasi%');
                     })
+                    ->where('description', 'not like', '%Pembelian Barang%')
                     ->distinct('student_id')
                     ->count('student_id');
             }
@@ -244,33 +288,24 @@ class AuditSaldoMinusController extends Controller
 
             // Hitung total pemotongan tagihan vs jajan vs top up
             $totalIn = $studentHistories->where('type', 'IN')->sum('amount');
-            $totalOut = $studentHistories->where('type', 'OUT')->sum('amount');
+            $totalOut = $studentHistories->whereIn('type', ['OUT', 'WITHDRAW'])->sum('amount');
 
-            $totalBillDeductions = $studentHistories
-                ->where('type', 'OUT')
-                ->filter(function ($item) {
-                    $desc = strtolower($item->description ?? '');
-                    return str_contains($desc, 'tagihan') ||
-                           str_contains($desc, 'spp') ||
-                           str_contains($desc, 'sms') ||
-                           str_contains($desc, 'zarkasi') ||
-                           str_contains($desc, 'pembayaran') ||
-                           str_contains($desc, 'adjustment');
-                })
-                ->sum('amount');
+            $totalBillDeductions = 0;
+            $totalPosDeductions = 0;
+            $totalAdjustments = 0;
 
-            $totalPosDeductions = $studentHistories
-                ->where('type', 'OUT')
-                ->filter(function ($item) {
-                    $desc = strtolower($item->description ?? '');
-                    return !(str_contains($desc, 'tagihan') ||
-                             str_contains($desc, 'spp') ||
-                             str_contains($desc, 'sms') ||
-                             str_contains($desc, 'zarkasi') ||
-                             str_contains($desc, 'pembayaran') ||
-                             str_contains($desc, 'adjustment'));
-                })
-                ->sum('amount');
+            foreach ($studentHistories as $item) {
+                if ($item->type === 'IN') continue;
+                $cat = $this->categorizeMutation($item->type, $item->description ?? '');
+                $amt = (int)$item->amount;
+                if ($cat === 'spp') {
+                    $totalBillDeductions += $amt;
+                } elseif ($cat === 'adjustment') {
+                    $totalAdjustments += $amt;
+                } else {
+                    $totalPosDeductions += $amt;
+                }
+            }
 
             // Format tanggal transaksi terakhir
             $lastDate = '-';
@@ -327,8 +362,18 @@ class AuditSaldoMinusController extends Controller
             // Kolom Log Kenapa Bisa Minus
             $sppPercent = $totalOut > 0 ? round(($totalBillDeductions / $totalOut) * 100) : 0;
             $posPercent = $totalOut > 0 ? round(($totalPosDeductions / $totalOut) * 100) : 0;
+            $adjPercent = $totalOut > 0 ? round(($totalAdjustments / $totalOut) * 100) : 0;
 
             $rootCauseBadges = '';
+            if ($totalPosDeductions > 0) {
+                $rootCauseBadges .= '
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge badge-light-warning text-dark fw-bolder fs-8">
+                            <i class="fas fa-shopping-basket text-warning me-1"></i> Kasir PoS: Rp ' . number_format($totalPosDeductions, 0, ',', '.') . '
+                        </span>
+                        <span class="text-muted fs-9 font-mono ms-1">(' . $posPercent . '%)</span>
+                    </div>';
+            }
             if ($totalBillDeductions > 0) {
                 $rootCauseBadges .= '
                     <div class="d-flex align-items-center justify-content-between mb-1">
@@ -338,18 +383,18 @@ class AuditSaldoMinusController extends Controller
                         <span class="text-muted fs-9 font-mono ms-1">(' . $sppPercent . '%)</span>
                     </div>';
             }
-            if ($totalPosDeductions > 0) {
+            if ($totalAdjustments > 0 && empty($rootCauseBadges)) {
                 $rootCauseBadges .= '
                     <div class="d-flex align-items-center justify-content-between">
-                        <span class="badge badge-light-warning fw-bolder fs-8">
-                            <i class="fas fa-shopping-basket text-warning me-1"></i> Jajan: Rp ' . number_format($totalPosDeductions, 0, ',', '.') . '
+                        <span class="badge badge-light-secondary text-gray-700 fw-bolder fs-8">
+                            <i class="fas fa-tools text-gray-500 me-1"></i> Penyesuaian: Rp ' . number_format($totalAdjustments, 0, ',', '.') . '
                         </span>
-                        <span class="text-muted fs-9 font-mono ms-1">(' . $posPercent . '%)</span>
+                        <span class="text-muted fs-9 font-mono ms-1">(' . $adjPercent . '%)</span>
                     </div>';
             }
 
             if (empty($rootCauseBadges)) {
-                $rootCauseBadges = '<span class="text-muted fs-8 fst-italic">Pengeluaran melebihi uang masuk</span>';
+                $rootCauseBadges = '<span class="text-muted fs-8 fst-italic">Pengeluaran kasir melebihi saldo</span>';
             }
 
             $logCol = '
@@ -431,6 +476,7 @@ class AuditSaldoMinusController extends Controller
         $totalOut = 0;
         $totalBillDeductions = 0;
         $totalPosDeductions = 0;
+        $totalAdjustments = 0;
 
         $itemsTopup = [];
         $itemsSpp = [];
@@ -442,7 +488,6 @@ class AuditSaldoMinusController extends Controller
             $prev = $running;
             $amt = (int)$item->amount;
             $desc = $item->description ?? '-';
-            $descLower = strtolower($desc);
 
             try {
                 $dateFormatted = Carbon::parse($item->created_at)->translatedFormat('d M Y H:i:s');
@@ -450,10 +495,23 @@ class AuditSaldoMinusController extends Controller
                 $dateFormatted = (string)$item->created_at;
             }
 
+            $category = $this->categorizeMutation($item->type, $desc);
+
+            // Friendly description if it is old system's ambiguous text
+            $friendlyDesc = $desc;
+            if ($category === 'pos') {
+                if (stripos($desc, 'pembelian barang') !== false) {
+                    $friendlyDesc = 'Belanja Kasir (PoS Keranjang)';
+                } elseif (stripos($desc, 'tarik cash') !== false) {
+                    $friendlyDesc = 'Tarik Kasbon Tunai Kasir';
+                }
+            } elseif ($category === 'adjustment') {
+                $friendlyDesc = 'Penyesuaian Saldo Sistem Lama';
+            }
+
             if ($item->type === 'IN') {
                 $running += $amt;
                 $totalIn += $amt;
-                $category = 'topup';
 
                 $itemsTopup[] = [
                     'index' => count($itemsTopup) + 1,
@@ -462,6 +520,7 @@ class AuditSaldoMinusController extends Controller
                     'amount' => $amt,
                     'amount_formatted' => '+ Rp ' . number_format($amt, 0, ',', '.'),
                     'description' => $desc,
+                    'friendly_desc' => $friendlyDesc,
                     'balance_after' => $running,
                     'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.')
                 ];
@@ -469,9 +528,8 @@ class AuditSaldoMinusController extends Controller
                 $running -= $amt;
                 $totalOut += $amt;
 
-                if (str_contains($descLower, 'tagihan') || str_contains($descLower, 'spp') || str_contains($descLower, 'sms') || str_contains($descLower, 'zarkasi') || str_contains($descLower, 'pembayaran') || str_contains($descLower, 'adjustment')) {
+                if ($category === 'spp') {
                     $totalBillDeductions += $amt;
-                    $category = 'spp';
 
                     $itemsSpp[] = [
                         'index' => count($itemsSpp) + 1,
@@ -480,13 +538,13 @@ class AuditSaldoMinusController extends Controller
                         'amount' => $amt,
                         'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
                         'description' => $desc,
+                        'friendly_desc' => $friendlyDesc,
                         'balance_after' => $running,
                         'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                         'is_negative' => $running < 0
                     ];
-                } else {
-                    $totalPosDeductions += $amt;
-                    $category = 'pos';
+                } elseif ($category === 'adjustment') {
+                    $totalAdjustments += $amt;
 
                     $itemsPos[] = [
                         'index' => count($itemsPos) + 1,
@@ -495,6 +553,23 @@ class AuditSaldoMinusController extends Controller
                         'amount' => $amt,
                         'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
                         'description' => $desc,
+                        'friendly_desc' => $friendlyDesc,
+                        'balance_after' => $running,
+                        'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
+                        'is_negative' => $running < 0,
+                        'is_adjustment' => true
+                    ];
+                } else {
+                    $totalPosDeductions += $amt;
+
+                    $itemsPos[] = [
+                        'index' => count($itemsPos) + 1,
+                        'created_at' => $dateFormatted,
+                        'raw_date' => $item->created_at,
+                        'amount' => $amt,
+                        'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
+                        'description' => $desc,
+                        'friendly_desc' => $friendlyDesc,
                         'balance_after' => $running,
                         'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                         'is_negative' => $running < 0
@@ -513,6 +588,7 @@ class AuditSaldoMinusController extends Controller
                     'amount' => $amt,
                     'amount_formatted' => 'Rp ' . number_format($amt, 0, ',', '.'),
                     'desc' => $desc,
+                    'friendly_desc' => $friendlyDesc,
                     'after' => $running,
                     'after_formatted' => '- Rp ' . number_format(abs($running), 0, ',', '.'),
                     'category' => $category
@@ -528,6 +604,7 @@ class AuditSaldoMinusController extends Controller
                 'amount' => $amt,
                 'amount_formatted' => ($item->type === 'IN' ? '+ Rp ' : '- Rp ') . number_format($amt, 0, ',', '.'),
                 'description' => $desc,
+                'friendly_desc' => $friendlyDesc,
                 'prev_balance' => $prev,
                 'prev_balance_formatted' => ($prev < 0 ? '- Rp ' : 'Rp ') . number_format(abs($prev), 0, ',', '.'),
                 'balance_after' => $running,
@@ -540,6 +617,16 @@ class AuditSaldoMinusController extends Controller
         $deficit = $totalOut - $totalIn;
         $sppPercent = $totalOut > 0 ? round(($totalBillDeductions / $totalOut) * 100, 1) : 0;
         $posPercent = $totalOut > 0 ? round(($totalPosDeductions / $totalOut) * 100, 1) : 0;
+        $adjPercent = $totalOut > 0 ? round(($totalAdjustments / $totalOut) * 100, 1) : 0;
+
+        // Diagnosis yang akurat
+        if ($totalBillDeductions > $totalPosDeductions) {
+            $diagnosis = "Saldo minus terutama akibat pemotongan tagihan SPP bulanan (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%) yang menyerap dana melebihi top up masuk.";
+        } elseif ($totalBillDeductions > 0 && $totalPosDeductions > 0) {
+            $diagnosis = "Saldo minus akibat kombinasi belanja Kasir (PoS) keranjang belanja (Rp " . number_format($totalPosDeductions, 0, ',', '.') . " / {$posPercent}%) dan tagihan SPP (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%).";
+        } else {
+            $diagnosis = "Saldo minus murni akibat transaksi jajan lewat fitur Kasir (PoS keranjang belanja) sebesar Rp " . number_format($totalPosDeductions, 0, ',', '.') . " tanpa batasan kasbon saat saldo tidak mencukupi.";
+        }
 
         // Terbaru di atas untuk tiap kolom
         $itemsTopupDesc = array_reverse($itemsTopup);
@@ -563,18 +650,19 @@ class AuditSaldoMinusController extends Controller
                 'total_bill_formatted' => 'Rp ' . number_format($totalBillDeductions, 0, ',', '.'),
                 'total_pos_deductions' => $totalPosDeductions,
                 'total_pos_formatted' => 'Rp ' . number_format($totalPosDeductions, 0, ',', '.'),
+                'total_adjustments' => $totalAdjustments,
+                'total_adjust_formatted' => 'Rp ' . number_format($totalAdjustments, 0, ',', '.'),
                 'deficit' => $deficit,
                 'deficit_formatted' => 'Rp ' . number_format($deficit, 0, ',', '.'),
                 'spp_percent' => $sppPercent,
                 'pos_percent' => $posPercent,
+                'adj_percent' => $adjPercent,
                 'topup_count' => count($itemsTopup),
                 'spp_count' => count($itemsSpp),
                 'pos_count' => count($itemsPos),
                 'total_events' => count($histories),
                 'first_negative_event' => $firstNegativeEvent,
-                'diagnosis' => $totalBillDeductions > $totalPosDeductions
-                    ? "Saldo minus terutama akibat pemotongan tagihan SPP bulanan (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%) yang menyerap dana melebihi top up masuk."
-                    : "Saldo minus didominasi transaksi belanja kantin/kasir POS (Rp " . number_format($totalPosDeductions, 0, ',', '.') . " / {$posPercent}%) saat saldo tidak mencukupi."
+                'diagnosis' => $diagnosis
             ],
             'items_topup' => $itemsTopupDesc,
             'items_spp' => $itemsSppDesc,
@@ -645,10 +733,13 @@ class AuditSaldoMinusController extends Controller
 
                 $bills = 0;
                 $jajan = 0;
+                $adjustment = 0;
                 foreach ($histories as $h) {
-                    $desc = strtolower($h->description ?? '');
-                    if (str_contains($desc, 'tagihan') || str_contains($desc, 'spp') || str_contains($desc, 'sms') || str_contains($desc, 'zarkasi') || str_contains($desc, 'pembayaran') || str_contains($desc, 'adjustment')) {
+                    $cat = $this->categorizeMutation('OUT', $h->description ?? '');
+                    if ($cat === 'spp') {
                         $bills += (int)$h->amount;
+                    } elseif ($cat === 'adjustment') {
+                        $adjustment += (int)$h->amount;
                     } else {
                         $jajan += (int)$h->amount;
                     }
