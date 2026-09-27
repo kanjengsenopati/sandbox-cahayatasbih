@@ -241,13 +241,12 @@
                             <thead>
                                 <tr class="fw-bolder fs-7 text-gray-700 text-uppercase gs-0 bg-light">
                                     <th class="w-35px text-center">No</th>
-                                    <th>Nama Siswa & NIS</th>
-                                    <th>Lembaga</th>
-                                    <th class="text-center">Kelas</th>
-                                    <th>Riwayat Saldo</th>
-                                    <th>Mulai Minus Sejak</th>
-                                    <th class="text-end">Minus Berapa</th>
-                                    <th>Pemicu & Nominal</th>
+                                    <th style="min-width: 170px;">Nama Siswa & NIS</th>
+                                    <th style="min-width: 120px;">Lembaga & Kelas</th>
+                                    <th style="min-width: 120px;">Riwayat Saldo</th>
+                                    <th style="min-width: 130px;">Mulai Minus Sejak</th>
+                                    <th class="text-end" style="min-width: 110px;">Minus Berapa</th>
+                                    <th style="min-width: 170px;">Pemicu & Nominal</th>
                                     <th class="text-center w-90px">Aksi</th>
                                 </tr>
                             </thead>
@@ -627,10 +626,14 @@
     .badge,
     .toolbar,
     .page-title,
-    .alert,
-    #table-saldo-minus,
-    #table-saldo-minus * {
+    .alert {
         font-family: Poppins, Helvetica, "sans-serif" !important;
+    }
+
+    /* Pastikan FontAwesome icons tidak ter-override font text */
+    .fa, .fas, .far, .fal, .fad, .fab, .fa-solid, .fa-regular, .fa-brands,
+    [class^="fa-"], [class*=" fa-"] {
+        font-family: "Font Awesome 6 Free", "FontAwesome" !important;
     }
 
     .font-mono {
@@ -638,7 +641,7 @@
     }
 
     /* ============================================================== */
-    /* CLEAN TABLE LAYOUT (NO HORIZONTAL SCROLL)                      */
+    /* CLEAN TABLE LAYOUT (NO HORIZONTAL SCROLL & NO CLIPPING)        */
     /* ============================================================== */
     #table-saldo-minus {
         width: 100% !important;
@@ -654,13 +657,13 @@
         letter-spacing: 0.03em !important;
         text-transform: uppercase !important;
         border-bottom: 1px solid #eff2f5 !important;
-        padding: 10px 12px !important;
+        padding: 9px 10px !important;
         vertical-align: middle !important;
         white-space: nowrap !important;
     }
 
     #table-saldo-minus tbody td {
-        padding: 10px 12px !important;
+        padding: 9px 10px !important;
         vertical-align: middle !important;
         border-bottom: 1px solid #eff2f5 !important;
     }
@@ -669,14 +672,9 @@
         background-color: #f9f9fc !important;
     }
 
-    /* Hilangkan scroll samping di desktop */
+    /* Kontainer tabel responsif tanpa pemotongan brutal */
     .table-responsive {
-        overflow-x: hidden !important;
-    }
-    @media (max-width: 991.98px) {
-        .table-responsive {
-            overflow-x: auto !important;
-        }
+        overflow-x: auto;
     }
 
     /* ============================================================== */
@@ -777,15 +775,14 @@
             columns: [
                 { data: 'no', name: 'no', orderable: false, searchable: false, className: 'text-center font-mono text-muted fs-8 w-35px' },
                 { data: 'student', name: 'student', orderable: true, searchable: true },
-                { data: 'school', name: 'school', orderable: true, searchable: true },
-                { data: 'classroom', name: 'classroom', orderable: true, searchable: true, className: 'text-center' },
+                { data: 'school_class', name: 'school_class', orderable: true, searchable: true },
                 { data: 'saldo_status', name: 'saldo_status', orderable: false, searchable: false },
                 { data: 'last_trans_date', name: 'last_trans_date', orderable: true, searchable: false },
                 { data: 'minus_amount', name: 'minus_amount', orderable: true, searchable: false, className: 'text-end' },
                 { data: 'root_cause', name: 'root_cause', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center w-90px' }
             ],
-            order: [[6, 'asc']], // Order by minus_amount asc (most negative first)
+            order: [[5, 'asc']], // Order by minus_amount asc (most negative first)
             pageLength: 25,
             lengthMenu: [10, 25, 50, 100],
             language: {
