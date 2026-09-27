@@ -242,7 +242,10 @@ class AuditSaldoMinusController extends Controller
             $studentHistories = $histories->get($s->id, collect());
             $lastMutation = $studentHistories->first();
 
-            // Hitung total pemotongan tagihan vs jajan
+            // Hitung total pemotongan tagihan vs jajan vs top up
+            $totalIn = $studentHistories->where('type', 'IN')->sum('amount');
+            $totalOut = $studentHistories->where('type', 'OUT')->sum('amount');
+
             $totalBillDeductions = $studentHistories
                 ->where('type', 'OUT')
                 ->filter(function ($item) {
@@ -257,12 +260,15 @@ class AuditSaldoMinusController extends Controller
                 ->sum('amount');
 
             $totalPosDeductions = $studentHistories
+                ->where('type', 'OUT')
                 ->filter(function ($item) {
                     $desc = strtolower($item->description ?? '');
-                    return str_contains($desc, 'kantin') ||
-                           str_contains($desc, 'barang') ||
-                           str_contains($desc, 'pos') ||
-                           str_contains($desc, 'jajan');
+                    return !(str_contains($desc, 'tagihan') ||
+                             str_contains($desc, 'spp') ||
+                             str_contains($desc, 'sms') ||
+                             str_contains($desc, 'zarkasi') ||
+                             str_contains($desc, 'pembayaran') ||
+                             str_contains($desc, 'adjustment'));
                 })
                 ->sum('amount');
 
@@ -297,13 +303,14 @@ class AuditSaldoMinusController extends Controller
                     </div>
                 </div>';
 
-            // Kolom Saldo Saat Ini
-            $localSaldo = $localStudents->has($s->id) ? (int)$localStudents->get($s->id)->saldo : null;
+            // Kolom Riwayat Saldo (Total Masuk vs Total Keluar)
             $saldoStatusCol = '
-                <div class="d-flex flex-column">
-                    <span class="font-mono fs-7 fw-bold text-gray-800">' . ($localSaldo !== null ? 'Lokal: Rp ' . number_format($localSaldo, 0, ',', '.') : 'Tercatat: Rp 0') . '</span>
-                    <span class="badge badge-light-warning fs-9 px-1.5 py-0.5 mt-0.5 text-warning" title="Fitur saldo disembunyikan di HP wali santri">
-                        <i class="fas fa-eye-slash fs-9 me-1 text-warning"></i> PWA Tersembunyi
+                <div class="d-flex flex-column gap-1">
+                    <span class="fs-8 text-success font-mono d-flex align-items-center">
+                        <i class="fas fa-arrow-down fs-9 me-1.5 text-success"></i>Masuk: <strong>Rp ' . number_format($totalIn, 0, ',', '.') . '</strong>
+                    </span>
+                    <span class="fs-8 text-danger font-mono d-flex align-items-center">
+                        <i class="fas fa-arrow-up fs-9 me-1.5 text-danger"></i>Keluar: <strong>Rp ' . number_format($totalOut, 0, ',', '.') . '</strong>
                     </span>
                 </div>';
 
@@ -318,28 +325,31 @@ class AuditSaldoMinusController extends Controller
                 </div>';
 
             // Kolom Log Kenapa Bisa Minus
+            $sppPercent = $totalOut > 0 ? round(($totalBillDeductions / $totalOut) * 100) : 0;
+            $posPercent = $totalOut > 0 ? round(($totalPosDeductions / $totalOut) * 100) : 0;
+
             $rootCauseBadges = '';
             if ($totalBillDeductions > 0) {
                 $rootCauseBadges .= '
-                    <div class="d-flex align-items-center mb-1">
-                        <span class="badge badge-light-danger fw-bold fs-8 me-2">
-                            <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan SPP
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge badge-light-danger fw-bolder fs-8">
+                            <i class="fas fa-file-invoice-dollar text-danger me-1"></i> SPP: Rp ' . number_format($totalBillDeductions, 0, ',', '.') . '
                         </span>
-                        <span class="font-mono fs-8 fw-bold text-danger">Rp ' . number_format($totalBillDeductions, 0, ',', '.') . '</span>
+                        <span class="text-muted fs-9 font-mono ms-1">(' . $sppPercent . '%)</span>
                     </div>';
             }
             if ($totalPosDeductions > 0) {
                 $rootCauseBadges .= '
-                    <div class="d-flex align-items-center">
-                        <span class="badge badge-light-warning fw-bold fs-8 me-2">
-                            <i class="fas fa-shopping-basket text-warning me-1"></i> Jajan Kasir POS
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge badge-light-warning fw-bolder fs-8">
+                            <i class="fas fa-shopping-basket text-warning me-1"></i> Jajan: Rp ' . number_format($totalPosDeductions, 0, ',', '.') . '
                         </span>
-                        <span class="font-mono fs-8 fw-bold text-gray-700">Rp ' . number_format($totalPosDeductions, 0, ',', '.') . '</span>
+                        <span class="text-muted fs-9 font-mono ms-1">(' . $posPercent . '%)</span>
                     </div>';
             }
 
             if (empty($rootCauseBadges)) {
-                $rootCauseBadges = '<span class="text-muted fs-8 fst-italic">Akumulasi transaksi tanpa validasi saldo cukup</span>';
+                $rootCauseBadges = '<span class="text-muted fs-8 fst-italic">Pengeluaran melebihi uang masuk</span>';
             }
 
             $logCol = '
@@ -350,14 +360,14 @@ class AuditSaldoMinusController extends Controller
             // Tombol Aksi
             $actionBtn = '
                 <button type="button" 
-                        class="btn btn-sm btn-light-primary fw-bolder fs-8 d-flex align-items-center py-2 px-3 btn-view-logs" 
+                        class="btn btn-sm btn-primary fw-bolder fs-8 d-flex align-items-center py-2 px-3 btn-view-logs shadow-xs" 
                         data-id="' . htmlspecialchars($s->id) . '" 
                         data-name="' . htmlspecialchars($s->name) . '" 
                         data-nis="' . htmlspecialchars($s->nis ?? '-') . '" 
                         data-school="' . htmlspecialchars($s->school_name ?? '-') . '" 
                         data-class="' . htmlspecialchars($s->classroom_name ?? '-') . '" 
                         data-saldo="' . htmlspecialchars($s->saldo) . '">
-                    <i class="fas fa-history me-1.5 fs-7"></i> Detail Log
+                    <i class="fas fa-columns me-1.5 fs-7"></i> Detail Log
                 </button>';
 
             $rows[] = [
@@ -402,6 +412,7 @@ class AuditSaldoMinusController extends Controller
                 'students.nis',
                 'students.name',
                 'students.saldo',
+                'students.status as student_status',
                 'classrooms.name as classroom_name',
                 'schools.name as school_name'
             ]);
@@ -421,25 +432,73 @@ class AuditSaldoMinusController extends Controller
         $totalBillDeductions = 0;
         $totalPosDeductions = 0;
 
-        $firstNegativeEvent = null;
+        $itemsTopup = [];
+        $itemsSpp = [];
+        $itemsPos = [];
         $timeline = [];
+        $firstNegativeEvent = null;
 
         foreach ($histories as $idx => $item) {
             $prev = $running;
             $amt = (int)$item->amount;
+            $desc = $item->description ?? '-';
+            $descLower = strtolower($desc);
+
+            try {
+                $dateFormatted = Carbon::parse($item->created_at)->translatedFormat('d M Y H:i:s');
+            } catch (\Throwable $e) {
+                $dateFormatted = (string)$item->created_at;
+            }
 
             if ($item->type === 'IN') {
                 $running += $amt;
                 $totalIn += $amt;
+                $category = 'topup';
+
+                $itemsTopup[] = [
+                    'index' => count($itemsTopup) + 1,
+                    'created_at' => $dateFormatted,
+                    'raw_date' => $item->created_at,
+                    'amount' => $amt,
+                    'amount_formatted' => '+ Rp ' . number_format($amt, 0, ',', '.'),
+                    'description' => $desc,
+                    'balance_after' => $running,
+                    'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.')
+                ];
             } else {
                 $running -= $amt;
                 $totalOut += $amt;
 
-                $desc = strtolower($item->description ?? '');
-                if (str_contains($desc, 'tagihan') || str_contains($desc, 'spp') || str_contains($desc, 'sms') || str_contains($desc, 'zarkasi') || str_contains($desc, 'pembayaran') || str_contains($desc, 'adjustment')) {
+                if (str_contains($descLower, 'tagihan') || str_contains($descLower, 'spp') || str_contains($descLower, 'sms') || str_contains($descLower, 'zarkasi') || str_contains($descLower, 'pembayaran') || str_contains($descLower, 'adjustment')) {
                     $totalBillDeductions += $amt;
+                    $category = 'spp';
+
+                    $itemsSpp[] = [
+                        'index' => count($itemsSpp) + 1,
+                        'created_at' => $dateFormatted,
+                        'raw_date' => $item->created_at,
+                        'amount' => $amt,
+                        'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
+                        'description' => $desc,
+                        'balance_after' => $running,
+                        'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
+                        'is_negative' => $running < 0
+                    ];
                 } else {
                     $totalPosDeductions += $amt;
+                    $category = 'pos';
+
+                    $itemsPos[] = [
+                        'index' => count($itemsPos) + 1,
+                        'created_at' => $dateFormatted,
+                        'raw_date' => $item->created_at,
+                        'amount' => $amt,
+                        'amount_formatted' => '- Rp ' . number_format($amt, 0, ',', '.'),
+                        'description' => $desc,
+                        'balance_after' => $running,
+                        'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
+                        'is_negative' => $running < 0
+                    ];
                 }
             }
 
@@ -447,42 +506,80 @@ class AuditSaldoMinusController extends Controller
             if ($running < 0 && $prev >= 0 && !$firstNegativeEvent) {
                 $isFirstNegative = true;
                 $firstNegativeEvent = [
-                    'date' => $item->created_at,
+                    'date' => $dateFormatted,
+                    'raw_date' => $item->created_at,
                     'prev' => $prev,
+                    'prev_formatted' => 'Rp ' . number_format($prev, 0, ',', '.'),
                     'amount' => $amt,
-                    'desc' => $item->description,
-                    'after' => $running
+                    'amount_formatted' => 'Rp ' . number_format($amt, 0, ',', '.'),
+                    'desc' => $desc,
+                    'after' => $running,
+                    'after_formatted' => '- Rp ' . number_format(abs($running), 0, ',', '.'),
+                    'category' => $category
                 ];
             }
 
             $timeline[] = [
                 'index' => $idx + 1,
-                'created_at' => $item->created_at,
+                'created_at' => $dateFormatted,
+                'raw_date' => $item->created_at,
                 'type' => $item->type,
+                'category' => $category,
                 'amount' => $amt,
-                'description' => $item->description,
+                'amount_formatted' => ($item->type === 'IN' ? '+ Rp ' : '- Rp ') . number_format($amt, 0, ',', '.'),
+                'description' => $desc,
                 'prev_balance' => $prev,
+                'prev_balance_formatted' => ($prev < 0 ? '- Rp ' : 'Rp ') . number_format(abs($prev), 0, ',', '.'),
                 'balance_after' => $running,
+                'balance_after_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
+                'is_negative' => $running < 0,
                 'is_first_negative' => $isFirstNegative
             ];
         }
 
-        // Urutkan timeline terbaru di atas untuk kemudahan pembacaan audit
-        $timelineDescending = array_reverse($timeline);
+        $deficit = $totalOut - $totalIn;
+        $sppPercent = $totalOut > 0 ? round(($totalBillDeductions / $totalOut) * 100, 1) : 0;
+        $posPercent = $totalOut > 0 ? round(($totalPosDeductions / $totalOut) * 100, 1) : 0;
+
+        // Terbaru di atas untuk tiap kolom
+        $itemsTopupDesc = array_reverse($itemsTopup);
+        $itemsSppDesc = array_reverse($itemsSpp);
+        $itemsPosDesc = array_reverse($itemsPos);
+        $timelineDesc = array_reverse($timeline);
 
         return response()->json([
+            'status' => 'success',
             'student' => $student,
             'summary' => [
                 'final_saldo' => (int)$student->saldo,
+                'final_saldo_formatted' => '- Rp ' . number_format(abs((int)$student->saldo), 0, ',', '.'),
                 'calculated_saldo' => $running,
+                'calculated_saldo_formatted' => ($running < 0 ? '- Rp ' : 'Rp ') . number_format(abs($running), 0, ',', '.'),
                 'total_in' => $totalIn,
+                'total_in_formatted' => 'Rp ' . number_format($totalIn, 0, ',', '.'),
                 'total_out' => $totalOut,
+                'total_out_formatted' => 'Rp ' . number_format($totalOut, 0, ',', '.'),
                 'total_bill_deductions' => $totalBillDeductions,
+                'total_bill_formatted' => 'Rp ' . number_format($totalBillDeductions, 0, ',', '.'),
                 'total_pos_deductions' => $totalPosDeductions,
-                'first_negative_event' => $firstNegativeEvent,
+                'total_pos_formatted' => 'Rp ' . number_format($totalPosDeductions, 0, ',', '.'),
+                'deficit' => $deficit,
+                'deficit_formatted' => 'Rp ' . number_format($deficit, 0, ',', '.'),
+                'spp_percent' => $sppPercent,
+                'pos_percent' => $posPercent,
+                'topup_count' => count($itemsTopup),
+                'spp_count' => count($itemsSpp),
+                'pos_count' => count($itemsPos),
                 'total_events' => count($histories),
+                'first_negative_event' => $firstNegativeEvent,
+                'diagnosis' => $totalBillDeductions > $totalPosDeductions
+                    ? "Saldo minus terutama akibat pemotongan tagihan SPP bulanan (Rp " . number_format($totalBillDeductions, 0, ',', '.') . " / {$sppPercent}%) yang menyerap dana melebihi top up masuk."
+                    : "Saldo minus didominasi transaksi belanja kantin/kasir POS (Rp " . number_format($totalPosDeductions, 0, ',', '.') . " / {$posPercent}%) saat saldo tidak mencukupi."
             ],
-            'timeline' => $timelineDescending
+            'items_topup' => $itemsTopupDesc,
+            'items_spp' => $itemsSppDesc,
+            'items_pos' => $itemsPosDesc,
+            'timeline' => $timelineDesc
         ]);
     }
 

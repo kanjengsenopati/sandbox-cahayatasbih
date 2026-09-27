@@ -265,98 +265,303 @@
     <!--end::Post-->
 </div>
 
-<!--begin::Modal Detail Log Kronologis-->
+<!--begin::Modal Detail Log Kronologis (3 Kolom & 2 Kolom)-->
 <div class="modal fade" id="modal-log-timeline" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
         <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header border-0 pb-0 pt-6 px-6">
-                <div>
-                    <h3 class="modal-title fw-bolder text-gray-900 fs-4 mb-1">
-                        <i class="fas fa-history text-primary me-2"></i> Log Kronologis Bukti Mutasi Saldo
-                    </h3>
-                    <div class="text-muted fs-7">
-                        Santri: <strong class="text-dark" id="modal-student-name">-</strong> | 
-                        NIS: <strong class="text-dark" id="modal-student-nis">-</strong> | 
+            <!--Modal Header-->
+            <div class="modal-header border-bottom py-4 px-6 bg-light">
+                <div class="d-flex flex-column">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="symbol symbol-35px symbol-circle bg-light-primary text-primary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-file-invoice-dollar fs-5 text-primary"></i>
+                        </span>
+                        <h3 class="modal-title fw-bolder text-gray-900 fs-4 mb-0">
+                            Bukti & Diagnosa Saldo Minus Santri
+                        </h3>
+                    </div>
+                    <div class="text-muted fs-7 mt-1 ms-10">
+                        Santri: <strong class="text-dark fs-6" id="modal-student-name">-</strong> &bull; 
+                        NIS: <strong class="text-dark font-mono" id="modal-student-nis">-</strong> &bull; 
+                        Lembaga: <strong class="text-dark" id="modal-student-school">-</strong> &bull; 
                         Kelas: <strong class="text-dark" id="modal-student-class">-</strong>
                     </div>
                 </div>
-                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
-                    <i class="fas fa-times fs-4"></i>
+
+                <!--View Switcher & Close-->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="btn-group btn-group-sm bg-white p-1 rounded-3 border" role="group" aria-label="Pilih Mode Tampilan">
+                        <button type="button" class="btn btn-sm btn-primary fw-bolder btn-switch-view" data-view="3col" id="btn-view-3col">
+                            <i class="fas fa-columns me-1.5 fs-7"></i> 3 Kolom (Aliran Dana)
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light fw-bolder text-gray-700 btn-switch-view" data-view="2col" id="btn-view-2col">
+                            <i class="fas fa-list-ol me-1.5 fs-7"></i> 2 Kolom (Kronologis)
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-icon btn-light-dark" data-bs-dismiss="modal">
+                        <i class="fas fa-times fs-4"></i>
+                    </button>
                 </div>
             </div>
 
+            <!--Modal Body-->
             <div class="modal-body px-6 py-5">
                 <!--Loading Spinner-->
-                <div id="modal-loading" class="text-center py-10">
-                    <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <div class="text-muted fs-7 fw-bold">Memuat rekap jejak audit forensik...</div>
+                <div id="modal-loading" class="text-center py-12">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <div class="text-gray-800 fs-6 fw-bold">Membedah aliran dana dan jejak mutasi saldo santri...</div>
+                    <div class="text-muted fs-8 mt-1">Mengelompokkan top up, pemotongan SPP autodebit, dan transaksi kantin.</div>
                 </div>
 
                 <!--Content Container-->
                 <div id="modal-content" class="d-none">
-                    <!--Trigger Box: Pertama Kali Anjlok ke Minus-->
-                    <div id="box-first-negative" class="p-4 mb-4 rounded-3 border border-danger border-dashed bg-light-danger d-none">
-                        <div class="d-flex align-items-center mb-1">
-                            <i class="fas fa-exclamation-circle text-danger fs-3 me-2"></i>
-                            <h5 class="fw-bolder text-danger mb-0">Pemicu Utama Saldo Anjlok ke Minus:</h5>
+
+                    <!--Top Equation Formula Strip: Masuk - SPP - Jajan = Saldo Minus-->
+                    <div class="card mb-5 border border-dashed rounded-3 p-4 bg-light">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 text-center mb-3">
+                            <!-- Box 1: Pemasukan Top Up -->
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-success border-dashed shadow-xs" style="min-width: 170px;">
+                                <div class="text-success fs-8 fw-bolder text-uppercase mb-1">
+                                    <i class="fas fa-arrow-down text-success me-1"></i> Total Top Up Masuk
+                                </div>
+                                <div class="text-success fs-4 fw-bolder font-mono" id="stat-topup">Rp 0</div>
+                                <div class="text-muted fs-8" id="stat-topup-count">0 transaksi</div>
+                            </div>
+
+                            <div class="fs-2 fw-bolder text-gray-400 px-1">−</div>
+
+                            <!-- Box 2: Potongan SPP -->
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-danger border-dashed shadow-xs" style="min-width: 170px;">
+                                <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
+                                    <i class="fas fa-file-invoice-dollar text-danger me-1"></i> Potong Tagihan SPP
+                                </div>
+                                <div class="text-danger fs-4 fw-bolder font-mono" id="stat-bill-deductions">Rp 0</div>
+                                <div class="text-muted fs-8" id="stat-bill-count">0 transaksi</div>
+                            </div>
+
+                            <div class="fs-2 fw-bolder text-gray-400 px-1">−</div>
+
+                            <!-- Box 3: Belanja POS -->
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-warning border-dashed shadow-xs" style="min-width: 170px;">
+                                <div class="text-warning fs-8 fw-bolder text-uppercase mb-1">
+                                    <i class="fas fa-shopping-basket text-warning me-1"></i> Belanja Jajan POS
+                                </div>
+                                <div class="text-warning fs-4 fw-bolder font-mono" id="stat-pos-deductions">Rp 0</div>
+                                <div class="text-muted fs-8" id="stat-pos-count">0 transaksi</div>
+                            </div>
+
+                            <div class="fs-2 fw-bolder text-gray-400 px-1">=</div>
+
+                            <!-- Box 4: Saldo Akhir (Defisit) -->
+                            <div class="flex-grow-1 p-3 bg-white rounded-3 border border-danger shadow-xs" style="min-width: 190px;">
+                                <div class="text-danger fs-8 fw-bolder text-uppercase mb-1">
+                                    <i class="fas fa-exclamation-triangle text-danger me-1"></i> Saldo Akhir Tercatat
+                                </div>
+                                <div class="badge badge-danger fs-5 fw-bolder font-mono px-3 py-1.5" id="stat-final-saldo">- Rp 0</div>
+                                <div class="text-muted fs-8 mt-1">Defisit Mutasi</div>
+                            </div>
                         </div>
-                        <div class="ms-6 fs-7 text-gray-800" id="text-first-negative">
-                            <!-- Populated dynamically -->
+
+                        <!-- Diagnosis Alert Box -->
+                        <div class="alert alert-light-danger d-flex align-items-center p-3 mb-0 border border-danger border-dashed rounded-3">
+                            <i class="fas fa-info-circle text-danger fs-3 me-3"></i>
+                            <div class="fs-7 text-gray-800" id="stat-diagnosis-text">
+                                Memuat analisa keuangan santri...
+                            </div>
                         </div>
                     </div>
 
-                    <!--Summary Stats Bar-->
-                    <div class="row g-3 mb-5 text-center">
-                        <div class="col-md-3 col-6">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="text-muted fs-8 fw-bold">Saldo Akhir Tercatat</div>
-                                <div class="text-danger fw-bolder fs-6 font-mono" id="stat-final-saldo">Rp 0</div>
+                    <!-- ============================================================== -->
+                    <!-- VIEW MODE 1: TAMPILAN 3 KOLOM (ALIRAN DANA)                     -->
+                    <!-- ============================================================== -->
+                    <div id="view-mode-3col">
+                        <div class="row g-4">
+                            <!-- Kolom 1: Pemasukan Top Up (Hijau) -->
+                            <div class="col-lg-4 col-md-12">
+                                <div class="card h-100 border border-success border-top-4 shadow-xs">
+                                    <div class="card-header border-0 py-3 px-4 bg-light-success d-flex align-items-center justify-content-between min-h-auto">
+                                        <div>
+                                            <span class="fs-7 fw-bolder text-success d-flex align-items-center">
+                                                <i class="fas fa-arrow-circle-down text-success me-2 fs-6"></i> 1. Uang Masuk (Top Up)
+                                            </span>
+                                            <span class="text-muted fs-9" id="col-topup-count-label">0 Transaksi</span>
+                                        </div>
+                                        <span class="badge badge-success font-mono fs-8 fw-bolder" id="col-topup-badge">Rp 0</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-topup" placeholder="Cari tanggal / nominal top up..." style="font-size: 0.8rem;">
+                                        </div>
+                                        <div id="list-col-topup" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                            <!-- List populated via JS -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="text-muted fs-8 fw-bold">Total Potong Tagihan SPP</div>
-                                <div class="text-danger fw-bolder fs-6 font-mono" id="stat-bill-deductions">Rp 0</div>
+
+                            <!-- Kolom 2: Potongan SPP / Tagihan (Merah) -->
+                            <div class="col-lg-4 col-md-12">
+                                <div class="card h-100 border border-danger border-top-4 shadow-xs">
+                                    <div class="card-header border-0 py-3 px-4 bg-light-danger d-flex align-items-center justify-content-between min-h-auto">
+                                        <div>
+                                            <span class="fs-7 fw-bolder text-danger d-flex align-items-center">
+                                                <i class="fas fa-file-invoice-dollar text-danger me-2 fs-6"></i> 2. Potong SPP / Tagihan
+                                            </span>
+                                            <span class="text-muted fs-9" id="col-spp-count-label">0 Transaksi Autodebit</span>
+                                        </div>
+                                        <span class="badge badge-danger font-mono fs-8 fw-bolder" id="col-spp-badge">Rp 0</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-spp" placeholder="Cari tagihan / bulan..." style="font-size: 0.8rem;">
+                                        </div>
+                                        <div id="list-col-spp" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                            <!-- List populated via JS -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="text-muted fs-8 fw-bold">Total Belanja Jajan POS</div>
-                                <div class="text-warning fw-bolder fs-6 font-mono" id="stat-pos-deductions">Rp 0</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="text-muted fs-8 fw-bold">Total Top Up Masuk</div>
-                                <div class="text-success fw-bolder fs-6 font-mono" id="stat-topup">Rp 0</div>
+
+                            <!-- Kolom 3: Belanja Kasir / Kantin (Oranye/Kuning) -->
+                            <div class="col-lg-4 col-md-12">
+                                <div class="card h-100 border border-warning border-top-4 shadow-xs">
+                                    <div class="card-header border-0 py-3 px-4 bg-light-warning d-flex align-items-center justify-content-between min-h-auto">
+                                        <div>
+                                            <span class="fs-7 fw-bolder text-warning d-flex align-items-center">
+                                                <i class="fas fa-shopping-basket text-warning me-2 fs-6"></i> 3. Belanja Kantin & POS
+                                            </span>
+                                            <span class="text-muted fs-9" id="col-pos-count-label">0 Belanja Kasir</span>
+                                        </div>
+                                        <span class="badge badge-warning font-mono fs-8 fw-bolder" id="col-pos-badge">Rp 0</span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm form-control-solid search-col" data-target="#list-col-pos" placeholder="Cari nama barang / jajan..." style="font-size: 0.8rem;">
+                                        </div>
+                                        <div id="list-col-pos" class="column-scroll-container pe-1" style="max-height: 480px; overflow-y: auto;">
+                                            <!-- List populated via JS -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!--Timeline Table-->
-                    <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                        <table class="table table-sm table-striped table-row-bordered align-middle gs-3 gy-2 fs-8">
-                            <thead class="bg-dark text-white sticky-top">
-                                <tr>
-                                    <th class="w-40px text-center">No</th>
-                                    <th>Tanggal & Waktu</th>
-                                    <th>Tipe</th>
-                                    <th class="text-end">Nominal</th>
-                                    <th>Keterangan / Transaksi</th>
-                                    <th class="text-end">Saldo Sebelum</th>
-                                    <th class="text-end">Saldo Sesudah</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-timeline-body">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
+                    <!-- ============================================================== -->
+                    <!-- VIEW MODE 2: TAMPILAN 2 KOLOM (DIAGNOSA & KRONOLOGIS)           -->
+                    <!-- ============================================================== -->
+                    <div id="view-mode-2col" class="d-none">
+                        <div class="row g-4">
+                            <!-- Kolom Kiri: Diagnosa & Breakdown Forensik (col-lg-4) -->
+                            <div class="col-lg-4">
+                                <div class="card border rounded-3 p-4 bg-white mb-4 shadow-xs">
+                                    <h5 class="fw-bolder text-gray-900 mb-3 d-flex align-items-center">
+                                        <i class="fas fa-chart-pie text-primary me-2"></i> Komposisi Pengeluaran
+                                    </h5>
+
+                                    <!-- Progress Bar SPP vs POS -->
+                                    <div class="d-flex align-items-center justify-content-between fs-8 mb-1">
+                                        <span class="text-danger fw-bolder" id="label-percent-spp">SPP: 0%</span>
+                                        <span class="text-warning fw-bolder" id="label-percent-pos">Kantin: 0%</span>
+                                    </div>
+                                    <div class="progress h-8px mb-4">
+                                        <div id="progress-bar-spp" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                                        <div id="progress-bar-pos" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                    </div>
+
+                                    <!-- Ringkasan Nilai -->
+                                    <div class="d-flex flex-column gap-2 fs-7 mb-4">
+                                        <div class="d-flex justify-content-between p-2 rounded bg-light-success">
+                                            <span class="text-success fw-bold"><i class="fas fa-plus-circle me-1 text-success"></i> Uang Masuk</span>
+                                            <span class="font-mono fw-bolder text-success" id="val-side-topup">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between p-2 rounded bg-light-danger">
+                                            <span class="text-danger fw-bold"><i class="fas fa-file-invoice-dollar me-1 text-danger"></i> Potongan SPP</span>
+                                            <span class="font-mono fw-bolder text-danger" id="val-side-spp">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between p-2 rounded bg-light-warning">
+                                            <span class="text-warning fw-bold"><i class="fas fa-shopping-basket me-1 text-warning"></i> Jajan Kantin</span>
+                                            <span class="font-mono fw-bolder text-warning" id="val-side-pos">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between p-2 rounded bg-danger text-white">
+                                            <span class="fw-bolder"><i class="fas fa-exclamation-circle me-1 text-white"></i> Selisih Minus</span>
+                                            <span class="font-mono fw-bolder text-white" id="val-side-deficit">- Rp 0</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Titik Awal Saldo Jebol Minus -->
+                                    <div id="box-first-negative-2col" class="p-3 rounded-2 border border-danger border-dashed bg-light-danger">
+                                        <div class="fw-bolder text-danger fs-8 mb-1 d-flex align-items-center">
+                                            <i class="fas fa-bolt text-danger me-1.5"></i> Titik Balik Saldo Pertama Kali Minus:
+                                        </div>
+                                        <div class="fs-8 text-gray-800" id="text-first-negative-2col">
+                                            -
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Kolom Kanan: Tabel Kronologis Interaktif (col-lg-8) -->
+                            <div class="col-lg-8">
+                                <div class="card border rounded-3 p-4 bg-white shadow-xs">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                        <!-- Filter Kategori Tabs -->
+                                        <ul class="nav nav-pills nav-pills-sm" id="timeline-filter-pills">
+                                            <li class="nav-item">
+                                                <button class="nav-link active btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="all">Semua</button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn text-danger" data-filter="negative">🔴 Saat Saldo Minus</button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="spp">💳 SPP</button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="pos">🛒 Belanja</button>
+                                            </li>
+                                            <li class="nav-item">
+                                                <button class="nav-link btn-sm py-1.5 px-3 fs-8 fw-bolder timeline-filter-btn" data-filter="topup">📥 Top Up</button>
+                                            </li>
+                                        </ul>
+
+                                        <!-- Quick search within timeline -->
+                                        <div style="min-width: 200px;">
+                                            <input type="text" id="search-timeline-input" class="form-control form-control-sm form-control-solid" placeholder="Cari keterangan..." style="font-size: 0.8rem;">
+                                        </div>
+                                    </div>
+
+                                    <!-- Timeline Table -->
+                                    <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                                        <table class="table table-sm table-row-bordered align-middle gs-3 gy-2 fs-8">
+                                            <thead class="bg-dark text-white sticky-top">
+                                                <tr>
+                                                    <th class="w-35px text-center">No</th>
+                                                    <th>Tanggal & Waktu</th>
+                                                    <th>Tipe</th>
+                                                    <th class="text-end">Nominal</th>
+                                                    <th>Keterangan / Transaksi</th>
+                                                    <th class="text-end">Saldo Akhir</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="modal-timeline-body">
+                                                <!-- Populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
 
-            <div class="modal-footer border-0 pt-0 px-6 pb-5">
-                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Tutup</button>
+            <!--Modal Footer-->
+            <div class="modal-footer border-top py-3 px-6 bg-light d-flex justify-content-between align-items-center">
+                <span class="text-muted fs-8">
+                    <i class="fas fa-shield-alt text-primary me-1"></i> Data dihitung langsung dari riwayat transaksi mutasi buku besar.
+                </span>
+                <button type="button" class="btn btn-sm btn-secondary fw-bolder" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -396,13 +601,22 @@
     .font-mono {
         font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
-    .pulse-danger {
-        animation: pulseDanger 1.8s infinite;
+    .col-item {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-    @keyframes pulseDanger {
-        0% { box-shadow: 0 0 0 0 rgba(241, 65, 108, 0.6); }
-        70% { box-shadow: 0 0 0 8px rgba(241, 65, 108, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(241, 65, 108, 0); }
+    .col-item:hover {
+        background-color: #fcfcfc !important;
+        border-color: #b5b5c3 !important;
+    }
+    .border-top-4 {
+        border-top-width: 4px !important;
+    }
+    .column-scroll-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    .column-scroll-container::-webkit-scrollbar-thumb {
+        background: #d5d5d5;
+        border-radius: 4px;
     }
 </style>
 @endsection
@@ -410,6 +624,7 @@
 @push('js')
 <script>
     var saldoMinusTable;
+    var cachedLogData = null;
 
     function formatNumber(num) {
         return new Intl.NumberFormat('id-ID').format(num);
@@ -441,7 +656,7 @@
                 { data: 'root_cause', name: 'root_cause', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
-            order: [[6, 'asc']], // Default order by minus_amount asc (most negative first)
+            order: [[6, 'asc']], // Order by minus_amount asc (most negative first)
             pageLength: 25,
             lengthMenu: [10, 25, 50, 100],
             language: {
@@ -500,6 +715,108 @@
             saldoMinusTable.ajax.reload();
         });
 
+        // View Switcher (3 Kolom vs 2 Kolom)
+        $('.btn-switch-view').on('click', function() {
+            var targetView = $(this).data('view');
+            $('.btn-switch-view').removeClass('btn-primary active').addClass('btn-light text-gray-700');
+            $(this).addClass('btn-primary active').removeClass('btn-light text-gray-700');
+
+            if (targetView === '3col') {
+                $('#view-mode-3col').removeClass('d-none');
+                $('#view-mode-2col').addClass('d-none');
+            } else {
+                $('#view-mode-3col').addClass('d-none');
+                $('#view-mode-2col').removeClass('d-none');
+            }
+        });
+
+        // Live Search within 3 Columns
+        $(document).on('keyup', '.search-col', function() {
+            var targetList = $(this).data('target');
+            var val = $(this).val().toLowerCase().trim();
+            $(targetList + ' .col-item').each(function() {
+                var text = $(this).data('search').toLowerCase();
+                if (!val || text.indexOf(val) > -1) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Live Search within Timeline (2 Kolom)
+        $('#search-timeline-input').on('keyup', function() {
+            filterTimelineTable();
+        });
+
+        // Timeline Filter Tabs (2 Kolom)
+        $('.timeline-filter-btn').on('click', function(e) {
+            e.preventDefault();
+            $('.timeline-filter-btn').removeClass('active');
+            $(this).addClass('active');
+            filterTimelineTable();
+        });
+
+        function filterTimelineTable() {
+            var activeFilter = $('#timeline-filter-pills .timeline-filter-btn.active').data('filter') || 'all';
+            var searchVal = ($('#search-timeline-input').val() || '').toLowerCase().trim();
+
+            $('#modal-timeline-body tr').each(function() {
+                var rowCategory = $(this).data('category');
+                var isNegative = $(this).data('negative') === true || $(this).data('negative') === 'true';
+                var searchContent = ($(this).data('search') || '').toLowerCase();
+
+                var matchCategory = true;
+                if (activeFilter === 'negative') {
+                    matchCategory = isNegative;
+                } else if (activeFilter !== 'all') {
+                    matchCategory = (rowCategory === activeFilter);
+                }
+
+                var matchSearch = (!searchVal || searchContent.indexOf(searchVal) > -1);
+
+                if (matchCategory && matchSearch) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        // Render cardlet for 3-column view
+        function renderCardlet(item, type) {
+            var searchData = (item.created_at + ' ' + item.description + ' ' + item.amount).toLowerCase();
+            var badgeClass = 'badge-light-success text-success';
+            var borderClass = 'border-gray-200';
+            var balanceBadge = '<span class="text-gray-700 font-mono fw-bold">' + item.balance_after_formatted + '</span>';
+
+            if (type === 'spp') {
+                badgeClass = 'badge-light-danger text-danger';
+            } else if (type === 'pos') {
+                badgeClass = 'badge-light-warning text-gray-800';
+            }
+
+            if (item.is_negative) {
+                balanceBadge = '<span class="badge badge-danger fs-9 px-1.5 py-0 font-mono">' + item.balance_after_formatted + '</span>';
+            }
+
+            return `
+                <div class="card mb-2 border ${borderClass} rounded-2 p-2.5 shadow-none bg-white col-item" data-search="${searchData}">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-muted fs-9 font-mono">${item.created_at}</span>
+                        <span class="badge ${badgeClass} font-mono fs-8 fw-bolder">${item.amount_formatted}</span>
+                    </div>
+                    <div class="text-gray-800 fs-8 fw-semibold text-truncate mb-1" title="${item.description}">
+                        ${item.description}
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between fs-9 text-muted pt-1 border-top border-gray-100">
+                        <span>Saldo berjalan:</span>
+                        ${balanceBadge}
+                    </div>
+                </div>
+            `;
+        }
+
         // Modal View Logs
         $(document).on('click', '.btn-view-logs', function(e) {
             e.preventDefault();
@@ -507,11 +824,16 @@
             var id = btn.data('id');
             var name = btn.data('name');
             var nis = btn.data('nis');
+            var school = btn.data('school');
             var className = btn.data('class');
 
             $('#modal-student-name').text(name);
             $('#modal-student-nis').text(nis);
+            $('#modal-student-school').text(school);
             $('#modal-student-class').text(className);
+
+            // Default ke tampilan 3 Kolom
+            $('#btn-view-3col').trigger('click');
 
             $('#modal-loading').removeClass('d-none');
             $('#modal-content').addClass('d-none');
@@ -521,65 +843,123 @@
                 url: "{{ url('admin/audit/saldo-minus') }}/" + id + "/logs",
                 type: "GET",
                 success: function(res) {
+                    cachedLogData = res;
                     $('#modal-loading').addClass('d-none');
                     $('#modal-content').removeClass('d-none');
 
                     var summary = res.summary;
-                    $('#stat-final-saldo').text('- Rp ' + formatNumber(Math.abs(summary.final_saldo)));
-                    $('#stat-bill-deductions').text('Rp ' + formatNumber(summary.total_bill_deductions));
-                    $('#stat-pos-deductions').text('Rp ' + formatNumber(summary.total_pos_deductions));
-                    $('#stat-topup').text('Rp ' + formatNumber(summary.total_in));
 
-                    // First negative event
-                    if (summary.first_negative_event) {
-                        var fn = summary.first_negative_event;
-                        $('#box-first-negative').removeClass('d-none');
-                        $('#text-first-negative').html(
-                            'Pada tanggal <strong>' + fn.date + '</strong>, saldo santri sebesar <strong class="text-success">Rp ' + formatNumber(fn.prev) + '</strong> ' +
-                            'dipotong sebesar <strong class="text-danger">Rp ' + formatNumber(fn.amount) + '</strong> (' + fn.desc + '). ' +
-                            'Karena sistem lama tidak memvalidasi kecukupan saldo, saldo santri seketika anjlok menjadi <strong class="text-danger">Rp ' + formatNumber(fn.after) + '</strong>.'
-                        );
+                    // 1. Header Formula Strip
+                    $('#stat-topup').text(summary.total_in_formatted);
+                    $('#stat-topup-count').text(summary.topup_count + ' transaksi');
+
+                    $('#stat-bill-deductions').text(summary.total_bill_formatted);
+                    $('#stat-bill-count').text(summary.spp_count + ' transaksi');
+
+                    $('#stat-pos-deductions').text(summary.total_pos_formatted);
+                    $('#stat-pos-count').text(summary.pos_count + ' transaksi');
+
+                    $('#stat-final-saldo').text(summary.final_saldo_formatted);
+                    $('#stat-diagnosis-text').html(
+                        '<strong>Kesimpulan Audit:</strong> Total pengeluaran santri (' + summary.total_out_formatted + ') ' +
+                        'melebihi seluruh saldo masuk (' + summary.total_in_formatted + ') sehingga tekor/minus sebesar ' +
+                        '<strong class="text-danger">' + summary.deficit_formatted + '</strong>. ' +
+                        summary.diagnosis
+                    );
+
+                    // 2. Populasi Tampilan 3 Kolom
+                    $('#col-topup-badge').text(summary.total_in_formatted);
+                    $('#col-topup-count-label').text(summary.topup_count + ' Transaksi');
+                    var listTopup = $('#list-col-topup').empty();
+                    if (res.items_topup && res.items_topup.length > 0) {
+                        $.each(res.items_topup, function(i, it) {
+                            listTopup.append(renderCardlet(it, 'topup'));
+                        });
                     } else {
-                        $('#box-first-negative').addClass('d-none');
+                        listTopup.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada riwayat top up.</div>');
                     }
 
-                    // Populate timeline table
-                    var tbody = $('#modal-timeline-body');
-                    tbody.empty();
+                    $('#col-spp-badge').text(summary.total_bill_formatted);
+                    $('#col-spp-count-label').text(summary.spp_count + ' Transaksi Autodebit');
+                    var listSpp = $('#list-col-spp').empty();
+                    if (res.items_spp && res.items_spp.length > 0) {
+                        $.each(res.items_spp, function(i, it) {
+                            listSpp.append(renderCardlet(it, 'spp'));
+                        });
+                    } else {
+                        listSpp.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada pemotongan tagihan SPP.</div>');
+                    }
 
+                    $('#col-pos-badge').text(summary.total_pos_formatted);
+                    $('#col-pos-count-label').text(summary.pos_count + ' Belanja Kasir');
+                    var listPos = $('#list-col-pos').empty();
+                    if (res.items_pos && res.items_pos.length > 0) {
+                        $.each(res.items_pos, function(i, it) {
+                            listPos.append(renderCardlet(it, 'pos'));
+                        });
+                    } else {
+                        listPos.html('<div class="text-center py-6 text-muted fs-8 fst-italic">Tidak ada belanja kasir kantin.</div>');
+                    }
+
+                    // 3. Populasi Tampilan 2 Kolom (Side panel)
+                    $('#val-side-topup').text(summary.total_in_formatted);
+                    $('#val-side-spp').text(summary.total_bill_formatted);
+                    $('#val-side-pos').text(summary.total_pos_formatted);
+                    $('#val-side-deficit').text(summary.final_saldo_formatted);
+
+                    $('#label-percent-spp').text('SPP: ' + summary.spp_percent + '%');
+                    $('#label-percent-pos').text('Kantin: ' + summary.pos_percent + '%');
+                    $('#progress-bar-spp').css('width', summary.spp_percent + '%');
+                    $('#progress-bar-pos').css('width', summary.pos_percent + '%');
+
+                    if (summary.first_negative_event) {
+                        var fn = summary.first_negative_event;
+                        $('#box-first-negative-2col').removeClass('d-none');
+                        $('#text-first-negative-2col').html(
+                            'Pada <strong>' + fn.date + '</strong>, saldo santri (' + fn.prev_formatted + ') ' +
+                            'dipotong <strong>' + fn.amount_formatted + '</strong> (' + fn.desc + '), ' +
+                            'mengakibatkan saldo pertama kali anjlok ke <strong class="text-danger">' + fn.after_formatted + '</strong>.'
+                        );
+                    } else {
+                        $('#box-first-negative-2col').addClass('d-none');
+                    }
+
+                    // 4. Populasi Tabel Kronologis (2 Kolom)
+                    var tbody = $('#modal-timeline-body').empty();
                     if (res.timeline && res.timeline.length > 0) {
                         $.each(res.timeline, function(i, item) {
                             var typeBadge = item.type === 'IN' 
-                                ? '<span class="badge badge-light-success fw-bold">TOPUP (IN)</span>'
-                                : '<span class="badge badge-light-danger fw-bold">POTONG (OUT)</span>';
+                                ? '<span class="badge badge-light-success fw-bold">TOPUP</span>'
+                                : (item.category === 'spp' ? '<span class="badge badge-light-danger fw-bold">SPP</span>' : '<span class="badge badge-light-warning fw-bold text-dark">KANTIN</span>');
 
-                            var prevClass = item.prev_balance < 0 ? 'text-danger font-mono' : 'text-gray-700 font-mono';
-                            var afterClass = item.balance_after < 0 ? 'text-danger fw-bold font-mono' : 'text-success fw-bold font-mono';
+                            var rowClass = item.is_first_negative ? 'table-danger' : '';
+                            var balanceBadge = item.is_negative 
+                                ? '<span class="badge badge-danger fs-9 font-mono px-2 py-0.5">' + item.balance_after_formatted + '</span>'
+                                : '<span class="text-success font-mono fw-bold">' + item.balance_after_formatted + '</span>';
 
-                            var rowClass = item.is_first_negative ? 'bg-light-danger border-danger border-start border-4' : '';
-                            var indicator = item.is_first_negative ? '<span class="badge badge-danger ms-1 pulse-danger fs-9">Titik Awal Minus!</span>' : '';
+                            var indicator = item.is_first_negative ? '<span class="badge badge-danger ms-1 fs-9">Awal Minus!</span>' : '';
+                            var searchStr = (item.created_at + ' ' + item.description + ' ' + item.amount_formatted + ' ' + item.category).toLowerCase();
 
-                            var row = `
-                                <tr class="${rowClass}">
-                                    <td class="text-center font-mono">${item.index}</td>
+                            var tr = `
+                                <tr class="${rowClass}" data-category="${item.category}" data-negative="${item.is_negative}" data-search="${searchStr}">
+                                    <td class="text-center font-mono text-muted">${item.index}</td>
                                     <td class="font-mono text-nowrap">${item.created_at}</td>
                                     <td>${typeBadge}</td>
-                                    <td class="text-end font-mono fw-bold">Rp ${formatNumber(item.amount)}</td>
+                                    <td class="text-end font-mono fw-bolder">${item.amount_formatted}</td>
                                     <td>${item.description} ${indicator}</td>
-                                    <td class="text-end ${prevClass}">Rp ${formatNumber(item.prev_balance)}</td>
-                                    <td class="text-end ${afterClass}">Rp ${formatNumber(item.balance_after)}</td>
+                                    <td class="text-end">${balanceBadge}</td>
                                 </tr>
                             `;
-                            tbody.append(row);
+                            tbody.append(tr);
                         });
                     } else {
-                        tbody.append('<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada riwayat mutasi saldo ditemukan.</td></tr>');
+                        tbody.html('<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada data transaksi.</td></tr>');
                     }
                 },
                 error: function(err) {
                     $('#modal-loading').addClass('d-none');
                     $('#modal-content').removeClass('d-none');
-                    $('#modal-timeline-body').html('<tr><td colspan="7" class="text-center py-4 text-danger">Gagal memuat log data mutasi.</td></tr>');
+                    $('#stat-diagnosis-text').html('<span class="text-danger">Gagal memuat rekap log forensik transaksi santri.</span>');
                 }
             });
         });
