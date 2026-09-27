@@ -302,7 +302,12 @@ class ReportTransactionController extends Controller
                 'name' => $canonicalName,
             ];
         })->unique('name')->sortBy('name')->values();
-        return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
+        $classroomsQuery = Classroom::query();
+        if (!empty($schoolId)) {
+            $classroomsQuery->where('school_id', $schoolId);
+        }
+        $classrooms = $classroomsQuery->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
+        return view('admins.report-transaction.index', compact('schools', 'classrooms', 'admins', 'billTypes'));
     }
 
     /**

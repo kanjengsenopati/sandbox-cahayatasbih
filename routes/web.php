@@ -111,6 +111,12 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::post('audit/advanced-sync/clean-reconcile', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'cleanReconcile'])->name('admin.audit.advanced-sync.clean-reconcile');
     Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
 
+    // Audit Saldo Minus
+    Route::get('audit/saldo-minus', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'index'])->name('admin.audit.saldo-minus');
+    Route::get('audit/saldo-minus/data', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'data'])->name('admin.audit.saldo-minus.data');
+    Route::get('audit/saldo-minus/{id}/logs', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'logs'])->name('admin.audit.saldo-minus.logs');
+    Route::get('audit/saldo-minus/export', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'export'])->name('admin.audit.saldo-minus.export');
+
     // Redirect old route for compatibility
     Route::get('audit', function() {
         return redirect()->route('admin.audit.sync');

@@ -1,4 +1,4 @@
-﻿<script src="{{ url('https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
+<script src="{{ url('https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
 <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
 <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
 <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
@@ -52,6 +52,7 @@
                     flex-direction: column !important;\
                     align-items: center !important;\
                     justify-content: center !important;\
+                    pointer-events: none !important;\
                 }\
                 .dt-processing-active tbody td {\
                     pointer-events: none;\

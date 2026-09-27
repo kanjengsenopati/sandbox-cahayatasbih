@@ -57,12 +57,12 @@
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
-                                        <label class="form-label">Filter Tanggal</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Filter Tanggal</label>
                                         <div class="d-flex gap-4 align-items-end">
                                             <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                                <span></span> <b class="caret"></b>
+                                                style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #e4e6ef; border-radius: 0.475rem; height: 38px; display: flex; align-items: center;">
+                                                <i class="glyphicon glyphicon-calendar fa fa-calendar text-gray-500"></i>&nbsp;
+                                                <span class="fs-7 fw-bold text-gray-700"></span>&nbsp;<b class="caret"></b>
                                             </div>
                                             <input type="text" id="start_date" name="start_date" hidden>
                                             <input type="text" id="end_date" name="end_date" hidden>
@@ -71,7 +71,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label">Lembaga</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Lembaga</label>
                                         <select name="school_id" class="form-select form-select-sm"
                                             id="filter_school_id">
                                             <option value="">Semua Lembaga</option>
@@ -81,14 +81,19 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Kelas</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Kelas</label>
                                         <select name="classroom_id" class="form-select form-select-sm"
                                             id="filter_classroom_id">
                                             <option value="">Semua Kelas</option>
+                                            @if(isset($classrooms))
+                                                @foreach ($classrooms as $classroom)
+                                                <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
+                                                @endforeach
+                                            @endif
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Tipe</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Tipe</label>
                                         <select name="type_data" class="form-select form-select-sm" id="filter_status">
                                             <option value="">Semua</option>
                                             <option value="BILL">Tagihan</option>
@@ -97,7 +102,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Petugas</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Petugas</label>
                                         <select name="admin_id" class="form-select form-select-sm" id="filter_admin">
                                             <option value="">Semua</option>
                                             @foreach($admins as $admin)
@@ -106,7 +111,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Jenis Tagihan</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Jenis Tagihan</label>
                                         <select name="bill_type_id" id="filter_tipe_tagihan"
                                             class="form-select form-select-sm">
                                             <option value="">Semua Tagihan</option>
@@ -116,9 +121,9 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Nama Santri / Siswa</label>
-                                        <div class="d-flex align-items-center position-relative">
-                                            <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Nama Santri / Siswa</label>
+                                        <div class="d-flex align-items-center position-relative filter-search-container" style="cursor: text;">
+                                            <span class="svg-icon svg-icon-1 position-absolute ms-3" style="pointer-events: none;">
                                                 <i class="fas fa-search text-gray-400"></i>
                                             </span>
                                             <input type="text" id="filter_student_name" name="student_name" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Nama Santri / Siswa..." style="width: 220px;" />
@@ -273,6 +278,62 @@
         border: 1px solid #edf2f7;
         background-color: #ffffff;
     }
+    #filter_school_id,
+    #filter_classroom_id,
+    #filter_status,
+    #filter_admin {
+        cursor: pointer !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        font-size: 0.9rem !important;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out !important;
+    }
+    #filter_school_id:hover,
+    #filter_classroom_id:hover,
+    #filter_status:hover,
+    #filter_admin:hover {
+        border-color: #b5b5c3 !important;
+    }
+    #filter_school_id:focus,
+    #filter_classroom_id:focus,
+    #filter_status:focus,
+    #filter_admin:focus {
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        outline: none !important;
+    }
+    #filter_student_name {
+        cursor: text !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        font-size: 0.9rem !important;
+        border: 1px solid #e4e6ef !important;
+        background-color: #f5f8fa !important;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out !important;
+    }
+    #filter_student_name:hover {
+        background-color: #eef3f7 !important;
+        border-color: #b5b5c3 !important;
+    }
+    #filter_student_name:focus,
+    #filter_student_name:active {
+        background-color: #ffffff !important;
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        color: #181c32 !important;
+        outline: none !important;
+    }
+    .select2-container--bootstrap5 .select2-selection {
+        height: 38px !important;
+        min-height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+    }
+    #btn-tampilkan {
+        height: 38px !important;
+        min-height: 38px !important;
+    }
 </style>
 
 @endsection
@@ -399,13 +460,11 @@
                 data: { school_id: school_id },
                 success: function(response) {
                     $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+                    $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+                    if (response.data && response.data.length > 0) {
                         $.each(response.data, function(key, value) {
                             $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
                         });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
                     }
                 }
             });
@@ -454,6 +513,10 @@
                 e.preventDefault();
                 reloadTable();
             }
+        });
+
+        $('.filter-search-container').on('click', function(e) {
+            $('#filter_student_name').focus();
         });
 
         $('#form-filter').on('submit', function(e) {

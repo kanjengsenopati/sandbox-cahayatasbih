@@ -849,7 +849,11 @@ class ReportBillController extends Controller
     public function getClassroom(Request $request)
     {
         $schoolId = $request->school_id;
-        $classrooms = Classroom::where('school_id', $schoolId)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
+        $query = Classroom::query();
+        if (!empty($schoolId)) {
+            $query->where('school_id', $schoolId);
+        }
+        $classrooms = $query->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         return $this->getSuccessResponse($classrooms);
     }
 
