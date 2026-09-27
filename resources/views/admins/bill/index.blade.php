@@ -822,65 +822,73 @@
 </script>
 <script>
     $(document).ready(() => {
-            var table = $('#table-transfer').DataTable({
-                ordering: true,
-                sortable: true,
-                processing: true,
-                serverSide: true,
-                ajax: "{{ route('bill.index') }}",
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                     {
-                        data: 'student.name',
-                        name: 'student.name',
-                        orderable: false,
-                    },
-                  
-                    {
-                        data: 'pay_amount',
-                        name: 'pay_amount'
-                    },
-                    {
-                        data: 'unique_payment',
-                        name: 'unique_payment'
-                    },
-                    {
-                        data: 'bank_recipient',
-                        name: 'bank_recipient',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'proof',
-                        name: 'proof',
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: false
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                ]
+            // Lazy-load: DataTable transfer hanya diinisialisasi saat tab pertama kali diklik.
+            // Mencegah AJAX request berat (~5.8s) memblokir page load via session lock.
+            var transferTableInitialized = false;
+            $('a[data-bs-toggle="tab"][href="#pembayaran_transfer"]').on('shown.bs.tab', function () {
+                if (!transferTableInitialized) {
+                    transferTableInitialized = true;
+                    $('#table-transfer').DataTable({
+                        ordering: true,
+                        sortable: true,
+                        processing: true,
+                        serverSide: true,
+                        ajax: "{{ route('bill.index') }}",
+                        language: {
+                            "paginate": {
+                                "next": "<i class='fa fa-angle-right'>",
+                                "previous": "<i class='fa fa-angle-left'>"
+                            },
+                            "loadingRecords": "Loading...",
+                            "processing": "Processing...",
+                        },
+                        columns: [{
+                                "data": null,
+                                "sortable": false,
+                                "searchable": false,
+                                render: function(data, type, row, meta) {
+                                    return meta.row + meta.settings._iDisplayStart + 1;
+                                }
+                            },
+                             {
+                                data: 'student.name',
+                                name: 'student.name',
+                                orderable: false,
+                            },
+                          
+                            {
+                                data: 'pay_amount',
+                                name: 'pay_amount'
+                            },
+                            {
+                                data: 'unique_payment',
+                                name: 'unique_payment'
+                            },
+                            {
+                                data: 'bank_recipient',
+                                name: 'bank_recipient',
+                                orderable: false,
+                                searchable: false
+                            },
+                            {
+                                data: 'proof',
+                                name: 'proof',
+                            },
+                            {
+                                data: 'status',
+                                name: 'status',
+                                orderable: true,
+                                searchable: false
+                            },
+                            {
+                                data: 'action',
+                                name: 'action',
+                                orderable: false,
+                                searchable: false
+                            }
+                        ]
+                    });
+                }
             });
 
             

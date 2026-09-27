@@ -1,0 +1,153 @@
+
+>         document.addEventListener('DOMContentLoaded', function () {
+              // Restore state if available
+              var savedState = sessionStorage.getItem('syncUIState');
+              if (savedState) {
+                  var state = JSON.parse(savedState);
+                  
+                  if (document.getElementById('select-filter-school')) {
+                      document.getElementById('select-filter-school').value = state.school || '';
+                      if (typeof onSchoolFilterChange === 'function') onSchoolFilterChange();
+                  }
+                  if (document.getElementById('select-filter-classroom')) {
+                      document.getElementById('select-filter-classroom').value = state.classroom || '';
+                  }
+                  if (document.getElementById('select-filter-academic-year')) {
+                      document.getElementById('select-filter-academic-year').value = state.academic_year || '';
+                      if (typeof onAcademicYearChange === 'function') onAcademicYearChange();
+                  }
+                  
+                  if (typeof filterBillTypesDropdown === 'function') {
+                      filterBillTypesDropdown();
+                  }
+                  
+                  if (document.getElementById('select-filter-bill-type')) {
+                      document.getElementById('select-filter-bill-type').value = state.bill_type || '';
+                  }
+                  
+                  sessionStorage.removeItem('syncUIState');
+                  
+                  if (typeof fetchMasterDiff === 'function') {
+                      var btns = document.querySelectorAll('.btn-mod-tab');
+                      var activeBtn = null;
+                      btns.forEach(function(b) {
+                          if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(state.module)) {
+                              activeBtn = b;
+                          }
+                      });
+                      fetchMasterDiff(state.module, activeBtn);
+                  }
+              } else {
+                  // Auto fetch students diff on Tab 1 initial load
+                  if (typeof fetchMasterDiff === 'function') {
+                      fetchMasterDiff('students');
+                  }
+              }
+              
+              // Listen to form submit to save state
+              var mergeForm = document.getElementById('form-confirm-merge');
+              var btnMerge = document.getElementById('btn-submit-merge');
+              if (btnMerge) {
+                  btnMerge.addEventListener('click', function() {
+                      var state = {
+                          module: document.getElementById('current-merge-module') ? document.getElementById('current-merge-module').value : 'students',
+                          school: document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '',
+                          classroom: document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '',
+                          academic_year: document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '',
+                          bill_type: document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : ''
+                      };
+                      sessionStorage.setItem('syncUIState', JSON.stringify(state));
+                  });
+              }
+  
+              // Loading state saat form sync disubmit
+              var form = document.getElementById('sync-db-form');
+              if (form) {
+                  form.addEventListener('submit', function () {
+                      var btn = document.getElementById('btn-sync-submit');
+                      if (btn) {
+                          btn.disabled = true;
+                          btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Sinkronisasi Berjalan...';
+                      }
+                  });
+              }
+  
+              // Check All Table logic
+              var checkAll = document.getElementById('sync-check-all-tables');
+              var tableCheckboxes = document.querySelectorAll('.table-checkbox');
+              var groupCheckboxes = document.querySelectorAll('.group-checkbox');
+  
+              if (checkAll) {
+                  checkAll.addEventListener('change', function () {
+                      var isChecked = this.checked;
+                      tableCheckboxes.forEach(function (cb) {
+                          cb.checked = isChecked;
+                      });
+                      groupCheckboxes.forEach(function (cb) {
+                          cb.checked = isChecked;
+                      });
+                  });
+              }
+  
+              // Group Checkbox logic
+              groupCheckboxes.forEach(function (gCb) {
+                  gCb.addEventListener('change', function () {
+                      var group = this.getAttribute('data-group');
+                      var isChecked = this.checked;
+                      document.querySelectorAll('.table-checkbox[data-group="' + group + '"]').forEach(function (tCb) {
+                          tCb.checked = isChecked;
+                      });
+                      updateMasterCheckbox();
+                  });
+              });
+  
+              // Table Checkbox logic
+              tableCheckboxes.forEach(function (tCb) {
+                  tCb.addEventListener('change', function () {
+                      var group = this.getAttribute('data-group');
+                      var groupCb = document.querySelector('.group-checkbox[data-group="' + group + '"]');
+                      if (groupCb) {
+                          var siblings = document.querySelectorAll('.table-checkbox[data-group="' + group + '"]');
+                          var allSiblingsChecked = Array.from(siblings).every(function (cb) {
+                              return cb.checked;
+                          });
+                          var anySiblingChecked = Array.from(siblings).some(function (cb) {
+                              return cb.checked;
+                          });
+                          groupCb.checked = allSiblingsChecked;
+                          groupCb.indeterminate = anySiblingChecked && !allSiblingsChecked;
+                      }
+                      updateMasterCheckbox();
+                  });
+              });
+  
+              function updateMasterCheckbox() {
+                  if (checkAll) {
+                      var allChecked = Array.from(tableCheckboxes).every(function (cb) {
+                          return cb.checked;
+                      });
+                      var anyChecked = Array.from(tableCheckboxes).some(function (cb) {
+                          return cb.checked;
+                      });
+                      checkAll.checked = allChecked;
+                      checkAll.indeterminate = anyChecked && !allChecked;
+                  }
+              }
+          });
+  
+          function toggleMasterPreview() {
+              var card = document.getElementById('preview-master-card');
+              if (card.style.display === 'none' || card.style.display === '') {
+                  card.style.display = 'block';
+                  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  fetchMasterDiff('students');
+              } else {
+                  card.style.display = 'none';
+              }
+          }
+  
+          var currentActiveFilter = 'ALL';
+  
+          function filterDiffTable(status, badgeEl) {
+              if (badgeEl && currentActiveFilter === status) {
+

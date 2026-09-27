@@ -321,19 +321,28 @@ class BillController extends Controller
     private function getTransactionData()
     {
         @set_time_limit(300);
+        // Lepas session lock lebih awal agar request lain dari user yang sama
+        // tidak terblokir selama query berat DataTables ini berjalan.
+        session()->save();
+
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with([
-            'student',
-            'paymentMethod',
-            'activeProof.bank',
-            'transactionProofs.bank',
-            'transactionDetails.bill.billType.academicYear',
-            'transactionDetails.bill.academicYear',
-            'transactionDetails.saldoHistory',
-            'transactionDetails.savingHistory',
-            'transactionDetails.ppdbRegistration'
-        ])
+        $transactions = Transaction::select([
+                'id', 'student_id', 'payment_method_id', 'pay_amount',
+                'unique_payment', 'payment_code', 'status', 'type',
+                'created_at', 'updated_at', 'deleted_at',
+            ])
+            ->with([
+                'student:id,name,nis',
+                'paymentMethod:id,name,type',
+                'activeProof.bank',
+                'transactionProofs.bank',
+                'transactionDetails.bill.billType.academicYear',
+                'transactionDetails.bill.academicYear',
+                'transactionDetails.saldoHistory',
+                'transactionDetails.savingHistory',
+                'transactionDetails.ppdbRegistration'
+            ])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -427,20 +436,30 @@ class BillController extends Controller
     private function getArchiveTransactionData()
     {
         @set_time_limit(300);
+        // Lepas session lock lebih awal agar request lain dari user yang sama
+        // tidak terblokir selama query berat DataTables ini berjalan.
+        session()->save();
+
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with([
-            'student',
-            'paymentMethod',
-            'activeProof.bank',
-            'transactionProofs.bank',
-            'admin',
-            'transactionDetails.bill.billType.academicYear',
-            'transactionDetails.bill.academicYear',
-            'transactionDetails.saldoHistory',
-            'transactionDetails.savingHistory',
-            'transactionDetails.ppdbRegistration'
-        ])
+        $transactions = Transaction::select([
+                'id', 'student_id', 'payment_method_id', 'pay_amount',
+                'unique_payment', 'payment_code', 'status', 'type',
+                'created_at', 'updated_at', 'deleted_at',
+                'admin_id', 'is_deleted_from_archive',
+            ])
+            ->with([
+                'student:id,name,nis',
+                'paymentMethod:id,name,type',
+                'activeProof.bank',
+                'transactionProofs.bank',
+                'admin:id,name',
+                'transactionDetails.bill.billType.academicYear',
+                'transactionDetails.bill.academicYear',
+                'transactionDetails.saldoHistory',
+                'transactionDetails.savingHistory',
+                'transactionDetails.ppdbRegistration'
+            ])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PAID)
