@@ -804,12 +804,13 @@
 
             var mergeForm = document.getElementById('form-confirm-merge');
 
-            var btnMerge = document.getElementById('btn-submit-merge');
-            if (btnMerge) {
-                btnMerge.addEventListener('click', function() {
-
             if (mergeForm) {
                 mergeForm.addEventListener('submit', function() {
+                    var btnMerge = document.getElementById('btn-submit-merge');
+                    if (btnMerge) {
+                        btnMerge.disabled = true;
+                        btnMerge.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
+                    }
 
                     var state = {
                         module: document.getElementById('current-merge-module') ? document.getElementById('current-merge-module').value : 'students',
@@ -967,7 +968,7 @@
 
             options.forEach(function(opt) {
                 if (!opt.value) {
-                    opt.style.display = ''; // "Semua Jenis Tagihan" always visible
+                    opt.style.display = ''; opt.hidden = false; opt.disabled = false; // "Semua Jenis Tagihan" always visible
                     if (billSelect.value === opt.value) currentSelectedValid = true;
                     return;
                 }
@@ -980,9 +981,13 @@
 
                 if (matchYear && matchSchool) {
                     opt.style.display = '';
+                    opt.hidden = false;
+                    opt.disabled = false;
                     if (billSelect.value === opt.value) currentSelectedValid = true;
                 } else {
                     opt.style.display = 'none';
+                    opt.hidden = true;
+                    opt.disabled = true;
                 }
             });
 
