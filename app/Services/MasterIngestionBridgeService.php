@@ -753,6 +753,27 @@ class MasterIngestionBridgeService
                                     }
                                 }
                             }
+
+                            // Enforce Single Source of Truth (SSoT): Rekonsiliasi akumulasi riil transaction_details ke bill
+                            $realPaidFromTx = $localConn->table('transaction_details as td')
+                                ->join('transactions as t', 't.id', '=', 'td.transaction_id')
+                                ->where('td.bill_id', $targetBillId)
+                                ->whereNull('td.deleted_at')
+                                ->whereNull('t.deleted_at')
+                                ->where('t.status', 'PAID')
+                                ->sum('td.amount');
+
+                            if ($realPaidFromTx > 0) {
+                                $targetBillObj = $localConn->table('bills')->where('id', $targetBillId)->first();
+                                $billAmount = (int) ($targetBillObj->amount ?? 0);
+                                $syncedStatus = ($billAmount > 0 && $realPaidFromTx >= $billAmount) ? 'PAID' : 'PARTIAL';
+
+                                $localConn->table('bills')->where('id', $targetBillId)->update([
+                                    'paid_amount' => $realPaidFromTx,
+                                    'status' => $syncedStatus,
+                                    'updated_at' => now(),
+                                ]);
+                            }
                         }
                     }
                 } elseif ($module === 'saldo') {

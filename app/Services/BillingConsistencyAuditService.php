@@ -28,6 +28,7 @@ class BillingConsistencyAuditService
             'item_4_transaction_details' => self::auditTransactionDetails(),
             'item_5_ghost_bills' => self::auditGhostBills(),
             'item_6_payment_consistency' => self::auditPaymentConsistency(),
+            'item_7_transaction_reconciliation' => self::auditTransactionReconciliation(),
         ];
     }
 
@@ -317,6 +318,82 @@ class BillingConsistencyAuditService
     }
 
     /**
+     * [ITEM 7] Audit Rekonsiliasi Tagihan vs Riwayat Transaksi (Single Source of Truth / SSoT)
+     * Memastikan kolom bills.paid_amount dan bills.status selaras 100% dengan akumulasi riil transaction_details.
+     */
+    public static function auditTransactionReconciliation(): array
+    {
+        $totalBills = Bill::whereNull('deleted_at')->count();
+
+        $discrepancies = DB::select("
+            SELECT 
+                b.id as bill_id,
+                b.student_id,
+                s.name as student_name,
+                s.nis as student_nis,
+                bt.name as bill_name,
+                b.amount,
+                b.paid_amount as recorded_paid,
+                b.status as recorded_status,
+                COALESCE(tx_agg.total_paid_tx, 0) as real_paid,
+                COALESCE(tx_agg.tx_count, 0) as tx_count
+            FROM bills b
+            JOIN students s ON s.id = b.student_id
+            JOIN bill_types bt ON bt.id = b.bill_type_id
+            LEFT JOIN (
+                SELECT 
+                    td.bill_id,
+                    SUM(td.amount) as total_paid_tx,
+                    COUNT(td.id) as tx_count
+                FROM transaction_details td
+                JOIN transactions t ON t.id = td.transaction_id
+                WHERE td.deleted_at IS NULL
+                  AND t.deleted_at IS NULL
+                  AND t.status = 'PAID'
+                GROUP BY td.bill_id
+            ) tx_agg ON tx_agg.bill_id = b.id
+            WHERE b.deleted_at IS NULL
+              AND s.deleted_at IS NULL
+              AND (
+                  b.paid_amount != COALESCE(tx_agg.total_paid_tx, 0)
+                  OR (b.status = 'PAID' AND COALESCE(tx_agg.total_paid_tx, 0) < b.amount AND b.amount > 0)
+                  OR (b.status = 'UNPAID' AND COALESCE(tx_agg.total_paid_tx, 0) > 0)
+                  OR (b.status = 'PARTIAL' AND (COALESCE(tx_agg.total_paid_tx, 0) = 0 OR (COALESCE(tx_agg.total_paid_tx, 0) >= b.amount AND b.amount > 0)))
+              )
+        ");
+
+        $overRecorded = 0;
+        $underRecorded = 0;
+        $falsePaidStatus = 0;
+
+        foreach ($discrepancies as $d) {
+            if ($d->recorded_paid > $d->real_paid) {
+                $overRecorded++;
+            } elseif ($d->recorded_paid < $d->real_paid) {
+                $underRecorded++;
+            }
+            if ($d->recorded_status === 'PAID' && $d->real_paid < $d->amount) {
+                $falsePaidStatus++;
+            }
+        }
+
+        $issueCount = count($discrepancies);
+
+        return [
+            'name' => 'Rekonsiliasi Riwayat Transaksi (Single Source of Truth)',
+            'status' => $issueCount === 0 ? 'HEALTHY' : 'WARNING',
+            'total_records' => $totalBills,
+            'issues_count' => $issueCount,
+            'details' => [
+                'over_recorded' => $overRecorded,
+                'under_recorded' => $underRecorded,
+                'false_paid_status' => $falsePaidStatus,
+                'sample_discrepancies' => array_slice($discrepancies, 0, 10),
+            ]
+        ];
+    }
+
+    /**
      * Eksekusi Perbaikan Otomatis (Auto-Heal / Repair) secara aman.
      *
      * @param array $options ['fix_overpaid', 'fix_ghost_inactive', 'fix_ghost_deleted', 'fix_virtual_details', 'relink_rate_items', 'backfill_details']
@@ -492,6 +569,77 @@ class BillingConsistencyAuditService
             ];
         }
 
+        // 6. REKONSILIASI TRANSAKSI KE DATA BILLS (Single Source of Truth / SSoT)
+        if (!empty($options['reconcile_transactions'])) {
+            $studentId = $options['student_id'] ?? null;
+            $fixedCount = self::executeTransactionReconciliation($dryRun, $studentId);
+
+            $results['reconcile_transactions'] = [
+                'action' => 'Menyelaraskan nilai paid_amount dan status tagihan 100% mengikuti riwayat transaksi riil (SSoT)',
+                'count' => $fixedCount,
+                'dry_run' => $dryRun,
+            ];
+        }
+
         return $results;
+    }
+
+    /**
+     * Eksekusi rekonsiliasi nilai paid_amount dan status bills agar 100% selaras dengan transaction_details.
+     */
+    public static function executeTransactionReconciliation(bool $dryRun = false, ?string $studentId = null): int
+    {
+        // 1. Ambil agregat transaksi valid per bill_id
+        $txAggregates = DB::table('transaction_details as td')
+            ->join('transactions as t', 't.id', '=', 'td.transaction_id')
+            ->whereNull('td.deleted_at')
+            ->whereNull('t.deleted_at')
+            ->where('t.status', 'PAID')
+            ->whereNotNull('td.bill_id')
+            ->when($studentId, function($q) use ($studentId) {
+                $q->whereExists(function($sub) use ($studentId) {
+                    $sub->select(DB::raw(1))
+                        ->from('bills')
+                        ->whereColumn('bills.id', 'td.bill_id')
+                        ->where('bills.student_id', $studentId);
+                });
+            })
+            ->select('td.bill_id', DB::raw('SUM(td.amount) as real_paid'))
+            ->groupBy('td.bill_id')
+            ->pluck('real_paid', 'bill_id')
+            ->toArray();
+
+        // 2. Ambil bills yang akan diselaraskan
+        $bills = DB::table('bills')
+            ->whereNull('deleted_at')
+            ->when($studentId, fn($q) => $q->where('student_id', $studentId))
+            ->select('id', 'student_id', 'amount', 'paid_amount', 'status')
+            ->get();
+
+        $updatedCount = 0;
+
+        foreach ($bills as $b) {
+            $realPaid = isset($txAggregates[$b->id]) ? (int) $txAggregates[$b->id] : 0;
+            
+            $expectedStatus = Bill::STATUS_UNPAID;
+            if ($b->amount > 0 && $realPaid >= $b->amount) {
+                $expectedStatus = Bill::STATUS_PAID;
+            } elseif ($realPaid > 0) {
+                $expectedStatus = Bill::STATUS_PARTIAL;
+            }
+
+            if ((int)$b->paid_amount !== $realPaid || $b->status !== $expectedStatus) {
+                if (!$dryRun) {
+                    DB::table('bills')->where('id', $b->id)->update([
+                        'paid_amount' => $realPaid,
+                        'status' => $expectedStatus,
+                        'updated_at' => now(),
+                    ]);
+                }
+                $updatedCount++;
+            }
+        }
+
+        return $updatedCount;
     }
 }

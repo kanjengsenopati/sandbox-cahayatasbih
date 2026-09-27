@@ -98,6 +98,9 @@
                             @elseif($key === 'item_6_payment_consistency')
                                 <div>Overpaid (Lebih Bayar): <strong>{{ count($modul['details']['overpaid_bills']) }}</strong> tagihan</div>
                                 <div>Status Lunas Salah: <strong>{{ $modul['details']['false_paid_status'] }}</strong></div>
+                            @elseif($key === 'item_7_transaction_reconciliation')
+                                <div>Kelebihan Catat: <strong>{{ number_format($modul['details']['over_recorded'], 0, ',', '.') }}</strong> tagihan</div>
+                                <div>Kekurangan Catat: <strong>{{ number_format($modul['details']['under_recorded'], 0, ',', '.') }}</strong> tagihan</div>
                             @endif
                         </div>
                     </div>
@@ -247,6 +250,26 @@
                             <button class="btn btn-sm btn-outline-success" onclick="triggerRepair(false, {fix_overpaid: true})">Selaraskan (Lunas)</button>
                         </td>
                     </tr>
+
+                    <!-- Item 7 -->
+                    <tr>
+                        <td class="font-weight-bold">7. Rekonsiliasi Riwayat Transaksi (SSoT)</td>
+                        <td>
+                            @if(($auditResults['item_7_transaction_reconciliation']['status'] ?? 'HEALTHY') === 'HEALTHY')
+                                <span class="badge badge-success">OK (100% Selaras)</span>
+                            @else
+                                <span class="badge badge-danger">Inkonsistensi Ditemukan</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="small text-muted">
+                                Ditemukan <strong>{{ number_format($auditResults['item_7_transaction_reconciliation']['details']['over_recorded'] ?? 0, 0, ',', '.') }}</strong> tagihan fiktif/kelebihan catat (tercatat lunas padahal riwayat transaksi belum mencukupi), dan <strong>{{ number_format($auditResults['item_7_transaction_reconciliation']['details']['under_recorded'] ?? 0, 0, ',', '.') }}</strong> tagihan belum ter-update dengan transaksi riil.
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-outline-primary" onclick="triggerRepair(false, {reconcile_transactions: true})">Rekonsiliasi SSoT</button>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -274,6 +297,7 @@ function triggerRepair(isDryRun, specificOptions = {}) {
         fix_ghost_deleted: specificOptions.fix_ghost_deleted !== undefined ? (specificOptions.fix_ghost_deleted ? 1 : 0) : 0,
         relink_rate_items: specificOptions.relink_rate_items !== undefined ? (specificOptions.relink_rate_items ? 1 : 0) : 1,
         backfill_details: specificOptions.backfill_details !== undefined ? (specificOptions.backfill_details ? 1 : 0) : 1,
+        reconcile_transactions: specificOptions.reconcile_transactions !== undefined ? (specificOptions.reconcile_transactions ? 1 : 0) : 1,
     };
 
     fetch('{{ route("bill.repair-consistency") }}', {

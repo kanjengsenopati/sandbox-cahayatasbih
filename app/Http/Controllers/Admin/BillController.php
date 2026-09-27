@@ -1855,6 +1855,7 @@ class BillController extends Controller
             'fix_ghost_deleted' => $request->boolean('fix_ghost_deleted', false),
             'relink_rate_items' => $request->boolean('relink_rate_items', true),
             'backfill_details' => $request->boolean('backfill_details', true),
+            'reconcile_transactions' => $request->boolean('reconcile_transactions', true),
         ];
 
         $dryRun = $request->boolean('dry_run', false);
