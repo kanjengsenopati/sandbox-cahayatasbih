@@ -63,7 +63,7 @@ class BillController extends Controller
             $syncCacheKey = "student_bills_synced_{$studentId}";
             if (!Cache::has($syncCacheKey)) {
                 Cache::put($syncCacheKey, true, now()->addMinutes(30));
-                dispatch(new SyncStudentBillsJob($studentId, request()->academic_year_id));
+                dispatch(new SyncStudentBillsJob($studentId, request()->academic_year_id))->afterResponse();
             }
 
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
@@ -152,7 +152,11 @@ class BillController extends Controller
                 if ($academicYearId) {
                     $query->where('academic_year_id', $academicYearId);
                 }
-                $query->with(['classroom.school']);
+                $query->with(['classroom.school', 'transactionDetails' => function($q) {
+                    $q->whereHas('transaction', fn($t) => $t->where('status', \App\Models\Transaction::STATUS_PAID))
+                      ->with(['transaction.admin', 'transaction.paymentMethod'])
+                      ->orderBy('created_at', 'asc');
+                }]);
             }])
             ->where('type', $type)
             ->whereIn('id', $studentBillTypeIds);

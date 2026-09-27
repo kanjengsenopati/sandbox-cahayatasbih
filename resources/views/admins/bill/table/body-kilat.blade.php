@@ -338,14 +338,14 @@
                             $remainingAmount = max(0, $amount - $mPaid);
                             $isPaid = ($amount > 0) && ($remainingAmount == 0);
                             $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         } elseif ($isAplikasi) {
                             $amount = 10000;
                             $mPaid = $aplikasiPaidAllocated[$month] ?? 0;
                             $remainingAmount = max(0, $amount - $mPaid);
                             $isPaid = ($amount > 0) && ($remainingAmount == 0);
                             $status = $isPaid ? 'PAID' : 'UNPAID';
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         } else {
                             $targetYearTemp = $billDetail?->year ?? ($month >= 7 ? ($bill->academicYear?->start_year ?? date('Y')) : ($bill->academicYear?->end_year ?? (date('Y') + 1)));
                             $amount = ($billDetail !== null) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp, $preloadedRates ?? null);
@@ -353,7 +353,7 @@
                             $isPaid = ($billDetail && $billDetail->status == 'PAID') || ($unpaidAmount == 0 && $paidAmount >= ($totalBillAmount ?? 0) && $amount > 0);
                             $remainingAmount = $isPaid ? 0 : ($billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount);
                             $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         }
 
                         $modalId = "bayarKilat{$bill->id}_{$month}";

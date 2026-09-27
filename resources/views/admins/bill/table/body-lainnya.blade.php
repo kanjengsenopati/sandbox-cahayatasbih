@@ -304,11 +304,7 @@
                                 $firstBillDetail = $bill->bills->where('student_id', $student->id)->first();
                                 $historyDetails = [];
                                 if ($firstBillDetail) {
-                                    $historyDetails = \App\Models\TransactionDetail::where('bill_id', $firstBillDetail->id)
-                                        ->whereHas('transaction', fn($q) => $q->where('status', \App\Models\Transaction::STATUS_PAID))
-                                        ->with(['transaction.admin', 'transaction.paymentMethod'])
-                                        ->orderBy('created_at', 'asc')
-                                        ->get();
+                                    $historyDetails = $firstBillDetail->transactionDetails;
                                 }
                             @endphp
                             
@@ -366,7 +362,7 @@
                             $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                             $status = $billDetail ? $billDetail->status : 'UNPAID';
                             $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                             
                             $modalId = "bayarLainnya{$bill->id}_{$month}";
                             $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
