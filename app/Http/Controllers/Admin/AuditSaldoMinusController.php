@@ -424,37 +424,34 @@ class AuditSaldoMinusController extends Controller
                 $timePart = $rawDt->format('H:i');
 
                 $originDateCol = '
-                    <div class="d-flex flex-column" style="min-width: 145px; white-space: nowrap;">
-                        <div class="d-flex align-items-center text-gray-900 fw-bold fs-8 mb-1">
-                            <i class="far fa-calendar-alt text-danger me-1.5 fs-8"></i>
-                            <span>' . $datePart . '</span>
-                            <span class="badge badge-light-secondary text-gray-600 font-mono fs-9 py-0 px-1.5 ms-1 border border-gray-300">' . $timePart . '</span>
+                    <div class="d-flex flex-column text-nowrap">
+                        <div class="text-gray-900 fw-bold fs-8 mb-0.5">
+                            <i class="far fa-calendar-alt text-danger me-1 fs-9"></i>' . $datePart . '
+                            <span class="text-muted font-mono fs-9 ms-1">' . $timePart . '</span>
                         </div>
-                        <div class="d-inline-flex align-items-center font-mono fs-9 text-danger fw-semibold bg-light-danger border border-danger border-opacity-25 px-2 py-0.5 rounded">
-                            <span>' . $originEvent['prev_formatted'] . '</span>
-                            <i class="fas fa-arrow-right mx-1.5 fs-10 text-danger opacity-75"></i>
-                            <span class="fw-bolder">' . $originEvent['after_formatted'] . '</span>
+                        <div class="text-danger font-mono fs-9 fw-semibold">
+                            ' . $originEvent['prev_formatted'] . ' &rarr; <span class="fw-bolder">' . $originEvent['after_formatted'] . '</span>
                         </div>
                     </div>';
             } elseif ($lastMutation) {
-                $originDateCol = '<span class="text-muted font-mono fs-8" style="white-space: nowrap;">' . Carbon::parse($lastMutation->created_at)->translatedFormat('d M Y H:i') . '</span>';
+                $originDateCol = '<span class="text-muted font-mono fs-8 text-nowrap">' . Carbon::parse($lastMutation->created_at)->translatedFormat('d M Y H:i') . '</span>';
             }
 
             // Status siswa
-            $statusBadge = '<span class="badge badge-light-success text-success border border-success border-opacity-25 px-2 py-0.5 fs-9 fw-bold">Aktif</span>';
+            $statusBadge = '<span class="badge badge-light-success text-success fs-9 py-0.5 px-1.5 fw-bold">Aktif</span>';
             if (!empty($s->student_status) && strtolower($s->student_status) !== 'aktif') {
-                $statusBadge = '<span class="badge badge-light-secondary text-gray-700 border border-gray-300 px-2 py-0.5 fs-9 fw-bold">' . htmlspecialchars(ucfirst($s->student_status)) . '</span>';
+                $statusBadge = '<span class="badge badge-light-secondary text-gray-700 fs-9 py-0.5 px-1.5 fw-bold">' . htmlspecialchars(ucfirst($s->student_status)) . '</span>';
             }
 
             // Kolom Nama & NIS
             $studentCol = '
-                <div class="d-flex align-items-center" style="min-width: 220px;">
-                    <div class="rounded-circle bg-light-danger text-danger fw-bolder fs-7 me-3 d-flex align-items-center justify-content-center border border-danger border-opacity-25 shadow-xs flex-shrink-0" style="width: 36px; height: 36px;">
+                <div class="d-flex align-items-center">
+                    <div class="symbol symbol-30px symbol-circle me-2.5 bg-light-danger text-danger fw-bolder fs-8 d-flex align-items-center justify-content-center flex-shrink-0">
                         ' . strtoupper(substr($s->name, 0, 1)) . '
                     </div>
-                    <div class="d-flex flex-column">
-                        <span class="text-gray-900 fw-bold fs-7 mb-0.5 text-hover-primary">' . htmlspecialchars($s->name) . '</span>
-                        <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex flex-column" style="min-width: 0;">
+                        <span class="text-gray-900 fw-bold fs-7 mb-0.5 text-hover-primary text-truncate" title="' . htmlspecialchars($s->name) . '">' . htmlspecialchars($s->name) . '</span>
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
                             <span class="text-muted fs-8 font-mono">NIS: ' . htmlspecialchars($s->nis ?? '-') . '</span>
                             ' . $statusBadge . '
                         </div>
@@ -463,25 +460,25 @@ class AuditSaldoMinusController extends Controller
 
             // Kolom Riwayat Saldo (Total Masuk vs Total Keluar)
             $saldoStatusCol = '
-                <div class="p-2 rounded-2 bg-light border border-gray-200 shadow-xs" style="min-width: 155px; white-space: nowrap;">
+                <div class="d-flex flex-column gap-1 text-nowrap">
                     <div class="d-flex align-items-center justify-content-between text-success fs-8">
-                        <span class="fw-semibold d-flex align-items-center"><i class="fas fa-arrow-down fs-9 me-1.5 text-success"></i>Masuk</span>
-                        <span class="font-mono fw-bold">Rp ' . number_format($totalIn, 0, ',', '.') . '</span>
+                        <span class="fs-9"><i class="fas fa-arrow-down me-1 text-success fs-9"></i>Masuk</span>
+                        <span class="font-mono fw-bold ms-2">Rp ' . number_format($totalIn, 0, ',', '.') . '</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between text-danger fs-8 mt-1 pt-1 border-top border-gray-200 border-opacity-60">
-                        <span class="fw-semibold d-flex align-items-center"><i class="fas fa-arrow-up fs-9 me-1.5 text-danger"></i>Keluar</span>
-                        <span class="font-mono fw-bold">Rp ' . number_format($totalOut, 0, ',', '.') . '</span>
+                    <div class="d-flex align-items-center justify-content-between text-danger fs-8">
+                        <span class="fs-9"><i class="fas fa-arrow-up me-1 text-danger fs-9"></i>Keluar</span>
+                        <span class="font-mono fw-bold ms-2">Rp ' . number_format($totalOut, 0, ',', '.') . '</span>
                     </div>
                 </div>';
 
             // Kolom Minus Berapa
             $minusVal = abs($s->saldo);
             $minusCol = '
-                <div class="d-flex flex-column align-items-end pe-2" style="min-width: 135px; white-space: nowrap;">
-                    <span class="badge badge-light-danger text-danger border border-danger border-opacity-35 fs-6 fw-bolder font-mono py-1.5 px-3 rounded-2 shadow-xs">
+                <div class="d-flex flex-column align-items-end text-nowrap">
+                    <span class="badge badge-light-danger text-danger fs-7 fw-bolder font-mono py-1 px-2.5">
                         - Rp ' . number_format($minusVal, 0, ',', '.') . '
                     </span>
-                    <span class="text-muted fs-9 mt-1 fw-medium">Defisit Saldo</span>
+                    <span class="text-muted fs-9 mt-0.5">Defisit Saldo</span>
                 </div>';
 
             // Kolom Disebabkan Oleh Apa & Berapa Nominalnya
@@ -519,21 +516,21 @@ class AuditSaldoMinusController extends Controller
                 }
 
                 $rawDesc = ($friendlyTitle !== $originEvent['description']) 
-                    ? '<span class="text-muted fs-9 font-mono text-truncate mt-0.5" style="max-width: 280px;" title="' . htmlspecialchars($originEvent['description']) . '"><i class="fas fa-receipt me-1 text-gray-400"></i>' . htmlspecialchars($originEvent['description']) . '</span>' 
+                    ? '<span class="text-muted fs-9 text-truncate mt-0.5" style="max-width: 220px;" title="' . htmlspecialchars($originEvent['description']) . '"><i class="fas fa-receipt me-1 text-gray-400"></i>' . htmlspecialchars($originEvent['description']) . '</span>' 
                     : '';
 
                 $officerHtml = '';
                 if (!empty($officerName)) {
-                    $officerHtml = '<div class="text-primary fs-9 fw-semibold mt-0.5"><i class="fas fa-user-check me-1"></i>Petugas: ' . htmlspecialchars($officerName) . '</div>';
+                    $officerHtml = '<div class="text-primary fs-9 fw-semibold mt-0.5 text-truncate" style="max-width: 220px;" title="' . htmlspecialchars($officerName) . '"><i class="fas fa-user-check me-1"></i>Petugas: ' . htmlspecialchars($officerName) . '</div>';
                 }
 
                 $logCol = '
-                    <div class="d-flex flex-column py-1" style="min-width: 230px; max-width: 320px;">
-                        <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                            <span class="badge ' . $badgeClass . ' fw-bold fs-9 py-0.5 px-2">' . $badgeIcon . '</span>
-                            <span class="badge badge-light-danger text-danger border border-danger border-opacity-30 fw-bold font-mono fs-9 py-0.5 px-2">' . $originEvent['amount_formatted'] . '</span>
+                    <div class="d-flex flex-column py-0.5" style="max-width: 230px;">
+                        <div class="d-flex align-items-center gap-1 mb-0.5 flex-wrap">
+                            <span class="badge ' . $badgeClass . ' fw-bold fs-9 py-0.5 px-1.5">' . $badgeIcon . '</span>
+                            <span class="badge badge-light-danger text-danger fw-bold font-mono fs-9 py-0.5 px-1.5">' . $originEvent['amount_formatted'] . '</span>
                         </div>
-                        <span class="text-gray-900 fs-8 fw-bold text-truncate" style="max-width: 280px;" title="' . htmlspecialchars($friendlyTitle) . '">
+                        <span class="text-gray-900 fs-8 fw-bold text-truncate" style="max-width: 220px;" title="' . htmlspecialchars($friendlyTitle) . '">
                             ' . htmlspecialchars($friendlyTitle) . '
                         </span>
                         ' . $officerHtml . '
@@ -546,22 +543,21 @@ class AuditSaldoMinusController extends Controller
             // Tombol Aksi
             $actionBtn = '
                 <button type="button" 
-                        class="btn btn-sm btn-primary fw-bold fs-8 d-inline-flex align-items-center py-2 px-3 btn-view-logs shadow-xs rounded-2" 
-                        style="white-space: nowrap;"
+                        class="btn btn-sm btn-primary fw-bolder fs-8 py-1.5 px-2.5 btn-view-logs text-nowrap" 
                         data-id="' . htmlspecialchars($s->id) . '" 
                         data-name="' . htmlspecialchars($s->name) . '" 
                         data-nis="' . htmlspecialchars($s->nis ?? '-') . '" 
                         data-school="' . htmlspecialchars($s->school_name ?? '-') . '" 
                         data-class="' . htmlspecialchars($s->classroom_name ?? '-') . '" 
                         data-saldo="' . htmlspecialchars($s->saldo) . '">
-                    <i class="fas fa-search me-1.5 fs-9"></i> Detail Log
+                    <i class="fas fa-search me-1 fs-9"></i> Detail Log
                 </button>';
 
             $rows[] = [
                 'no' => $no++,
                 'student' => $studentCol,
-                'school' => '<span class="fw-bold text-gray-800 fs-7" style="white-space: nowrap;">' . htmlspecialchars($s->school_name ?? '-') . '</span>',
-                'classroom' => '<span class="badge badge-light-primary text-primary border border-primary border-opacity-25 fw-bold fs-8 px-2.5 py-1" style="white-space: nowrap;">' . htmlspecialchars($s->classroom_name ?? '-') . '</span>',
+                'school' => '<span class="fw-bold text-gray-800 fs-7 text-nowrap">' . htmlspecialchars($s->school_name ?? '-') . '</span>',
+                'classroom' => '<span class="badge badge-light-primary text-primary fw-bolder fs-8 px-2 py-0.5 text-nowrap">' . htmlspecialchars($s->classroom_name ?? '-') . '</span>',
                 'saldo_status' => $saldoStatusCol,
                 'last_trans_date' => $originDateCol,
                 'minus_amount' => $minusCol,

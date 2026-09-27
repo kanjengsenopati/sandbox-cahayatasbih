@@ -1,11 +1,6 @@
 @extends('layouts.master', ['title' => 'Audit Saldo Minus'])
 
 @section('content')
-<!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
@@ -242,18 +237,18 @@
                 <!--begin::Card Body-->
                 <div class="card-body pt-0">
                     <div class="table-responsive">
-                        <table id="table-saldo-minus" class="table table-row-bordered align-middle gy-3 gs-4 border rounded-3 w-100">
+                        <table id="table-saldo-minus" class="table table-row-bordered table-row-dashed align-middle gy-3 gs-3 border rounded w-100">
                             <thead>
-                                <tr class="fw-bolder text-gray-700 text-uppercase gs-0">
-                                    <th class="w-45px text-center">No</th>
-                                    <th style="min-width: 220px;">Nama Siswa & NIS</th>
-                                    <th style="min-width: 120px;">Lembaga</th>
-                                    <th style="min-width: 75px;">Kelas</th>
-                                    <th style="min-width: 160px;">Riwayat Saldo</th>
-                                    <th style="min-width: 155px;">Mulai Minus Sejak</th>
-                                    <th style="min-width: 140px;" class="text-end">Minus Berapa</th>
-                                    <th style="min-width: 250px;">Pemicu & Nominal Awal</th>
-                                    <th style="min-width: 110px;" class="text-center">Aksi</th>
+                                <tr class="fw-bolder fs-7 text-gray-700 text-uppercase gs-0 bg-light">
+                                    <th class="w-35px text-center">No</th>
+                                    <th>Nama Siswa & NIS</th>
+                                    <th>Lembaga</th>
+                                    <th class="text-center">Kelas</th>
+                                    <th>Riwayat Saldo</th>
+                                    <th>Mulai Minus Sejak</th>
+                                    <th class="text-end">Minus Berapa</th>
+                                    <th>Pemicu & Nominal</th>
+                                    <th class="text-center w-90px">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="fw-semibold text-gray-600 fs-7">
@@ -618,7 +613,7 @@
 
 <style>
     /* ============================================================== */
-    /* PLUS JAKARTA SANS & MODERN TYPOGRAPHY                          */
+    /* LEGACY TYPOGRAPHY (METRONIC POPPINS STACK)                     */
     /* ============================================================== */
     body, 
     #kt_content, 
@@ -635,50 +630,53 @@
     .alert,
     #table-saldo-minus,
     #table-saldo-minus * {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-family: Poppins, Helvetica, "sans-serif" !important;
     }
 
     .font-mono {
-        font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     }
 
     /* ============================================================== */
-    /* CRISP, PROFESSIONAL ENTERPRISE TABLE STYLING                  */
+    /* CLEAN TABLE LAYOUT (NO HORIZONTAL SCROLL)                      */
     /* ============================================================== */
     #table-saldo-minus {
-        border-collapse: separate !important;
-        border-spacing: 0 !important;
         width: 100% !important;
+        table-layout: auto !important;
+        margin-bottom: 0 !important;
     }
 
     #table-saldo-minus thead th {
-        background-color: #f8fafc !important;
-        color: #334155 !important;
+        background-color: #f5f8fa !important;
+        color: #5e6278 !important;
         font-weight: 700 !important;
-        font-size: 0.72rem !important;
-        letter-spacing: 0.05em !important;
+        font-size: 0.725rem !important;
+        letter-spacing: 0.03em !important;
         text-transform: uppercase !important;
-        border-bottom: 2px solid #e2e8f0 !important;
-        padding: 14px 16px !important;
+        border-bottom: 1px solid #eff2f5 !important;
+        padding: 10px 12px !important;
         vertical-align: middle !important;
         white-space: nowrap !important;
     }
 
     #table-saldo-minus tbody td {
-        padding: 13px 16px !important;
+        padding: 10px 12px !important;
         vertical-align: middle !important;
-        border-bottom: 1px solid #f1f5f9 !important;
-        background-color: #ffffff;
-        transition: background-color 0.15s ease;
+        border-bottom: 1px solid #eff2f5 !important;
     }
 
     #table-saldo-minus tbody tr:hover td {
-        background-color: #f8fafc !important;
+        background-color: #f9f9fc !important;
     }
 
-    /* Clean subtle shadow for card table */
-    .card-table-shadow {
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+    /* Hilangkan scroll samping di desktop */
+    .table-responsive {
+        overflow-x: hidden !important;
+    }
+    @media (max-width: 991.98px) {
+        .table-responsive {
+            overflow-x: auto !important;
+        }
     }
 
     /* ============================================================== */
@@ -686,43 +684,37 @@
     /* ============================================================== */
     .filter-control {
         cursor: pointer !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        font-size: 0.825rem !important;
-        font-weight: 500 !important;
-        color: #1e293b !important;
-        background-color: #ffffff !important;
-        transition: all 0.2s ease !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        border: 1px solid #e4e6ef !important;
+        border-radius: 0.475rem !important;
+        font-size: 0.85rem !important;
+        color: #3f4254 !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
     }
     .filter-control:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
         outline: none !important;
     }
     #search_keyword {
-        height: 40px !important;
-        min-height: 40px !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        font-size: 0.825rem !important;
-        font-weight: 500 !important;
-        color: #1e293b !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        border: 1px solid #e4e6ef !important;
+        border-radius: 0.475rem !important;
+        font-size: 0.85rem !important;
+        color: #3f4254 !important;
         background-color: #ffffff !important;
-        transition: all 0.2s ease !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
     }
     #search_keyword:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
         outline: none !important;
     }
     #btn-apply-filter, #btn-reset-filter {
-        height: 40px !important;
-        min-height: 40px !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.02em !important;
+        height: 38px !important;
+        min-height: 38px !important;
     }
 
     /* Modal Tweaks */
@@ -750,7 +742,7 @@
         width: 6px;
     }
     .column-scroll-container::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: #d5d5d5;
         border-radius: 4px;
     }
 </style>
@@ -766,12 +758,12 @@
     }
 
     $(document).ready(function() {
-        // Initialize DataTables with clean enterprise non-collapsing layout
+        // Initialize DataTables tanpa scroll samping & tanpa child row collapse
         saldoMinusTable = $('#table-saldo-minus').DataTable({
             processing: true,
             serverSide: true,
-            responsive: false, // MATIKAN responsive agar TIDAK me-collapse kolom jadi child row jelek
-            scrollX: true,     // Aktifkan scroll horizontal mulus agar semua data muat rapi
+            responsive: false, // Tidak collapse ke child row
+            scrollX: false,    // Tidak ada scroll samping
             autoWidth: false,
             ajax: {
                 url: "{{ route('admin.audit.saldo-minus.data') }}",
@@ -783,26 +775,15 @@
                 }
             },
             columns: [
-                { data: 'no', name: 'no', orderable: false, searchable: false, className: 'text-center font-mono text-muted fs-8' },
+                { data: 'no', name: 'no', orderable: false, searchable: false, className: 'text-center font-mono text-muted fs-8 w-35px' },
                 { data: 'student', name: 'student', orderable: true, searchable: true },
                 { data: 'school', name: 'school', orderable: true, searchable: true },
-                { data: 'classroom', name: 'classroom', orderable: true, searchable: true },
+                { data: 'classroom', name: 'classroom', orderable: true, searchable: true, className: 'text-center' },
                 { data: 'saldo_status', name: 'saldo_status', orderable: false, searchable: false },
                 { data: 'last_trans_date', name: 'last_trans_date', orderable: true, searchable: false },
                 { data: 'minus_amount', name: 'minus_amount', orderable: true, searchable: false, className: 'text-end' },
                 { data: 'root_cause', name: 'root_cause', orderable: false, searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
-            ],
-            columnDefs: [
-                { targets: 0, width: '45px' },
-                { targets: 1, width: '240px' },
-                { targets: 2, width: '130px' },
-                { targets: 3, width: '80px' },
-                { targets: 4, width: '165px' },
-                { targets: 5, width: '160px' },
-                { targets: 6, width: '145px' },
-                { targets: 7, width: '280px' },
-                { targets: 8, width: '110px' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center w-90px' }
             ],
             order: [[6, 'asc']], // Order by minus_amount asc (most negative first)
             pageLength: 25,
