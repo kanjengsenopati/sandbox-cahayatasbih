@@ -25,18 +25,21 @@ class ItemController extends Controller
     {
         $user = auth()->user();
         if ($user && ($user->isKasirOutlet() || $user->hasRole('Kasir Karyawan Outlet'))) {
-            $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
-            if ($kasirOutletRole) {
-                $kasirOutletPermissions = [
-                    'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
-                    'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
-                    'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
-                    'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
-                ];
-                foreach ($kasirOutletPermissions as $p) {
-                    \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+            if (!Cache::has('kasir_outlet_perms_synced_v1')) {
+                $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
+                if ($kasirOutletRole) {
+                    $kasirOutletPermissions = [
+                        'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
+                        'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
+                        'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
+                        'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
+                    ];
+                    foreach ($kasirOutletPermissions as $p) {
+                        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+                    }
+                    $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
                 }
-                $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
+                Cache::forever('kasir_outlet_perms_synced_v1', true);
             }
         }
 
@@ -52,6 +55,7 @@ class ItemController extends Controller
         }
 
         if (request()->ajax()) {
+            session()->save();
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 

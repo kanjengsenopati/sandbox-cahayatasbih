@@ -24,6 +24,7 @@ class PpdbController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = Ppdb::with('ppdbType', 'academicYear', 'school')->where('is_active', true)->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('image', function ($data) {

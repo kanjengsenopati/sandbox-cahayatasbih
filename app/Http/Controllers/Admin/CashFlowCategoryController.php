@@ -20,6 +20,7 @@ class CashFlowCategoryController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = CashFlowCategory::latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {

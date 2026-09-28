@@ -12,7 +12,7 @@
         $modalOutlets = \App\Models\Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
         $categories = \App\Models\CategoryItem::where('outlet_id', $koperasiId)->get();
     }
-    $modalItems = \App\Models\Item::when(auth()->user()->outlet_id, function($q) {
+    $modalItems = \App\Models\Item::select('id', 'name', 'code', 'stock')->when(auth()->user()->outlet_id, function($q) {
         $q->where('outlet_id', auth()->user()->outlet_id);
     })->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
         if (request('mode') === 'outlet') {

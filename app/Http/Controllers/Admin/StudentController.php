@@ -37,6 +37,7 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = Student::with('user', 'classroom.school', 'studentSubStatus')->hasSchool()
                 ->when(request('school_id'), function ($query) {
                     $query->whereHas('classroom', function ($query) {
@@ -110,10 +111,9 @@ class StudentController extends Controller
 
                     return $html;
                 })
-                ->addColumn('student', function ($data) use ($activeAy) {
+                ->addColumn('student', function ($data) {
                     $studentName = $data?->name ? $data->name : '-';
-                    $resolvedClass = $data->classroom ?? ($activeAy ? $data->getClassroomForAcademicYear($activeAy->id) : null);
-                    $className = $resolvedClass?->name ?? '-';
+                    $className = $data->classroom?->name ?? '-';
 
                     // Use avatar_url accessor for proper absolute URL
                     $avatarUrl = $data->avatar_url ?? asset('assets/media/avatars/default.png');
@@ -188,8 +188,12 @@ class StudentController extends Controller
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent', 'student'])
                 ->make(true);
         }
-        $schools = School::hasSchool()->orderBy('name')->get();
-        $studentSubStatuses = \App\Models\StudentSubStatus::where('is_active', true)->get();
+        $schools = \Illuminate\Support\Facades\Cache::remember('student_filter_schools', 3600, function() {
+            return School::hasSchool()->select('id', 'name')->orderBy('name')->get();
+        });
+        $studentSubStatuses = \Illuminate\Support\Facades\Cache::remember('student_sub_statuses', 3600, function() {
+            return \App\Models\StudentSubStatus::where('is_active', true)->select('id', 'name')->get();
+        });
         return view('admins.student.index', compact('schools', 'studentSubStatuses'));
     }
 

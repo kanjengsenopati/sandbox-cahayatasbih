@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Carbon\Carbon;
 use App\Models\Admin;
 use App\Models\School;
+use App\Models\Classroom;
 use App\Models\BillType;
 use App\Models\BillItem;
 use App\Models\Transaction;
@@ -32,6 +33,7 @@ class ReportTransactionController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = Transaction::where('status', Transaction::STATUS_PAID)
                 ->with(['student.user', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
                 ->when(request()->filled('start_date'), function ($query) {
@@ -262,11 +264,9 @@ class ReportTransactionController extends Controller
                     ->make(true);
             }
         }
-        // ambil list admin dari transaction 
-        $admin_ids = Transaction::where('status', Transaction::STATUS_PAID)->pluck('admin_id')->unique();
-        // ambil list admin nama dari admin_ids
-        $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
-        $schools = School::orderBy('name')->get();
+        // Ambil list admin langsung tanpa full-table scan pada transactions
+        $admins = Admin::select('id', 'name')->orderBy('name')->get();
+        $schools = School::select('id', 'name', 'type')->orderBy('name')->get();
         $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
             '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
             '615a34af-be2d-45f2-9830-720fea341a0c',
@@ -302,7 +302,7 @@ class ReportTransactionController extends Controller
                 'name' => $canonicalName,
             ];
         })->unique('name')->sortBy('name')->values();
-        $classroomsQuery = Classroom::query();
+        $classroomsQuery = Classroom::select('id', 'name', 'school_id');
         if (!empty($schoolId)) {
             $classroomsQuery->where('school_id', $schoolId);
         }
