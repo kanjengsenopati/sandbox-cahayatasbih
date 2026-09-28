@@ -12,45 +12,10 @@
 <script src="{{ url('https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js') }}"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+@include('layouts.partials.swr-datatables')
 @livewireScripts
 @stack('js')
 <script>
-    // Set DataTables global defaults & unified modern loading indicator
-    if (typeof $.fn.dataTable !== 'undefined') {
-        $.fn.dataTable.ext.errMode = 'console';
-        const UNIFIED_PROCESSING_HTML = `
-            <div class="d-flex flex-column align-items-center justify-content-center">
-                <div class="spinner-border text-primary mb-3" style="width: 2.2rem; height: 2.2rem; border-width: 0.22em;" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div class="fs-6 fw-bolder text-gray-800 mb-1">Mohon Tunggu</div>
-                <div class="fs-8 text-muted">Sedang memuat data...</div>
-            </div>
-        `;
-
-        $.extend(true, $.fn.dataTable.defaults, {
-            stateSave: true,
-            stateDuration: 7200, // 2 hours
-            language: {
-                processing: UNIFIED_PROCESSING_HTML
-            }
-        });
-
-        // Listen to processing event globally to toggle active class & guarantee consistent indicator UI
-        $(document).on('processing.dt', function(e, settings, processing) {
-            var wrapper = $(e.target).closest('.dataTables_wrapper');
-            if (processing) {
-                wrapper.addClass('dt-processing-active');
-                var $proc = wrapper.find('div.dataTables_processing');
-                if ($proc.length && (!$proc.find('.spinner-border').length || $proc.text().includes('Processing') || $proc.text().includes('Sedang memproses'))) {
-                    $proc.html(UNIFIED_PROCESSING_HTML);
-                }
-            } else {
-                wrapper.removeClass('dt-processing-active');
-            }
-        });
-    }
-
     // Translate input title to title_en and description to description_en when input title and description
     const translate = (input, output) => {
         if ($(input).val() != '') {

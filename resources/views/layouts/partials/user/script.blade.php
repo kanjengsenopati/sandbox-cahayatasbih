@@ -12,28 +12,10 @@
 <script src="{{ url('https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js') }}"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+@include('layouts.partials.swr-datatables')
 @livewireScripts
 @stack('js')
 <script>
-    // Set DataTables global defaults
-    if (typeof $.fn.dataTable !== 'undefined') {
-        $.extend(true, $.fn.dataTable.defaults, {
-            language: {
-                processing: "Sedang memproses data, Silahkan ditunggu..."
-            }
-        });
-
-        // Listen to processing event globally to toggle active class
-        $(document).on('processing.dt', function(e, settings, processing) {
-            var wrapper = $(e.target).closest('.dataTables_wrapper');
-            if (processing) {
-                wrapper.addClass('dt-processing-active');
-            } else {
-                wrapper.removeClass('dt-processing-active');
-            }
-        });
-    }
-
     // Translate input title to title_en and description to description_en when input title and description
     const translate = (input, output) => {
         if ($(input).val() != '') {
