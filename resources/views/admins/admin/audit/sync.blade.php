@@ -1251,7 +1251,13 @@ window.currentSortDirection = 'asc';
         if (window.currentSyncModule === 'billing_status') {
             html += '<td class="fw-bold fs-7 text-muted">' + (startIndex + idx + 1) + '</td>';
             html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
-            html += '<td class="fw-bolder text-dark">' + cleanName + '</td>';
+            
+            var classBadge = '';
+            if (item.classroom_name && item.classroom_name !== '-') {
+                classBadge = '<span class="badge bg-light-primary text-primary fw-bolder px-2 py-1 fs-9 ms-2">' + item.classroom_name + '</span>';
+            }
+            html += '<td class="fw-bolder text-dark">' + cleanName + classBadge + '</td>';
+            
             html += '<td class="text-center">' + statusBadge + '</td>';
         } else {
             html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';

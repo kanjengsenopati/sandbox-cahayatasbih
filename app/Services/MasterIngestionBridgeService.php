@@ -434,18 +434,19 @@ class MasterIngestionBridgeService
         $targetClassroomIds = $classroomsQuery->pluck('id')->map(fn($id) => (string)$id)->toArray();
 
         $query = $masterConn->table('students')
-            ->select('id', 'name', 'nis', 'classroom_id')
-            ->whereNull('deleted_at');
+            ->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+            ->select('students.id', 'students.name', 'students.nis', 'students.classroom_id', 'classrooms.name as classroom_name')
+            ->whereNull('students.deleted_at');
 
         if (!empty($classroomId)) {
             // STRICT CONSTRAINT: Relational cross-check
             if (!empty($schoolId) && !in_array($classroomId, $targetClassroomIds)) {
-                $query->where('id', 'STRICT_CONSTRAINT_VIOLATION_FORCE_EMPTY');
+                $query->where('students.id', 'STRICT_CONSTRAINT_VIOLATION_FORCE_EMPTY');
             } else {
-                $query->where('classroom_id', $classroomId);
+                $query->where('students.classroom_id', $classroomId);
             }
         } elseif (!empty($schoolId)) {
-            $query->whereIn('classroom_id', $targetClassroomIds);
+            $query->whereIn('students.classroom_id', $targetClassroomIds);
         }
 
         if ($limit > 0) {
@@ -630,6 +631,7 @@ class MasterIngestionBridgeService
                 'id' => $mRec->id,
                 'code_or_nis' => $mRec->nis ?: Str::limit($mRec->id, 8, ''),
                 'name' => $mRec->name,
+                'classroom_name' => $mRec->classroom_name ?? '-',
                 'status' => $status,
                 'diffs' => $diffs,
                 'raw_master' => (array) $mRec,
