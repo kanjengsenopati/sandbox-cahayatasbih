@@ -19,6 +19,7 @@ use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CanonicalBillTypeTrait;
+use Generator;
 
 class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
 {
@@ -87,7 +88,7 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
             ->orderBy('created_at'); // memastikan urutan di dalam hari yang sama
     }
 
-    public function generator()
+    public function generator(): Generator
     {
         $query = $this->baseQuery();
         $currentGroup = [];

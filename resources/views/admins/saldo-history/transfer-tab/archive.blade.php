@@ -30,12 +30,15 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                <select id="archive-classroom-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
-                    <option value="">Semua Kelas</option>
-                    @foreach($classrooms as $cls)
-                        <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
-                    @endforeach
-                </select>
+                <div class="dropdown" id="archive_classroom_dropdown_container" style="position: relative !important;">
+                    <input type="hidden" id="archive-classroom-id" value="">
+                    <button class="btn btn-light form-select-solid form-select-sm rounded-pill fs-7 d-flex justify-content-between align-items-center bg-white border" type="button" id="archive_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer; padding: 0 12px;">
+                        <span id="archive_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                        <i class="fas fa-chevron-down fs-9 text-gray-500 archive-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                    </button>
+                    <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="archive_classroom_btn" id="archive_classroom_mega_menu">
+                    </div>
+                </div>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>

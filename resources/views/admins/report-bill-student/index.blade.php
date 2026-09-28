@@ -66,7 +66,7 @@
                                                 <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                                 <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                             </button>
-                                            <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 520px; width: 620px; max-width: 95vw; max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                            <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                 <div class="text-muted fs-7 p-3 text-center">Pilih Lembaga terlebih dahulu</div>
                                             </div>
                                         </div>
@@ -371,9 +371,24 @@ $(document).ready(function() {
             return numA - numB;
         });
 
-        const row = $('<div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4"></div>');
+        const colCount = sortedKeys.length;
+        let colClass = 'col-12';
+        let menuWidth = '260px';
+        if (colCount === 2) {
+            colClass = 'col-6';
+            menuWidth = '380px';
+        } else if (colCount === 3) {
+            colClass = 'col-4';
+            menuWidth = '500px';
+        } else if (colCount >= 4) {
+            colClass = 'col-3';
+            menuWidth = '620px';
+        }
+        container.css({ 'width': menuWidth });
+
+        const row = $('<div class="row g-2"></div>');
         sortedKeys.forEach(key => {
-            const col = $('<div class="col"></div>');
+            const col = $(`<div class="${colClass}"></div>`);
             const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
             col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
             const list = $('<div class="d-flex flex-column gap-1"></div>');
@@ -415,6 +430,19 @@ $(document).ready(function() {
         }
 
         reloadAllTables();
+    });
+
+    $('#report_bill_student_classroom_dropdown_container').on('show.bs.dropdown', function () {
+        const $btn = $('#filter_classroom_btn');
+        const $menu = $('#classroom_mega_menu');
+        const btnOffset = $btn.offset();
+        const menuWidth = $menu.outerWidth() || 500;
+        const winWidth = $(window).width();
+        if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+            $menu.css({ 'left': 'auto', 'right': '0' });
+        } else {
+            $menu.css({ 'left': '0', 'right': 'auto' });
+        }
     });
 
     // School -> Classroom cascade & refresh Bill Types

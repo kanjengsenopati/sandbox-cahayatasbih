@@ -377,148 +377,158 @@ class PosTransactionController extends Controller
                 ->orderBy('name')->get();
         }
 
-        // Hitung rekap waktu dalam 1 query CASE WHEN (menggantikan 9 query terpisah)
-        // Inisialisasi range tanggal
         $startDateInput = $request->input('start_date');
         $endDateInput   = $request->input('end_date');
-        if ($startDateInput && $endDateInput) {
-            $startDate = Carbon::parse($startDateInput);
-            $endDate   = Carbon::parse($endDateInput);
-            $today     = Carbon::today();
-            $targetDate = $today->between($startDate, $endDate)
-                ? Carbon::now()
-                : ($endDate->isFuture() ? Carbon::now() : $endDate->endOfDay());
-        } else {
-            $targetDate = Carbon::now();
-        }
-        $targetDateToday      = $targetDate->copy()->startOfDay();
-        $targetDateWeekStart  = $targetDate->copy()->startOfWeek();
-        $targetDateWeekEnd    = $targetDate->copy()->endOfWeek();
-        $targetDateMonthStart = $targetDate->copy()->startOfMonth();
-        $targetDateMonthEnd   = $targetDate->copy()->endOfMonth();
-
-        $rekapRaw = \DB::selectOne("
-            SELECT
-                COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN pay_amount ELSE 0 END), 0) as today_sales,
-                COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN profit ELSE 0 END), 0)     as today_profit,
-                COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END)                            as today_count,
-                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as week_sales,
-                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as week_profit,
-                COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as week_count,
-                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as month_sales,
-                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as month_profit,
-                COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as month_count
-            FROM point_of_sale_transactions
-            WHERE status = ?
-            " . ($hasOutletRestriction ? 'AND outlet_id IN (' . implode(',', array_fill(0, count($authOutletIds), '?')) . ')' : ''),
-            array_merge(
-                // today x3
-                [$targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d')],
-                // week x3
-                [$targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd],
-                // month x3
-                [$targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd],
-                // status + outlet restriction
-                [PointOfSaleTransaction::STATUS_SUCCESS],
-                $hasOutletRestriction ? $authOutletIds : []
-            )
-        );
 
         $rekapWaktu = [
-            'today_sales'  => $rekapRaw->today_sales ?? 0,
-            'today_profit' => $rekapRaw->today_profit ?? 0,
-            'today_count'  => $rekapRaw->today_count ?? 0,
-            'week_sales'   => $rekapRaw->week_sales ?? 0,
-            'week_profit'  => $rekapRaw->week_profit ?? 0,
-            'week_count'   => $rekapRaw->week_count ?? 0,
-            'month_sales'  => $rekapRaw->month_sales ?? 0,
-            'month_profit' => $rekapRaw->month_profit ?? 0,
-            'month_count'  => $rekapRaw->month_count ?? 0,
+            'today_sales'  => 0,
+            'today_profit' => 0,
+            'today_count'  => 0,
+            'week_sales'   => 0,
+            'week_profit'  => 0,
+            'week_count'   => 0,
+            'month_sales'  => 0,
+            'month_profit' => 0,
+            'month_count'  => 0,
         ];
-
-
-        // Rekap Dana Per Outlet (untuk Tab Serah Terima)
         $outletsSummary = [];
-        
-        // Find main outlet (Koperasi)
-        $mainOutlet = $outlets->first(fn($ot) => in_array(strtoupper($ot->code), ['KPR', 'KOPERASI']) || strtoupper($ot->name) === 'KOPERASI');
-        $mainOutletId = $mainOutlet?->id;
+        $chartCashierOmzet = [];
+        $chartCashierProfit = [];
+        $chartIncomesCategories = [];
+        $totalProduct = 0;
 
-        // Pre-calculate sales, received handovers, and sent handovers for all outlets in 3 grouped queries
-        $outletIds = $outlets->pluck('id')->toArray();
-        $salesByOutlet = PointOfSaleTransaction::whereIn('outlet_id', $outletIds)
-            ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
-            ->groupBy('outlet_id')
-            ->selectRaw('outlet_id, SUM(pay_amount) as total')
-            ->pluck('total', 'outlet_id')
-            ->toArray();
-
-        $receivedHandoversByOutlet = OutletHandover::whereIn('recipient_outlet_id', $outletIds)
-            ->groupBy('recipient_outlet_id')
-            ->selectRaw('recipient_outlet_id, SUM(amount) as total')
-            ->pluck('total', 'recipient_outlet_id')
-            ->toArray();
-
-        $sentHandoversByOutlet = OutletHandover::whereIn('outlet_id', $outletIds)
-            ->groupBy('outlet_id')
-            ->selectRaw('outlet_id, SUM(amount) as total')
-            ->pluck('total', 'outlet_id')
-            ->toArray();
-
-        // Calculate pending amount based on parent-child logic
-        foreach ($outlets as $ot) {
-            $totalSales = $salesByOutlet[$ot->id] ?? 0;
-
-            if ($mainOutletId && $ot->id == $mainOutletId) {
-                // Main outlet (Koperasi):
-                // Pending amount is the sum of child outlets' pending amounts
-                $pendingAmount = 0;
-                foreach ($outlets as $childOt) {
-                    if ($childOt->id != $mainOutletId) {
-                        $childSales = $salesByOutlet[$childOt->id] ?? 0;
-                        $childReceived = $receivedHandoversByOutlet[$childOt->id] ?? 0;
-                        $pendingAmount += max(0, $childSales - $childReceived);
-                    }
-                }
-                $totalHandovers = $sentHandoversByOutlet[$ot->id] ?? 0;
+        // Optimasi: Analitik Tab 2, Serah Terima Tab 3, dan Kartu Rekap Bisnis hanya dijalankan jika mode === 'bisnis' & bukan kasir
+        if ($mode === 'bisnis' && !$isKasir) {
+            // Inisialisasi range tanggal
+            if ($startDateInput && $endDateInput) {
+                $startDate = Carbon::parse($startDateInput);
+                $endDate   = Carbon::parse($endDateInput);
+                $today     = Carbon::today();
+                $targetDate = $today->between($startDate, $endDate)
+                    ? Carbon::now()
+                    : ($endDate->isFuture() ? Carbon::now() : $endDate->endOfDay());
             } else {
-                // Child outlet:
-                // Pending amount is its own sales minus handovers received from Koperasi
-                $totalHandovers = $receivedHandoversByOutlet[$ot->id] ?? 0;
-                $pendingAmount = max(0, $totalSales - $totalHandovers);
+                $targetDate = Carbon::now();
+            }
+            $targetDateToday      = $targetDate->copy()->startOfDay();
+            $targetDateWeekStart  = $targetDate->copy()->startOfWeek();
+            $targetDateWeekEnd    = $targetDate->copy()->endOfWeek();
+            $targetDateMonthStart = $targetDate->copy()->startOfMonth();
+            $targetDateMonthEnd   = $targetDate->copy()->endOfMonth();
+
+            $rekapRaw = \DB::selectOne("
+                SELECT
+                    COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN pay_amount ELSE 0 END), 0) as today_sales,
+                    COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN profit ELSE 0 END), 0)     as today_profit,
+                    COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END)                            as today_count,
+                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as week_sales,
+                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as week_profit,
+                    COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as week_count,
+                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as month_sales,
+                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as month_profit,
+                    COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as month_count
+                FROM point_of_sale_transactions
+                WHERE status = ?
+                " . ($hasOutletRestriction ? 'AND outlet_id IN (' . implode(',', array_fill(0, count($authOutletIds), '?')) . ')' : ''),
+                array_merge(
+                    // today x3
+                    [$targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d')],
+                    // week x3
+                    [$targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd],
+                    // month x3
+                    [$targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd],
+                    // status + outlet restriction
+                    [PointOfSaleTransaction::STATUS_SUCCESS],
+                    $hasOutletRestriction ? $authOutletIds : []
+                )
+            );
+
+            $rekapWaktu = [
+                'today_sales'  => $rekapRaw->today_sales ?? 0,
+                'today_profit' => $rekapRaw->today_profit ?? 0,
+                'today_count'  => $rekapRaw->today_count ?? 0,
+                'week_sales'   => $rekapRaw->week_sales ?? 0,
+                'week_profit'  => $rekapRaw->week_profit ?? 0,
+                'week_count'   => $rekapRaw->week_count ?? 0,
+                'month_sales'  => $rekapRaw->month_sales ?? 0,
+                'month_profit' => $rekapRaw->month_profit ?? 0,
+                'month_count'  => $rekapRaw->month_count ?? 0,
+            ];
+
+            // Rekap Dana Per Outlet (untuk Tab Serah Terima)
+            $mainOutlet = $outlets->first(fn($ot) => in_array(strtoupper($ot->code), ['KPR', 'KOPERASI']) || strtoupper($ot->name) === 'KOPERASI');
+            $mainOutletId = $mainOutlet?->id;
+
+            $outletIds = $outlets->pluck('id')->toArray();
+            $salesByOutlet = PointOfSaleTransaction::whereIn('outlet_id', $outletIds)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->groupBy('outlet_id')
+                ->selectRaw('outlet_id, SUM(pay_amount) as total')
+                ->pluck('total', 'outlet_id')
+                ->toArray();
+
+            $receivedHandoversByOutlet = OutletHandover::whereIn('recipient_outlet_id', $outletIds)
+                ->groupBy('recipient_outlet_id')
+                ->selectRaw('recipient_outlet_id, SUM(amount) as total')
+                ->pluck('total', 'recipient_outlet_id')
+                ->toArray();
+
+            $sentHandoversByOutlet = OutletHandover::whereIn('outlet_id', $outletIds)
+                ->groupBy('outlet_id')
+                ->selectRaw('outlet_id, SUM(amount) as total')
+                ->pluck('total', 'outlet_id')
+                ->toArray();
+
+            foreach ($outlets as $ot) {
+                $totalSales = $salesByOutlet[$ot->id] ?? 0;
+
+                if ($mainOutletId && $ot->id == $mainOutletId) {
+                    $pendingAmount = 0;
+                    foreach ($outlets as $childOt) {
+                        if ($childOt->id != $mainOutletId) {
+                            $childSales = $salesByOutlet[$childOt->id] ?? 0;
+                            $childReceived = $receivedHandoversByOutlet[$childOt->id] ?? 0;
+                            $pendingAmount += max(0, $childSales - $childReceived);
+                        }
+                    }
+                    $totalHandovers = $sentHandoversByOutlet[$ot->id] ?? 0;
+                } else {
+                    $totalHandovers = $receivedHandoversByOutlet[$ot->id] ?? 0;
+                    $pendingAmount = max(0, $totalSales - $totalHandovers);
+                }
+
+                $outletsSummary[] = [
+                    'id' => $ot->id,
+                    'name' => $ot->name,
+                    'code' => $ot->code,
+                    'total_sales' => $totalSales,
+                    'total_handovers' => $totalHandovers,
+                    'pending_amount' => $pendingAmount,
+                ];
             }
 
-            $outletsSummary[] = [
-                'id' => $ot->id,
-                'name' => $ot->name,
-                'code' => $ot->code,
-                'total_sales' => $totalSales,
-                'total_handovers' => $totalHandovers,
-                'pending_amount' => $pendingAmount,
-            ];
-        }
+            $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
+            $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
+            
+            $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds);
+            $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $outletId, $hasOutletRestriction, $authOutletIds);
 
-        $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
-        $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
-        
-        $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds);
-        $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $outletId, $hasOutletRestriction, $authOutletIds);
-
-        // Count of active products
-        $totalProduct = \App\Models\Item::whereIsActive(true)
-            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
-            })
-            ->when(!$hasOutletRestriction && $outletId, function($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
-            })
-            ->when($hasOutletRestriction && $outletId, function($q) use ($outletId, $authOutletIds) {
-                if (in_array($outletId, $authOutletIds)) {
+            // Count of active products
+            $totalProduct = \App\Models\Item::whereIsActive(true)
+                ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                    $q->whereIn('outlet_id', $authOutletIds);
+                })
+                ->when(!$hasOutletRestriction && $outletId, function($q) use ($outletId) {
                     $q->where('outlet_id', $outletId);
-                }
-            })
-            ->count();
+                })
+                ->when($hasOutletRestriction && $outletId, function($q) use ($outletId, $authOutletIds) {
+                    if (in_array($outletId, $authOutletIds)) {
+                        $q->where('outlet_id', $outletId);
+                    }
+                })
+                ->count();
+        }
 
         // Calculate global totals
         $transactionQueryGlobal = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)

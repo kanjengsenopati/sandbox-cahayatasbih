@@ -65,6 +65,12 @@
     /* Font Inter */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+    /* Prevent horizontal page overflow causing screen shift */
+    html, body {
+        overflow-x: clip;
+        max-width: 100vw;
+    }
+
     /* Warna primary (ungu) */
     .btn-primary {
         color: #fff;

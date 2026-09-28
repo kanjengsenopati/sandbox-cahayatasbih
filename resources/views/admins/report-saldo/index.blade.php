@@ -126,7 +126,7 @@
                                                   <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                                   <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                               </button>
-                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 620px; max-width: 95vw; max-height: 420px; overflow-y: auto; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                              <div class="dropdown-menu p-4 shadow border-0" style="min-width: 280px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; right: 0 !important; left: auto !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
                                               </div>
                                           </div>
@@ -466,12 +466,27 @@
                 return numA - numB;
             });
 
-            const row = $('<div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4"></div>');
+            const colCount = sortedKeys.length;
+            let colClass = 'col-12';
+            let menuWidth = '260px';
+            if (colCount === 2) {
+                colClass = 'col-6';
+                menuWidth = '380px';
+            } else if (colCount === 3) {
+                colClass = 'col-4';
+                menuWidth = '500px';
+            } else if (colCount >= 4) {
+                colClass = 'col-3';
+                menuWidth = '620px';
+            }
+            container.css({ 'width': menuWidth });
+
+            const row = $('<div class="row g-2"></div>');
             
             container.append($('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>'));
 
             sortedKeys.forEach(key => {
-                const col = $('<div class="col"></div>');
+                const col = $(`<div class="${colClass}"></div>`);
                 const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
                 col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">${headerTitle}</h6>`);
                 const list = $('<div class="d-flex flex-column gap-1"></div>');
@@ -503,6 +518,17 @@
             } else {
                 $('.dropdown-menu.show').not($menu).removeClass('show');
                 $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
+
+                // Smart positioning: check if opening right overflows window
+                const btnOffset = $btn.offset();
+                const menuWidth = $menu.outerWidth() || 500;
+                const winWidth = $(window).width();
+                if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                    $menu.css({ 'left': 'auto', 'right': '0' });
+                } else {
+                    $menu.css({ 'left': '0', 'right': 'auto' });
+                }
+
                 $menu.addClass('show');
                 $btn.addClass('show').attr('aria-expanded', 'true');
                 $btn.find('.filter-classroom-arrow').css('transform', 'rotate(180deg)');
