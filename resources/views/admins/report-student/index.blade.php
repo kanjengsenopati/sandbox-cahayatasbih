@@ -414,28 +414,29 @@
     drawCallback: function(settings) {
         $('[data-bs-toggle="tooltip"]').tooltip();
     },
-    columns: [
-    {
-    data: null,
-    sortable: false,
-    searchable: false,
-    render: function(data, type, row, meta) {
-    return meta.row + meta.settings._iDisplayStart + 1;
-    }
-    },
-    { data: 'nis', name: 'students.nis' },
-    { data: 'nisn', name: 'students.nisn' },
-    { data: 'name', name: 'students.name' },
-    { data: 'classroom.name', name: 'classroom.name' },
-    { data: 'school.name', name: 'school.name', defaultContent: '-' },
-    {
-    data: 'unpaid_bills',
-    name: 'unpaid_bills',
-    orderable: true,
-    searchable: false
-    }
-    ]
-    });
+        columns: [
+        {
+        data: null,
+        sortable: false,
+        searchable: false,
+        render: function(data, type, row, meta) {
+        return meta.row + meta.settings._iDisplayStart + 1;
+        }
+        },
+        { data: 'nis', name: 'students.nis', defaultContent: '-' },
+        { data: 'nisn', name: 'students.nisn', defaultContent: '-' },
+        { data: 'name', name: 'students.name', defaultContent: '-' },
+        { data: 'classroom.name', name: 'classroom.name', defaultContent: '-' },
+        { data: 'school.name', name: 'school.name', defaultContent: '-' },
+        {
+        data: 'unpaid_bills',
+        name: 'unpaid_bills',
+        orderable: true,
+        searchable: false,
+        defaultContent: '-'
+        }
+        ]
+        });
 
     table.on('xhr.dt', function(e, settings, json, xhr) {
         if (json && json.summary) {

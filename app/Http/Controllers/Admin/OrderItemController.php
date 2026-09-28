@@ -67,8 +67,7 @@ class OrderItemController extends Controller
                   });
         })->sum('quantity');
         
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = $this->getKoperasiId();
 
         $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
@@ -115,8 +114,7 @@ class OrderItemController extends Controller
         $admin = auth()->user();
         $authOutletIds = $admin->getOutletIds();
 
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = $this->getKoperasiId();
 
         $data = Item::where('is_active', true)->with('categoryItem')
             ->withSum('pointOfSaleTransactionDetails as total_selling', 'quantity')
@@ -304,8 +302,7 @@ class OrderItemController extends Controller
             $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
 
             // 6. KHUSUS MODE OUTLET: Pengurangan Stok Atomik & Log StockHistory (OUT)
-            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $koperasiId = $this->getKoperasiId();
 
             if ($outletId !== $koperasiId) {
                 foreach ($carts as $cart) {
@@ -634,8 +631,7 @@ class OrderItemController extends Controller
             $admin = auth()->user();
             $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
-            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $koperasiId = $this->getKoperasiId();
 
             $item = Item::where('code', $request->code)
                 ->when($outletId, function($q) use ($outletId, $koperasiId) {
@@ -649,6 +645,15 @@ class OrderItemController extends Controller
                 ->lockForUpdate()->first();
             if (!$item) {
                 return $this->failedResponse("Barang tidak ditemukan", null);
+            }
+
+            // Validasi stok sebelum pengurangan — cegah stok negatif
+            if ($item->stock < $request->quantity) {
+                DB::rollback();
+                return $this->failedResponse(
+                    "Stok tidak mencukupi. Tersedia: {$item->stock}, Diminta: {$request->quantity}",
+                    null
+                );
             }
 
             $cart = PointOfSaleCart::where('item_id', $item->id)->where('admin_id', auth()->user()->id)->lockForUpdate()->first();
@@ -665,15 +670,6 @@ class OrderItemController extends Controller
                 $cart->price = $item->selling_price;
                 $cart->total = $cart->quantity * $cart->price;
                 $cart->save();
-            }
-
-            // Validasi stok sebelum pengurangan — cegah stok negatif
-            if ($item->stock < $request->quantity) {
-                DB::rollback();
-                return $this->failedResponse(
-                    "Stok tidak mencukupi. Tersedia: {$item->stock}, Diminta: {$request->quantity}",
-                    null
-                );
             }
 
             // Update stock on item
@@ -908,5 +904,13 @@ class OrderItemController extends Controller
             'carts' => $carts,
             'total_price' => $total
         ];
+    }
+
+    protected function getKoperasiId(): string
+    {
+        return Cache::remember('koperasi_outlet_id', 86400, function () {
+            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        });
     }
 }

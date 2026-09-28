@@ -27,8 +27,7 @@ class ReportStudentController extends Controller
 
         if (request()->ajax()) {
             session()->save();
-            $baseQuery = Student::select('students.*')
-                ->selectRaw("(SELECT COUNT(*) FROM bills WHERE bills.student_id = students.id AND bills.status = 'UNPAID' AND bills.deleted_at IS NULL) as unpaid_bills_count")
+            $baseQuery = Student::query()
                 ->hasSchool()
                 ->when(request()->school_id, function ($q) {
                     $q->where('students.school_id', request()->school_id);
@@ -77,14 +76,17 @@ class ReportStudentController extends Controller
                 'total_female' => (int)($counts->total_female ?? 0),
             ];
 
-            $data = $dataQuery->with([
-                'classroom',
-                'school',
-                'bills' => function ($q) {
-                    $q->where('status', \App\Models\Bill::STATUS_UNPAID)->with('billType');
-                }
-            ])
-            ->orderBy('students.name', 'asc');
+            $data = (clone $dataQuery)
+                ->select('students.*')
+                ->selectRaw("(SELECT COUNT(*) FROM bills WHERE bills.student_id = students.id AND bills.status = 'UNPAID' AND bills.deleted_at IS NULL) as unpaid_bills_count")
+                ->with([
+                    'classroom',
+                    'school',
+                    'bills' => function ($q) {
+                        $q->where('status', \App\Models\Bill::STATUS_UNPAID)->with('billType');
+                    }
+                ])
+                ->orderBy('students.name', 'asc');
 
             return DataTables::of($data)
                 ->addColumn('unpaid_bills', function ($data) {
@@ -126,12 +128,16 @@ class ReportStudentController extends Controller
                 ->make(true);
         }
 
-        // Global summaries for initial load
-        $baseQuery = Student::hasSchool();
+        // Global summaries for initial load (single aggregate query)
+        $initCounts = Student::hasSchool()->selectRaw("
+            COUNT(*) as total,
+            COUNT(CASE WHEN gender = 'L' THEN 1 END) as total_male,
+            COUNT(CASE WHEN gender = 'P' THEN 1 END) as total_female
+        ")->first();
         $summary = [
-            'total' => (clone $baseQuery)->count(),
-            'total_male' => (clone $baseQuery)->where('gender', 'L')->count(),
-            'total_female' => (clone $baseQuery)->where('gender', 'P')->count(),
+            'total' => (int)($initCounts->total ?? 0),
+            'total_male' => (int)($initCounts->total_male ?? 0),
+            'total_female' => (int)($initCounts->total_female ?? 0),
         ];
 
         return view('admins.report-student.index', compact('schools', 'academicYears', 'summary'));

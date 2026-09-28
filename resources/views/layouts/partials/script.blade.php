@@ -17,6 +17,7 @@
 <script>
     // Set DataTables global defaults & unified modern loading indicator
     if (typeof $.fn.dataTable !== 'undefined') {
+        $.fn.dataTable.ext.errMode = 'console';
         const UNIFIED_PROCESSING_HTML = `
             <div class="d-flex flex-column align-items-center justify-content-center">
                 <div class="spinner-border text-primary mb-3" style="width: 2.2rem; height: 2.2rem; border-width: 0.22em;" role="status">

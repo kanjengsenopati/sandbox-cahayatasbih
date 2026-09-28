@@ -74,6 +74,12 @@
         transform: translateY(-4px);
         box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1) !important;
     }
+    .product-card:active,
+    .product-card.card-active-pulse {
+        transform: scale(0.96) !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
     .product-image {
         width: 100%;
         height: 120px;
@@ -596,6 +602,7 @@
     var totalPrice = 0;
     var requestMode = "{{ request('mode') }}";
     var requestOutletId = "{{ request('outlet_id') }}";
+    var currentCartData = [];
 
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
@@ -713,23 +720,74 @@
         }
     }
 
-    // add product to cart use axios
+    // add product to cart use axios with optimistic UI (0ms perceived latency)
     function addProductToCart(product) {
+        if (!product) return;
+
+        var pId = product.id || product.item_id;
+        // Visual tactile pulse on the clicked card
+        var cardEl = document.getElementById('grid-stock-' + pId)?.closest('.product-card');
+        if (cardEl) {
+            cardEl.classList.add('card-active-pulse');
+            setTimeout(function() { cardEl.classList.remove('card-active-pulse'); }, 200);
+        }
+
+        // Instant visual stock reduction on catalog grid
+        changeVisualStock(pId, -1);
+
+        // Optimistic local cart update
+        var pPrice = Number(product.selling_price !== undefined ? product.selling_price : (product.price || 0));
+        var existingIndex = currentCartData.findIndex(function(c) {
+            return (c.item && c.item.id == pId) || (c.item_id == pId) || (c.item && c.item.code && c.item.code == product.code);
+        });
+
+        if (existingIndex > -1) {
+            currentCartData[existingIndex].quantity = Number(currentCartData[existingIndex].quantity) + 1;
+            currentCartData[existingIndex].total = currentCartData[existingIndex].quantity * Number(currentCartData[existingIndex].price);
+        } else {
+            currentCartData.unshift({
+                id: 'temp_' + Date.now(),
+                item_id: pId,
+                quantity: 1,
+                price: pPrice,
+                total: pPrice,
+                item: {
+                    id: pId,
+                    name: product.name || 'Produk',
+                    stock: product.stock !== undefined ? Math.max(0, product.stock - 1) : 0,
+                    image: product.image || defaultImageUrl,
+                    code: product.code
+                }
+            });
+        }
+
+        // Instant 0ms table & total price render
+        renderCartTable(currentCartData);
+        var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+        _renderTotalPrice(optTotal);
+
+        // Background server sync
         axios.post("{{ route('order-item.add-to-cart') }}", {
             code: product.code,
             quantity: 1,
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            // response.data.data will contain 'carts' and 'total_price'
             var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock decrement
-            changeVisualStock(product.id || product.item_id, -1);
+            if (data && data.carts) {
+                currentCartData = data.carts;
+                renderCartTable(currentCartData);
+                updateTotalPrice(data.total_price);
+            }
         }).catch(function (error) {
             console.error(error);
+            var errMsg = error.response && error.response.data && error.response.data.message
+                ? error.response.data.message
+                : 'Terjadi kesalahan saat menambahkan barang';
+            showErrorAlert(errMsg);
+            // Re-sync with actual server cart & catalog
+            refreshProductList();
+            loadProductCatalog();
         });
     }
 
@@ -823,7 +881,8 @@
 
     function refreshProductList(productsParam) {
         if (productsParam !== undefined) {
-            renderCartTable(productsParam);
+            currentCartData = productsParam || [];
+            renderCartTable(currentCartData);
             return;
         }
 
@@ -839,10 +898,12 @@
         .then(function (response) {
             var resData = response.data.data;
             if (resData && resData.carts !== undefined) {
-                renderCartTable(resData.carts);
+                currentCartData = resData.carts || [];
+                renderCartTable(currentCartData);
                 _renderTotalPrice(resData.total_price);
             } else {
-                renderCartTable(resData);
+                currentCartData = resData || [];
+                renderCartTable(currentCartData);
                 updateTotalPrice();
             }
             // Hide loader
@@ -855,12 +916,13 @@
     }
 
     function renderCartTable(products) {
+        currentCartData = products || [];
         var listProduct = document.getElementById('list-product');
         // Clear existing rows
         listProduct.innerHTML = '';
         
-        if (products && products.length > 0) {
-            products.forEach(function (product, index) {
+        if (currentCartData && currentCartData.length > 0) {
+            currentCartData.forEach(function (product, index) {
                 var tr = createTableRow(product);
                 listProduct.appendChild(tr);
             });
@@ -873,64 +935,96 @@
     }
 
     function createTableRow(product) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-    <td>
-        <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-            data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
-            <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
-            </a>
-            <div class="ms-5">
-                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
-                <div class="text-muted fs-7">Stok: ${product?.item?.stock ?? 'N/A'}</div>
+        var tr = document.createElement('tr');
+        var isTemp = String(product?.id || '').startsWith('temp_');
+        var stock = product?.item?.stock ?? 'N/A';
+        var price = Number(product?.price || 0);
+        var total = Number(product?.total || 0);
+        var itemId = product?.item?.id || product?.item_id || '';
+
+        tr.innerHTML = `
+        <td>
+            <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+                data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
+                <a class="symbol symbol-50px">
+                    <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
+                </a>
+                <div class="ms-5">
+                    <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
+                    <div class="text-muted fs-7">Stok: ${stock}</div>
+                </div>
             </div>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex justify-content-center align-items-center">
-            <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-                onclick="${product.quantity > 1 ? `updateCartQuantity('${product.id}', ${product.quantity - 1}, '${product.item.id}', 1)` : ''}">
-                <i class="fas fa-minus"></i>
+        </td>
+        <td>
+            <div class="d-flex justify-content-center align-items-center">
+                <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn ${isTemp ? 'disabled' : ''}"
+                    onclick="${!isTemp && product.quantity > 1 ? `updateCartQuantity('${product.id}', ${product.quantity - 1}, '${itemId}', 1)` : ''}">
+                    <i class="fas fa-minus"></i>
+                </a>
+                <span class="quantity">${product.quantity}</span>
+                <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn ${isTemp ? 'disabled' : ''}"
+                    onclick="${!isTemp && (product.quantity < stock || stock === 'N/A') ? `updateCartQuantity('${product.id}', ${product.quantity + 1}, '${itemId}', -1)` : ''}">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <input type="hidden" value="${product.id}">
+            </div>
+        </td>
+        <td>Rp. ${price.toLocaleString('id-ID')}</td>
+        <td>Rp. ${total.toLocaleString('id-ID')}</td>
+        <td>
+            <a class="btn btn-icon btn-light-danger btn-sm ${isTemp ? 'disabled' : ''}" 
+               onclick="${!isTemp ? `deleteProductFromCart('${product.id}', '${itemId}', ${product.quantity})` : ''}">
+                <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
             </a>
-            <span class="quantity">${product.quantity}</span>
-            <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
-                onclick="${product.quantity < product.item.stock ? `updateCartQuantity('${product.id}', ${product.quantity + 1}, '${product.item.id}', -1)` : ''}">
-                <i class="fas fa-plus"></i>
-            </a>
-            <input type="hidden" value="${product.id}">
-        </div>
-    </td>
-    <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
-    <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
-    <td>
-        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}', '${product.item.id}', ${product.quantity})">
-            <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
-        </a>
-    </td>`;
-    return tr;
+        </td>`;
+        return tr;
     }
 
     function deleteProductFromCart(productId, itemId, quantity) {
+        // Optimistic local remove
+        currentCartData = currentCartData.filter(function(c) { return c.id != productId; });
+        renderCartTable(currentCartData);
+        var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+        _renderTotalPrice(optTotal);
+
+        // Visual stock increment
+        if (itemId && quantity) {
+            changeVisualStock(itemId, quantity);
+        }
+
         axios.post("{{ route('order-item.delete-from-cart') }}", {
             id: productId,
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
             var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock increment
-            if (itemId && quantity) {
-                changeVisualStock(itemId, quantity);
+            if (data && data.carts) {
+                currentCartData = data.carts;
+                renderCartTable(currentCartData);
+                updateTotalPrice(data.total_price);
             }
         }).catch(function (error) {
             console.error(error);
+            refreshProductList();
         });
     }
 
     function updateCartQuantity(productId, quantity, itemId, stockDiff) {
+        // Optimistic local update
+        var cartItem = currentCartData.find(function(c) { return c.id == productId; });
+        if (cartItem) {
+            cartItem.quantity = quantity;
+            cartItem.total = quantity * Number(cartItem.price);
+            renderCartTable(currentCartData);
+            var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+            _renderTotalPrice(optTotal);
+        }
+
+        // Visual stock adjust
+        if (itemId && stockDiff) {
+            changeVisualStock(itemId, stockDiff);
+        }
+
         axios.post("{{ route('order-item.update-cart-quantity') }}", {
             id: productId,
             quantity: quantity,
@@ -938,15 +1032,14 @@
             outlet_id: requestOutletId
         }).then(function (response) {
             var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock adjust
-            if (itemId && stockDiff) {
-                changeVisualStock(itemId, stockDiff);
+            if (data && data.carts) {
+                currentCartData = data.carts;
+                renderCartTable(currentCartData);
+                updateTotalPrice(data.total_price);
             }
         }).catch(function (error) {
             console.error(error);
+            refreshProductList();
         });
     }
 

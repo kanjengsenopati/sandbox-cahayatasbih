@@ -230,55 +230,63 @@
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
-   {
+    {
         data: 'academic_year.name',
         name: 'academic_year.name',
         orderable: true,
         searchable: true,
         responsivePriority: -1,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'student.classroom.name',
         name: 'student.classroom.name',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'semester',
         name: 'semester',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'student.name',
         name: 'student.name',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'score',
         name: 'score',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'violation',
         name: 'violation',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'action',
         name: 'action',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'note',
         name: 'note',
         orderable: true,
         searchable: true,
-        },
+        defaultContent: '-'
+    },
     ]
     });
     
