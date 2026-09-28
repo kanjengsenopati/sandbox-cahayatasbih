@@ -379,14 +379,28 @@ class ReportTransactionController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $export = new ReportTransactionExport();
-        $result = $export->generateTsv();
+        session()->save();
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
 
-        return response()->json([
-            'success' => true,
-            'tsv' => $result['tsv'],
-            'count' => $result['count'],
-        ]);
+        try {
+            $export = new ReportTransactionExport();
+            $result = $export->generateTsv();
+
+            return response()->json([
+                'success' => true,
+                'tsv' => $result['tsv'],
+                'count' => $result['count'],
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Export sheets error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses data export: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

@@ -311,16 +311,16 @@
                                             <span id="penyesuaian_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                             <i class="fas fa-chevron-down fs-8 text-gray-500 penyesuaian-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                         </button>
-                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" id="penyesuaian_classroom_menu" style="min-width: 850px; max-width: 95vw; overflow-x: auto; border: 1px solid #e2e8f0; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="penyesuaian_classroom_btn">
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" id="penyesuaian_classroom_menu" style="min-width: 580px; width: 680px; max-width: 95vw; max-height: 460px; overflow-y: auto; border: 1px solid #e2e8f0; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
-                                                <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
+                                                <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas <span class="badge bg-light-primary text-primary fs-9 ms-1">4 Kolom</span></h6>
                                                 <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="resetPenyesuaianClassFilter()">Reset Filter</button>
                                             </div>
-                                            <div class="row flex-nowrap g-3">
+                                            <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4">
                                                 @foreach($groupedClasses as $groupName => $classes)
                                                     @if(count($classes) > 0)
-                                                    <div class="col" style="min-width: 110px;">
-                                                        <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-7">{{ $groupName }}</div>
+                                                    <div class="col">
+                                                        <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-8 text-uppercase">{{ $groupName }}</div>
                                                         <div class="d-flex flex-column gap-1">
                                                             @foreach($classes as $cls)
                                                             <button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 penyesuaian-class-item border border-gray-200 mb-1 fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">

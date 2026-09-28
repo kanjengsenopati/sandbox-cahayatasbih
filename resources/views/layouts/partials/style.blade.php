@@ -254,6 +254,9 @@
     }
 
     /* Glassmorphism backdrop overlay on the wrapper */
+    div.dataTables_wrapper {
+        position: relative !important;
+    }
     div.dataTables_wrapper.dt-processing-active::before {
         content: "" !important;
         position: absolute !important;
@@ -261,47 +264,37 @@
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        background-color: rgba(248, 250, 252, 0.45) !important;
-        backdrop-filter: blur(4px) !important;
-        -webkit-backdrop-filter: blur(4px) !important;
+        background-color: rgba(255, 255, 255, 0.6) !important;
+        backdrop-filter: blur(2px) !important;
+        -webkit-backdrop-filter: blur(2px) !important;
         z-index: 1040 !important;
-        border-radius: 24px !important;
-        opacity: 0;
-        animation: fadeInOverlay 0.2s ease-in-out forwards;
+        border-radius: 16px !important;
+        opacity: 1 !important;
+        transition: opacity 0.2s ease-in-out;
+        pointer-events: none !important;
     }
 
-    @keyframes fadeInOverlay {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    /* Elevated White/Purple Card for the loading box */
+    /* Unified Modern Floating Processing Card */
     div.dataTables_wrapper div.dataTables_processing {
         display: none;
-        position: absolute !important;
+        position: fixed !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: 540px !important;
-        max-width: 90% !important;
+        width: 260px !important;
+        max-width: 90vw !important;
         height: auto !important;
-        min-height: 160px !important;
         margin: 0 !important;
-        padding: 24px 32px !important;
-        background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%) !important; /* Smooth Purple */
-        border: 1px solid rgba(138, 99, 210, 0.2) !important; /* Smooth Purple Border */
-        border-radius: 24px !important; /* Mutlak 24px radius */
-        box-shadow: 0 10px 40px rgba(138, 99, 210, 0.08) !important;
-        z-index: 1050 !important;
-
-        /* Typography matching branding */
-        color: #5A306B !important; /* Deep Purple text */
+        padding: 24px 20px !important;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 18px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+        z-index: 10050 !important;
+        color: #1e293b !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 20px !important; /* 2x Larger text size */
-        font-weight: 600 !important;
         text-align: center !important;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
+        pointer-events: none !important;
     }
 
     /* Active state (when wrapper is dt-processing-active) */
@@ -310,23 +303,19 @@
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 16px !important;
         opacity: 1 !important;
     }
 
-    /* Modern Animated Spinner (Branding Primary: Purple #8a63d2) */
-    div.dataTables_wrapper div.dataTables_processing::before {
-        content: "" !important;
-        display: block !important;
-        width: 42px !important;
-        height: 42px !important;
-        border: 3.5px solid rgba(138, 99, 210, 0.15) !important;
-        border-top-color: #8a63d2 !important;
-        border-radius: 50% !important;
-        animation: dt-spin 0.8s linear infinite !important;
-        margin: 0 auto !important;
-        position: relative !important;
-        z-index: 1052 !important;
+    .dt-processing-active tbody td {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+
+    .dt-processing-active .btn,
+    .dt-processing-active a,
+    .dt-processing-active button {
+        pointer-events: auto !important;
+        opacity: 1 !important;
     }
 
     /* ==========================================================================
@@ -515,6 +504,20 @@
     .nav-link.disabled,
     .page-item.disabled .page-link {
         cursor: not-allowed !important;
+    }
+
+    /* Sleek Top Progress Bar on Page Navigation */
+    #top-page-progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0%;
+        height: 3px;
+        background: linear-gradient(90deg, #8a63d2, #10B981);
+        z-index: 999999;
+        transition: width 0.25s ease-out, opacity 0.25s ease-out;
+        pointer-events: none;
+        box-shadow: 0 0 10px rgba(138, 99, 210, 0.7);
     }
 </style>
 

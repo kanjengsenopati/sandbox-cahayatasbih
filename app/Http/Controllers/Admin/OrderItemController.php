@@ -388,11 +388,11 @@ class OrderItemController extends Controller
         $effectiveLimit = $student->getEffectiveDailyLimit();
 
         if ($effectiveLimit > 0) {
-            // Optimasi: Cek transaksi harian
-            // Karena kita sudah pakai lockForUpdate di $student, 
-            // kalkulasi ini relatif aman selama transaksi lain juga me-lock row student yang sama.
+            // Optimasi: Cek transaksi harian menggunakan rentang tanggal agar index terpakai
+            $todayStart = now()->startOfDay();
+            $todayEnd = now()->endOfDay();
             $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                ->whereDate('paid_at', now())
+                ->whereBetween('paid_at', [$todayStart, $todayEnd])
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
 
@@ -418,8 +418,6 @@ class OrderItemController extends Controller
             'balance_before' => $balanceBefore ?? 0,
             'balance_after' => $balanceAfter ?? 0,
         ]);
-
-        \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
 
         return $history;
     }
@@ -559,8 +557,10 @@ class OrderItemController extends Controller
 
     public function getStudentByBarcode(Request $request)
     {
+        session()->save();
+
         $barcode = $request->barcode;
-        $student = Student::with('classroom')
+        $student = Student::with('classroom.school')
             ->where(function ($query) use ($barcode) {
                 $query->where('barcode', $barcode)
                       ->orWhere('nis', $barcode)
@@ -576,8 +576,10 @@ class OrderItemController extends Controller
         $student->effective_daily_limit = $effectiveLimit;
         
         if ($effectiveLimit > 0) {
+            $todayStart = now()->startOfDay();
+            $todayEnd = now()->endOfDay();
             $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                ->whereDate('paid_at', now())
+                ->whereBetween('paid_at', [$todayStart, $todayEnd])
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
                 
@@ -593,6 +595,8 @@ class OrderItemController extends Controller
 
     public function getCartData()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
@@ -611,11 +615,18 @@ class OrderItemController extends Controller
             }
         }
 
-        return $this->postSuccessResponse("Data keranjang berhasil diambil", $carts);
+        $totalPrice = $carts->sum('total');
+
+        return $this->postSuccessResponse("Data keranjang berhasil diambil", [
+            'carts' => $carts,
+            'total_price' => $totalPrice
+        ]);
     }
 
     public function addItemToCart(Request $request)
     {
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -688,6 +699,8 @@ class OrderItemController extends Controller
 
     public function deleteCart(Request $request)
     {
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -732,6 +745,8 @@ class OrderItemController extends Controller
 
     public function updateCartQuantity(Request $request)
     {
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -789,6 +804,8 @@ class OrderItemController extends Controller
 
     public function getTotalPrice()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
         $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->sum('total');
@@ -797,6 +814,8 @@ class OrderItemController extends Controller
 
     public function deleteAllCart()
     {
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -837,12 +856,16 @@ class OrderItemController extends Controller
 
     public function getDailyTransaction()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
 
         // Ambil transaksi yang sesuai dengan admin, outlet, dan tanggal hari ini
         $transactions = PointOfSaleTransaction::with(['student', 'pointOfSaleTransactionDetails.item'])
-            ->whereDate('paid_at', now())
+            ->whereBetween('paid_at', [$todayStart, $todayEnd])
             ->where('admin_id', auth()->user()->id)
             ->where('outlet_id', $outletId)
             ->latest()

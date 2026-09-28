@@ -126,7 +126,7 @@
                                                   <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                                   <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                               </button>
-                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 540px; max-width: 95vw; max-height: 420px; overflow-y: auto; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                              <div class="dropdown-menu p-4 shadow" style="min-width: 520px; width: 620px; max-width: 95vw; max-height: 420px; overflow-y: auto; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
                                               </div>
                                           </div>
@@ -458,13 +458,22 @@
                 groups[key].push(c);
             });
 
-            const row = $('<div class="row g-2"></div>');
+            const sortedKeys = Object.keys(groups).sort((a,b) => {
+                let numA = parseInt(a);
+                let numB = parseInt(b);
+                if (isNaN(numA)) return 1;
+                if (isNaN(numB)) return -1;
+                return numA - numB;
+            });
+
+            const row = $('<div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4"></div>');
             
             container.append($('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>'));
 
-            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
-                const col = $('<div class="col-4"></div>');
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">Kelas ${key}</h6>`);
+            sortedKeys.forEach(key => {
+                const col = $('<div class="col"></div>');
+                const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">${headerTitle}</h6>`);
                 const list = $('<div class="d-flex flex-column gap-1"></div>');
                 groups[key].forEach(c => {
                     list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">

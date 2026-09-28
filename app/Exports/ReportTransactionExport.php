@@ -93,19 +93,32 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
         $currentGroup = [];
         $currentKey = null;
 
-        // Gunakan cursor untuk iterasi efisien tanpa memory exhaustion
-        foreach ($query->cursor() as $transaction) {
-            $key = $transaction->student_id . '_' . $transaction->created_at->format('Y-m-d') . '_' . $transaction->type;
-            
-            if ($currentKey !== $key) {
-                if (!empty($currentGroup)) {
-                    yield $currentGroup;
-                }
-                $currentGroup = [$transaction];
-                $currentKey = $key;
-            } else {
-                $currentGroup[] = $transaction;
+        $page = 1;
+        $perPage = 300;
+
+        while (true) {
+            $transactions = (clone $query)->forPage($page, $perPage)->get();
+            if ($transactions->isEmpty()) {
+                break;
             }
+
+            foreach ($transactions as $transaction) {
+                $createdDate = $transaction->created_at ? $transaction->created_at->format('Y-m-d') : '';
+                $key = $transaction->student_id . '_' . $createdDate . '_' . $transaction->type;
+                
+                if ($currentKey !== $key) {
+                    if (!empty($currentGroup)) {
+                        yield $currentGroup;
+                    }
+                    $currentGroup = [$transaction];
+                    $currentKey = $key;
+                } else {
+                    $currentGroup[] = $transaction;
+                }
+            }
+
+            $page++;
+            unset($transactions);
         }
 
         if (!empty($currentGroup)) {

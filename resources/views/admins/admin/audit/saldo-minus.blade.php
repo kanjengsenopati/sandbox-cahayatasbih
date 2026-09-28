@@ -186,12 +186,15 @@
                             <!--Filter Kelas-->
                             <div style="min-width: 150px;">
                                 <label class="form-label fs-8 fw-bolder text-gray-700 mb-1">Kelas</label>
-                                <select id="filter_classroom" class="form-select form-select-sm filter-control">
-                                    <option value="">Semua Kelas</option>
-                                    @foreach($classrooms as $cls)
-                                        <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="dropdown" id="audit_classroom_dropdown_container" style="position: relative !important;">
+                                    <input type="hidden" id="filter_classroom" value="">
+                                    <button class="btn btn-light form-select form-select-sm fs-8 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer;">
+                                        <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                        <i class="fas fa-chevron-down fs-9 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                    </button>
+                                    <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 520px; width: 620px; max-width: 95vw; max-height: 400px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="audit_classroom_mega_menu">
+                                    </div>
+                                </div>
                             </div>
 
                             <!--Filter Rentang Minus-->
@@ -816,28 +819,107 @@
             $('#search_keyword').focus();
         });
 
+        const auditAllClasses = @json($classrooms ?? []);
+
+        function renderAuditClassroomMegaMenu(selectedSchoolId) {
+            const container = $('#audit_classroom_mega_menu');
+            container.empty();
+
+            let filteredClasses = auditAllClasses;
+            if (selectedSchoolId) {
+                filteredClasses = auditAllClasses.filter(c => c.school_id == selectedSchoolId);
+            }
+
+            if (!filteredClasses || filteredClasses.length === 0) {
+                container.html('<div class="text-muted fs-8 p-3 text-center">Tidak ada kelas ditemukan</div>');
+                return;
+            }
+
+            const groups = {};
+            filteredClasses.forEach(c => {
+                let match = (c.name || '').match(/^(\d+)/);
+                let key = match ? match[1] : 'Lainnya';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(c);
+            });
+
+            const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 audit-classroom-item text-center rounded-2 py-1.5 fs-8" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+            container.append(resetBtn);
+
+            const sortedKeys = Object.keys(groups).sort((a,b) => {
+                let numA = parseInt(a);
+                let numB = parseInt(b);
+                if (isNaN(numA)) return 1;
+                if (isNaN(numB)) return -1;
+                return numA - numB;
+            });
+
+            const row = $('<div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4"></div>');
+            sortedKeys.forEach(key => {
+                const col = $('<div class="col"></div>');
+                const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+                const list = $('<div class="d-flex flex-column gap-1"></div>');
+                groups[key].forEach(c => {
+                    list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1 px-2 mb-1 rounded-2 audit-classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 28px;">
+                        <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                        <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                    </button>`);
+                });
+                col.append(list);
+                row.append(col);
+            });
+            container.append(row);
+        }
+
+        renderAuditClassroomMegaMenu('');
+
+        $(document).on('click', '#audit_classroom_mega_menu .audit-classroom-item', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+
+            $('#filter_classroom').val(id);
+            if (id) {
+                $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#filter_classroom_btn_text').text('Semua Kelas');
+            }
+
+            $('#audit_classroom_mega_menu .class-check-icon').addClass('d-none');
+            $('#audit_classroom_mega_menu .audit-classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+            if (id) {
+                $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+                $(this).find('.class-check-icon').removeClass('d-none');
+            }
+
+            const dropdownEl = document.getElementById('audit_classroom_mega_menu');
+            if (dropdownEl) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(document.getElementById('filter_classroom_btn'));
+                if (bsDropdown) bsDropdown.hide();
+            }
+
+            saldoMinusTable.ajax.reload();
+        });
+
         // Reset Filter
         $('#btn-reset-filter').on('click', function(e) {
             e.preventDefault();
             $('#filter_school').val('');
             $('#filter_classroom').val('');
+            $('#filter_classroom_btn_text').text('Semua Kelas');
             $('#filter_minus_range').val('');
             $('#search_keyword').val('');
+            renderAuditClassroomMegaMenu('');
             saldoMinusTable.ajax.reload();
         });
 
         // School change filter for classrooms
         $('#filter_school').on('change', function() {
             var schoolId = $(this).val();
-            $('#filter_classroom option').each(function() {
-                var clsSchool = $(this).data('school');
-                if (!schoolId || !clsSchool || clsSchool == schoolId || $(this).val() === '') {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
             $('#filter_classroom').val('');
+            $('#filter_classroom_btn_text').text('Semua Kelas');
+            renderAuditClassroomMegaMenu(schoolId);
             saldoMinusTable.ajax.reload();
         });
 

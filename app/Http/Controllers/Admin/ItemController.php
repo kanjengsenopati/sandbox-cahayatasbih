@@ -253,13 +253,17 @@ class ItemController extends Controller
 
     public function searchItem(Request $request)
     {
+        session()->save();
+
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
         if (!$request->search) {
-            $items = Item::with('categoryItem')->where('stock', '>', 0)
+            $items = Item::with('categoryItem:id,name')
+                ->select(['id', 'name', 'code', 'selling_price', 'stock', 'image', 'category_item_id', 'outlet_id'])
+                ->where('stock', '>', 0)
                 ->when($outletId, function($q) use ($outletId, $koperasiId) {
                     $q->where(function($query) use ($outletId, $koperasiId) {
                         $query->where('outlet_id', $outletId);
@@ -270,6 +274,7 @@ class ItemController extends Controller
                 })
                 ->where('is_active', true)
                 ->orderBy('stock', 'asc') // Order by stock in ascending order
+                ->limit(40)
                 ->get();
 
             return $this->postSuccessResponse("Berhasil mengambil data", $items);
@@ -284,6 +289,8 @@ class ItemController extends Controller
 
     public function searchItemCode(Request $request)
     {
+        session()->save();
+
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
@@ -308,13 +315,17 @@ class ItemController extends Controller
 
     public function searchItemName(Request $request)
     {
+        session()->save();
+
         $searchTerm = strtolower($request->search);
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-        $items = Item::with('categoryItem')->whereIsActive(true)
+        $items = Item::with('categoryItem:id,name')
+            ->select(['id', 'name', 'code', 'selling_price', 'stock', 'image', 'category_item_id', 'outlet_id'])
+            ->whereIsActive(true)
             ->when($outletId, function($q) use ($outletId, $koperasiId) {
                 $q->where(function($query) use ($outletId, $koperasiId) {
                     $query->where('outlet_id', $outletId);
@@ -324,6 +335,7 @@ class ItemController extends Controller
                 });
             })
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+            ->limit(30)
             ->get();
 
         if ($items->isEmpty()) {

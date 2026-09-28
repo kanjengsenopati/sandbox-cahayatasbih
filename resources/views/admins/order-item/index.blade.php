@@ -837,8 +837,14 @@
             }
         })
         .then(function (response) {
-            renderCartTable(response.data.data);
-            updateTotalPrice();
+            var resData = response.data.data;
+            if (resData && resData.carts !== undefined) {
+                renderCartTable(resData.carts);
+                _renderTotalPrice(resData.total_price);
+            } else {
+                renderCartTable(resData);
+                updateTotalPrice();
+            }
             // Hide loader
             document.getElementById('product-loader').style.display = 'none';
         }).catch(function (error) {
@@ -1290,7 +1296,8 @@
                     window.currentStudentTotalThisDay = student.total_this_day || 0;
                     window.isLimitAlertShown = false;
 
-                    updateTotalPrice();
+                    var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+                    _renderTotalPrice(curTotal);
                     // Clear input
                     e.target.value = '';
                 } else {
@@ -1321,7 +1328,8 @@
         window.currentStudentRemainingLimit = 0;
         window.currentStudentTotalThisDay = 0;
         window.isLimitAlertShown = false;
-        updateTotalPrice();
+        var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
     });
 
     document.getElementById('umum-tab').addEventListener('click', function () {
@@ -1336,7 +1344,8 @@
         window.currentStudentRemainingLimit = 0;
         window.currentStudentTotalThisDay = 0;
         window.isLimitAlertShown = false;
-        updateTotalPrice();
+        var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
     });
 </script>
 <script>
