@@ -754,6 +754,8 @@ class MasterIngestionBridgeService
                     }
 
                     if (!empty($masterBills)) {
+                        $syncedLocalBillIds = []; // Track bills synced to local
+
                         foreach ($masterBills as $mBill) {
                             $row = (array) $mBill;
                             $targetBillTypeId = $mBill->bill_type_id;
@@ -803,9 +805,6 @@ class MasterIngestionBridgeService
                                 ->whereNull('deleted_at')
                                 ->first();
 
-                            $targetBillId = $mBill->id;
-
-
                             $targetBillId = null;
                             if ($localBill) {
                                 $targetBillId = $localBill->id;
@@ -815,6 +814,8 @@ class MasterIngestionBridgeService
                                 $targetBillId = $row['id'];
                                 $localConn->table('bills')->insert($row);
                             }
+                            
+                            $syncedLocalBillIds[] = $targetBillId;
 
                             // Enforce Transactional Atomicity: Copy transactions when paid
                             if ($mBill->status === 'PAID') {
@@ -877,7 +878,29 @@ class MasterIngestionBridgeService
                                 ]);
                             }
                         }
+                        
+                        // Atomicity & Consistency: Remove extra local bills that DO NOT exist in master DB
+                        if (!empty($syncedLocalBillIds)) {
+                            $delQuery = $localConn->table('bills')
+                                ->where('student_id', $mRec->id)
+                                ->whereNotIn('id', $syncedLocalBillIds)
+                                ->whereNull('deleted_at');
+                            
+                            // Respect current filters
+                            if (!empty($academicYearId)) {
+                                $delQuery->where('academic_year_id', $academicYearId);
+                            }
+                            if (!empty($billTypeId)) {
+                                $localCleanType = $localConn->table('bill_types')->where('id', $billTypeId)->first();
+                                if ($localCleanType) {
+                                    $delQuery->where('bill_type_id', $localCleanType->id);
+                                }
+                            }
+                            
+                            $delQuery->update(['deleted_at' => now()]);
+                        }
                     }
+
                 } elseif ($module === 'saldo') {
                     // Resolve real-time active balance from Master DB's `saldo_histories`
                     $latestMasterHistory = $masterConn->table('saldo_histories')

@@ -1223,13 +1223,15 @@ window.currentSortDirection = 'asc';
         }
 
         var statusBadge = '';
+        var isCheckable = (item.status !== 'EXACT_MATCH');
+        
         if (window.currentSyncModule === 'billing_status') {
-            if (item.status === 'EXACT_MATCH') {
-                if (isSynced) {
-                    statusBadge = '<span class="badge" style="background-color: #8b5cf6; color: white;"><i class="fas fa-check-circle text-white me-1"></i> Sukses Sinkronisasi</span>';
-                } else {
-                    statusBadge = '<span class="badge bg-light text-muted fw-bold border border-gray-300"><i class="fas fa-check text-muted me-1"></i> Tidak Perlu Sinkronisasi</span>';
-                }
+            if (isSynced) {
+                // FALLBACK STATUS: If recently synced, FORCE success status regardless of counts
+                statusBadge = '<span class="badge" style="background-color: #8b5cf6; color: white;"><i class="fas fa-check-circle text-white me-1"></i> Sukses Sinkronisasi</span>';
+                isCheckable = false; // Disable checkbox
+            } else if (item.status === 'EXACT_MATCH') {
+                statusBadge = '<span class="badge bg-light text-muted fw-bold border border-gray-300"><i class="fas fa-check text-muted me-1"></i> Tidak Perlu Sinkronisasi</span>';
             } else if (item.status === 'NEW_RECORD') {
                 statusBadge = '<span class="badge bg-light-primary text-primary fw-bolder px-2 py-1"><i class="fas fa-plus-circle text-primary me-1"></i> Belum Ada di Lokal</span>';
             } else if (item.status === 'UPDATE_REQUIRED') {
@@ -1237,9 +1239,10 @@ window.currentSortDirection = 'asc';
             } else {
                 statusBadge = '<span class="badge bg-light-danger text-danger fw-bolder px-2 py-1"><i class="fas fa-times-circle text-danger me-1"></i> Konflik</span>';
             }
+        } else {
+            isCheckable = (item.status !== 'EXACT_MATCH' && !isSynced);
         }
 
-        var isCheckable = (item.status !== 'EXACT_MATCH');
         var checkAttr = isCheckable ? 'checked' : 'disabled';
 
         html += '<tr data-status="' + item.status + '">';
