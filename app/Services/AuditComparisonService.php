@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\GeminiVisionService;
 
@@ -12,6 +13,48 @@ class AuditComparisonService
      * Compare local database with master database using high-performance bulk queries.
      */
     public function getComparisonData(?string $search = null, int $page = 1, int $perPage = 10): array
+    {
+        $raw = Cache::remember('audit_diagnostics_raw_comparison', 600, function () {
+            return $this->computeRawComparisonData();
+        });
+
+        $summaries = $raw['summaries'] ?? [];
+        $discrepancies = $raw['discrepancies'] ?? [];
+
+        // Filter discrepancies by search term (case-insensitive substring on name or NIS)
+        $filteredDiscrepancies = array_values(array_filter($discrepancies, function ($item) use ($search) {
+            if (empty($search)) return true;
+            $term = strtolower(trim($search));
+            return str_contains(strtolower($item['name']), $term) || 
+                   str_contains(strtolower($item['nis']), $term);
+        }));
+
+        // Paginate discrepancies (default 10 per page)
+        $offset = ($page - 1) * $perPage;
+        $pageItems = array_slice($filteredDiscrepancies, $offset, $perPage);
+
+        $paginatedDiscrepancies = new LengthAwarePaginator(
+            $pageItems,
+            count($filteredDiscrepancies),
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query()
+            ]
+        );
+
+        return [
+            'summaries' => $summaries,
+            'total_discrepancies' => count($discrepancies),
+            'discrepancies' => $paginatedDiscrepancies,
+        ];
+    }
+
+    /**
+     * Compute raw discrepancies and summaries comparing local and master database.
+     */
+    public function computeRawComparisonData(): array
     {
         // 1. Get summary counts
         $localStudentsCount = DB::connection('mysql')->table('students')->whereNull('deleted_at')->count();
@@ -295,33 +338,9 @@ class AuditComparisonService
             }
         }
 
-        // 4. Filter discrepancies by search term (case-insensitive substring on name or NIS)
-        $filteredDiscrepancies = array_values(array_filter($discrepancies, function ($item) use ($search) {
-            if (empty($search)) return true;
-            $term = strtolower(trim($search));
-            return str_contains(strtolower($item['name']), $term) || 
-                   str_contains(strtolower($item['nis']), $term);
-        }));
-
-        // 5. Paginate discrepancies (default 10 per page)
-        $offset = ($page - 1) * $perPage;
-        $pageItems = array_slice($filteredDiscrepancies, $offset, $perPage);
-
-        $paginatedDiscrepancies = new LengthAwarePaginator(
-            $pageItems,
-            count($filteredDiscrepancies),
-            $perPage,
-            $page,
-            [
-                'path' => request()->url(),
-                'query' => request()->query()
-            ]
-        );
-
         return [
             'summaries' => $summaries,
-            'total_discrepancies' => count($discrepancies),
-            'discrepancies' => $paginatedDiscrepancies,
+            'discrepancies' => $discrepancies,
         ];
     }
 

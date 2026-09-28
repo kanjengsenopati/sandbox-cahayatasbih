@@ -36,8 +36,15 @@ class UserController extends Controller
             return $this->handleStatisticRequest();
         }
 
+        $schools = \Illuminate\Support\Facades\Cache::remember('user_filter_schools', 3600, function() {
+            return \App\Models\School::select('id', 'name')->orderBy('name')->get();
+        });
+        $classrooms = \Illuminate\Support\Facades\Cache::remember('user_filter_classrooms', 3600, function() {
+            return \App\Models\Classroom::with('school:id,name')->select('id', 'name', 'school_id')->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
+        });
+
         // Tampilkan view default
-        return view('admins.user.index');
+        return view('admins.user.index', compact('schools', 'classrooms'));
     }
 
     /**
@@ -45,7 +52,9 @@ class UserController extends Controller
      */
     protected function handleDataTableRequest()
     {
-        $data = User::when(request()->query('status') === 'ACTIVE', function ($query) {
+        session()->save();
+        $data = User::select('id', 'name', 'phone', 'email', 'avatar', 'status', 'jamaah_status', 'last_login')
+            ->when(request()->query('status') === 'ACTIVE', function ($query) {
             return $query->where('status', 'ACTIVE')->whereNotNull('last_login');
         })->when(request()->query('status') === 'INACTIVE', function ($query) {
             return $query->where('status', 'ACTIVE')->whereNull('last_login');
@@ -108,16 +117,19 @@ class UserController extends Controller
      */
     protected function handleStatisticRequest()
     {
-        $total = User::count();
-        $active = User::where('status', 'ACTIVE')->whereNotNull('last_login')->count();
-        $inactive = User::where('status', 'ACTIVE')->whereNull('last_login')->count();
-        $verification = User::where('status', 'VERIFICATION')->count();
+        session()->save();
+        $stats = User::selectRaw("
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN status = 'ACTIVE' AND last_login IS NOT NULL THEN 1 ELSE 0 END), 0) as active,
+            COALESCE(SUM(CASE WHEN status = 'ACTIVE' AND last_login IS NULL THEN 1 ELSE 0 END), 0) as inactive,
+            COALESCE(SUM(CASE WHEN status = 'VERIFICATION' THEN 1 ELSE 0 END), 0) as verification
+        ")->first();
 
         return response()->json([
-            'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
-            'verification' => $verification,
+            'total' => (int) ($stats->total ?? 0),
+            'active' => (int) ($stats->active ?? 0),
+            'inactive' => (int) ($stats->inactive ?? 0),
+            'verification' => (int) ($stats->verification ?? 0),
         ]);
     }
 

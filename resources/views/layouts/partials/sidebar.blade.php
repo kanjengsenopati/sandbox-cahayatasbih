@@ -122,6 +122,9 @@
             @if($menu->url)
                 @php
                     $menuUrl = $menu->url;
+                    if ($menuUrl && !str_starts_with($menuUrl, '/') && !str_starts_with($menuUrl, 'http') && !str_starts_with($menuUrl, '#')) {
+                        $menuUrl = '/' . $menuUrl;
+                    }
                     if ($menu->name === 'Dashboard' && method_exists(auth()->user(), 'isKasirOnly') && auth()->user()->isKasirOnly()) {
                         $mode = auth()->user()->isKasirKoperasi() ? 'kantin' : 'outlet';
                         $effectiveOutletId = auth()->user()->getEffectiveOutletId($mode);
@@ -265,6 +268,10 @@
                                         } elseif (str_contains($subUrl, 'mode=bisnis')) {
                                             $subName = 'Laporan POS Bisnis';
                                         }
+                                    }
+
+                                    if ($subUrl && !str_starts_with($subUrl, '/') && !str_starts_with($subUrl, 'http') && !str_starts_with($subUrl, '#')) {
+                                        $subUrl = '/' . $subUrl;
                                     }
                                 @endphp
                                 <div class="menu-item">

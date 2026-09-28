@@ -26,7 +26,8 @@ class SchoolController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = School::with('adminSchool.admin')->latest()->get();
+            session()->save();
+            $data = School::with('adminSchool.admin')->latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('school.edit', $data->id);

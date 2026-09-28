@@ -112,9 +112,13 @@ class AuditController extends Controller
             return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        session()->save();
+
         // Cache diagnostic CLI script execution results for 5 minutes unless refresh parameter is requested
         if ($request->has('refresh')) {
             Cache::forget('audit_diagnostics_results');
+            Cache::forget('audit_diagnostics_raw_comparison');
+            Cache::forget('audit_ai_insight');
         }
 
         $results = Cache::remember('audit_diagnostics_results', 300, function () {
@@ -125,7 +129,7 @@ class AuditController extends Controller
         $search = $request->input('search');
         $page = (int) $request->input('page', 1);
 
-        // Fast O(1) bulk comparison data (< 200ms) with search & pagination (default 10)
+        // Fast bulk comparison data with caching, search & pagination (default 10)
         $comparison = $comparisonService->getComparisonData($search, $page, 10);
 
         return view('admins.admin.audit.diagnostics', compact('results', 'comparison'));

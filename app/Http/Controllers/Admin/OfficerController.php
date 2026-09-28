@@ -21,6 +21,7 @@ class OfficerController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = Officer::with('user')->latest();
             return DataTables::of($data)
                 ->addColumn('photo', function ($data) {
