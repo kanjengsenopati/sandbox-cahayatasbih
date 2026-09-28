@@ -526,7 +526,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-6 bg-white">
-                <img id="imagePreviewSrc" src="" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 400 200\'%3E%3Crect width=\'400\' height=\'200\' fill=\'%23f1f5f9\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\\'middle\' font-family=\'sans-serif\' font-size=\'14\' font-weight=\'bold\' fill=\'%2394a3b8\'%3EBukti Pembayaran Tidak Ditemukan%3C/text%3E%3C/svg%3E';" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
+                <img id="imagePreviewSrc" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221%22 height=%221%22%3E%3C/svg%3E" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 200%22%3E%3Crect width=%22400%22 height=%22200%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 font-weight=%22bold%22 fill=%22%2394a3b8%22%3EBukti Pembayaran Tidak Ditemukan%3C/text%3E%3C/svg%3E';" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
             </div>
         </div>
     </div>
