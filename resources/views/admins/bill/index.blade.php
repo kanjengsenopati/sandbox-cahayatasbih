@@ -156,62 +156,6 @@
         flex: 1 1 100% !important;
     }
 </style>
-
-
-<script>
-    
-    });
-
-    $(document).ready(function() {
-        $(document).on('click', '.btn-batalkan', function(e) {
-            e.preventDefault();
-            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
-            if (selectedCheckboxes.length === 0) {
-                Swal.fire({
-                    title: 'Pilih Tagihan',
-                    text: 'Silakan pilih tagihan yang sudah terbayar (LUNAS) untuk dibatalkan.',
-                    icon: 'warning',
-                    confirmButtonColor: '#2563EB'
-                });
-                return;
-            }
-
-            // We only want to cancel PAID bills
-            let billIds = [];
-            selectedCheckboxes.forEach(checkbox => {
-                billIds.push(checkbox.getAttribute('data-bill-id'));
-            });
-
-            Swal.fire({
-                title: 'Batalkan Pembayaran?',
-                text: 'Apakah Anda yakin ingin MEMBATALKAN pembayaran tagihan-tagihan ini? Transaksi pembayaran akan dihapus/di-rollback secara atomik.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                cancelButtonColor: '#94a3b8',
-                confirmButtonText: 'Ya, Batalkan!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const form = document.createElement('form');
-                    form.action = "{{ route('bill.change-status-bulk') }}";
-                    form.method = 'post';
-
-                    form.innerHTML = `
-                    @csrf
-                    <input type="hidden" name="bill_ids" value='${JSON.stringify(billIds)}'>
-                    `;
-
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-        });
-    });
-</script>
-
-
-
 @endpush
 @section('content')
 <!--begin::Content-->
@@ -696,6 +640,52 @@
                 success: function (data) {
                     modal.find('.modal-body').html(data);
                     modal.modal('show');
+                }
+            });
+        });
+
+        // Handler pembatalan pembayaran tagihan terpilih
+        $(document).on('click', '.btn-batalkan', function(e) {
+            e.preventDefault();
+            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                Swal.fire({
+                    title: 'Pilih Tagihan',
+                    text: 'Silakan pilih tagihan yang sudah terbayar (LUNAS) untuk dibatalkan.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563EB'
+                });
+                return;
+            }
+
+            // We only want to cancel PAID bills
+            let billIds = [];
+            selectedCheckboxes.forEach(checkbox => {
+                billIds.push(checkbox.getAttribute('data-bill-id'));
+            });
+
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                text: 'Apakah Anda yakin ingin MEMBATALKAN pembayaran tagihan-tagihan ini? Transaksi pembayaran akan dihapus/di-rollback secara atomik.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.action = "{{ route('bill.change-status-bulk') }}";
+                    form.method = 'post';
+
+                    form.innerHTML = `
+                    @csrf
+                    <input type="hidden" name="bill_ids" value='${JSON.stringify(billIds)}'>
+                    `;
+
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             });
         });
