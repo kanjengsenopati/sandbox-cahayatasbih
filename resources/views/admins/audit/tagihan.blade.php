@@ -139,7 +139,15 @@
             processing: true,
             serverSide: true,
             pageLength: 20,
-            ajax: "{{ route('audit.tagihan') }}?tab=archive",
+            ajax: {
+                url: "{{ route('audit.tagihan') }}",
+                data: function(d) {
+                    d.tab = 'archive';
+                    d.search_student = $('#archive-search-student').val();
+                    d.start_date = $('#archive-start-date').val();
+                    d.end_date = $('#archive-end-date').val();
+                }
+            },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'student', name: 'student' },
@@ -155,8 +163,27 @@
             order: [[8, 'desc']], // Urutkan berdasarkan tanggal terbaru
         });
 
+        var searchTimeout = null;
+        $('#archive-search-student').on('keyup input change', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                archiveTable.ajax.reload();
+            }, 300);
+        });
+
+        $('#archive-btn-filter').click(function() {
+            archiveTable.ajax.reload();
+        });
+
+        $('#archive-btn-reset').click(function() {
+            $('#archive-search-student').val('');
+            $('#archive-start-date').val('');
+            $('#archive-end-date').val('');
+            archiveTable.ajax.reload();
+        });
+
         // Delete Archive handler
-        $(document).on('click', '.btn-delete-archive', function() {
+        $(document).on('click', '.btn-delete-archive, .delete-archive-btn', function() {
             var id = $(this).data('id');
             Swal.fire({
                 title: 'Apakah Anda yakin?',
