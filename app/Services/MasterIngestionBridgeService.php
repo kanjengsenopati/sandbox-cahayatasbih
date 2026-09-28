@@ -601,7 +601,21 @@ class MasterIngestionBridgeService
                 $result['status_summary']['new_count']++;
                 $diffInfo['local']['is_empty'] = true;
             } else {
-                if ($mPaidCount !== $lPaidCount || $mBillsCount !== $lBillsCount || $mPaidAmount !== $lPaidAmount) {
+                // One-Way Positive Sync Rule
+                $mPaid = $diffInfo['master']['paid_months'];
+                $mUnpaid = $diffInfo['master']['unpaid_months'];
+                $lPaid = $diffInfo['local']['paid_months'];
+                $lUnpaid = $diffInfo['local']['unpaid_months'];
+                
+                // Local must have all PAID months from Master
+                $missingPaidInLocal = array_diff($mPaid, $lPaid);
+                // Local must at least have all bills from Master (can be PAID or UNPAID)
+                $allLocal = array_merge($lPaid, $lUnpaid);
+                $missingUnpaidInLocal = array_diff($mUnpaid, $allLocal);
+                
+                // If Local already covers all Master's bills and honors Master's paid bills, we do NOT sync.
+                // We ignore if Local has more PAID bills than Master.
+                if (!empty($missingPaidInLocal) || !empty($missingUnpaidInLocal)) {
                     $status = 'UPDATE_REQUIRED';
                     $result['status_summary']['update_count']++;
                 } else {
@@ -806,98 +820,88 @@ class MasterIngestionBridgeService
                                 ->first();
 
                             $targetBillId = null;
+                            $skipUpdate = false;
+                            
                             if ($localBill) {
                                 $targetBillId = $localBill->id;
-                                unset($row['id']);
-                                $localConn->table('bills')->where('id', $targetBillId)->update($row);
+                                
+                                // BUSINESS RULE: One-Way Positive Sync.
+                                // Do not downgrade a PAID local bill to UNPAID if Master is UNPAID.
+                                if ($localBill->status === 'PAID' && $row['status'] === 'UNPAID') {
+                                    $skipUpdate = true;
+                                }
+                                
+                                if (!$skipUpdate) {
+                                    unset($row['id']);
+                                    $localConn->table('bills')->where('id', $targetBillId)->update($row);
+                                }
                             } else {
                                 $targetBillId = $row['id'];
                                 $localConn->table('bills')->insert($row);
                             }
-                            
-                            $syncedLocalBillIds[] = $targetBillId;
 
-                            // Enforce Transactional Atomicity: Copy transactions when paid
-                            if ($mBill->status === 'PAID') {
-                                $mDetails = $mb_tx_details_by_bill[$mBill->id] ?? [];
-                                foreach ($mDetails as $mDetail) {
-                                    $mTx = $mb_txs_by_id[$mDetail->transaction_id] ?? null;
-                                    
-                                    if ($mTx && !$localConn->table('transactions')->where('id', $mTx->id)->exists()) {
-                                        $localConn->table('transactions')->insert((array) $mTx);
+                            if (!$skipUpdate) {
+                                // Enforce Transactional Atomicity: Copy transactions when paid
+                                if ($mBill->status === 'PAID') {
+                                    $mDetails = $mb_tx_details_by_bill[$mBill->id] ?? [];
+                                    foreach ($mDetails as $mDetail) {
+                                        $mTx = $mb_txs_by_id[$mDetail->transaction_id] ?? null;
                                         
-                                        // Also ingest saldo history if paid via SALDO
-                                        if ($mTx->payment_method_id) {
-                                            try {
-                                                // Attempt to find by description or amount since transaction_id is missing
-                                                $allSH = $mb_saldo_histories_by_student[$mTx->student_id] ?? [];
-                                                $mSaldoHist = [];
-                                                foreach ($allSH as $sh) {
-                                                    if ($sh->amount == $mTx->amount && $sh->created_at >= $mTx->created_at) {
-                                                        $mSaldoHist[] = $sh;
+                                        if ($mTx && !$localConn->table('transactions')->where('id', $mTx->id)->exists()) {
+                                            $localConn->table('transactions')->insert((array) $mTx);
+                                            
+                                            // Also ingest saldo history if paid via SALDO
+                                            if ($mTx->payment_method_id) {
+                                                try {
+                                                    // Attempt to find by description or amount since transaction_id is missing
+                                                    $allSH = $mb_saldo_histories_by_student[$mTx->student_id] ?? [];
+                                                    $mSaldoHist = [];
+                                                    foreach ($allSH as $sh) {
+                                                        if ($sh->amount == $mTx->amount && $sh->created_at >= $mTx->created_at) {
+                                                            $mSaldoHist[] = $sh;
+                                                        }
                                                     }
-                                                }
-                                                foreach ($mSaldoHist as $sh) {
-                                                    if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
-                                                        $localConn->table('saldo_histories')->insert((array) $sh);
+                                                    foreach ($mSaldoHist as $sh) {
+                                                        if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
+                                                            $localConn->table('saldo_histories')->insert((array) $sh);
+                                                        }
                                                     }
+                                                } catch (\Exception $e) {
+                                                    \Illuminate\Support\Facades\Log::warning("Could not sync saldo_histories for tx {$mTx->id}: " . $e->getMessage());
                                                 }
-                                            } catch (\Exception $e) {
-                                                \Illuminate\Support\Facades\Log::warning("Could not sync saldo_histories for tx {$mTx->id}: " . $e->getMessage());
                                             }
                                         }
-                                    }
-                                    
-                                    $detailRow = (array) $mDetail;
-                                    $detailRow['bill_id'] = $targetBillId; // Re-map ke bill lokal
-                                    
-                                    if (!$localConn->table('transaction_details')->where('id', $detailRow['id'])->exists()) {
-                                        $localConn->table('transaction_details')->insert($detailRow);
+                                        
+                                        $detailRow = (array) $mDetail;
+                                        $detailRow['bill_id'] = $targetBillId; // Re-map ke bill lokal
+                                        
+                                        if (!$localConn->table('transaction_details')->where('id', $detailRow['id'])->exists()) {
+                                            $localConn->table('transaction_details')->insert($detailRow);
+                                        }
                                     }
                                 }
-                            }
 
-                            // Enforce Single Source of Truth (SSoT): Rekonsiliasi akumulasi riil transaction_details ke bill
-                            $realPaidFromTx = $localConn->table('transaction_details as td')
-                                ->join('transactions as t', 't.id', '=', 'td.transaction_id')
-                                ->where('td.bill_id', $targetBillId)
-                                ->whereNull('td.deleted_at')
-                                ->whereNull('t.deleted_at')
-                                ->where('t.status', 'PAID')
-                                ->sum('td.amount');
+                                // Enforce Single Source of Truth (SSoT): Rekonsiliasi akumulasi riil transaction_details ke bill
+                                $realPaidFromTx = $localConn->table('transaction_details as td')
+                                    ->join('transactions as t', 't.id', '=', 'td.transaction_id')
+                                    ->where('td.bill_id', $targetBillId)
+                                    ->whereNull('td.deleted_at')
+                                    ->whereNull('t.deleted_at')
+                                    ->where('t.status', 'PAID')
+                                    ->sum('td.amount');
 
-                            if ($realPaidFromTx > 0) {
-                                $targetBillObj = $localConn->table('bills')->where('id', $targetBillId)->first();
-                                $billAmount = (int) ($targetBillObj->amount ?? 0);
-                                $syncedStatus = ($billAmount > 0 && $realPaidFromTx >= $billAmount) ? 'PAID' : 'PARTIAL';
+                                if ($realPaidFromTx > 0) {
+                                    $targetBillObj = $localConn->table('bills')->where('id', $targetBillId)->first();
+                                    $billAmount = (int) ($targetBillObj->amount ?? 0);
+                                    $syncedStatus = ($billAmount > 0 && $realPaidFromTx >= $billAmount) ? 'PAID' : 'PARTIAL';
 
-                                $localConn->table('bills')->where('id', $targetBillId)->update([
-                                    'paid_amount' => $realPaidFromTx,
-                                    'status' => $syncedStatus,
-                                    'updated_at' => now(),
-                                ]);
-                            }
-                        }
-                        
-                        // Atomicity & Consistency: Remove extra local bills that DO NOT exist in master DB
-                        if (!empty($syncedLocalBillIds)) {
-                            $delQuery = $localConn->table('bills')
-                                ->where('student_id', $mRec->id)
-                                ->whereNotIn('id', $syncedLocalBillIds)
-                                ->whereNull('deleted_at');
-                            
-                            // Respect current filters
-                            if (!empty($academicYearId)) {
-                                $delQuery->where('academic_year_id', $academicYearId);
-                            }
-                            if (!empty($billTypeId)) {
-                                $localCleanType = $localConn->table('bill_types')->where('id', $billTypeId)->first();
-                                if ($localCleanType) {
-                                    $delQuery->where('bill_type_id', $localCleanType->id);
+                                    $localConn->table('bills')->where('id', $targetBillId)->update([
+                                        'paid_amount' => $realPaidFromTx,
+                                        'status' => $syncedStatus,
+                                        'updated_at' => now(),
+                                    ]);
                                 }
                             }
-                            
-                            $delQuery->update(['deleted_at' => now()]);
                         }
                     }
 
