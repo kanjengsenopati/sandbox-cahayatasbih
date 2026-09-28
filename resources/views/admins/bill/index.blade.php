@@ -489,11 +489,10 @@
                                                                 Semua</label>
                                                             <!-- Tempatkan tombol "Bayar" di lokasi yang sesuai -->
                                                             @if (Auth::user()->can('Edit Tagihan'))
-                                                            <button class="btn btn-primary modal-pay ms-2"
-                                                                data-bs-toggle="modal" data-bs-target="#paymentModal"
-                                                                style="min-width: 100px;">Bayar</button>
-                                                            <button class="btn btn-danger btn-batalkan ms-2"
-                                                                style="min-width: 100px;">Batalkan</button>
+                                                            <button type="button" class="btn btn-primary btn-bayar-kilat ms-2 opacity-50"
+                                                                style="min-width: 100px; cursor: not-allowed;">Bayar</button>
+                                                            <button type="button" class="btn btn-danger btn-batalkan ms-2 opacity-50"
+                                                                style="min-width: 100px; cursor: not-allowed;">Batalkan</button>
                                                             @endif
                                                         </div>
                                                     </ul>

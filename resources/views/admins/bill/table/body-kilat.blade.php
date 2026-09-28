@@ -502,6 +502,7 @@
                 if (selectAllCheckbox) {
                     selectAllCheckbox.checked = (allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length);
                 }
+                updateActionButtonsState();
             }
         });
 
@@ -512,8 +513,26 @@
                     checkbox.checked = selectAllCheckbox.checked;
                 });
                 updateCardSelectionStates();
+                updateActionButtonsState();
             });
         }
+
+        function updateActionButtonsState() {
+            const selectedCount = document.querySelectorAll('.bill-month-checkbox:checked').length;
+            const btnBayar = document.querySelector('.btn-bayar-kilat');
+            const btnBatalkan = document.querySelector('.btn-batalkan');
+            
+            if (selectedCount > 0) {
+                if(btnBayar) { btnBayar.classList.remove('opacity-50'); btnBayar.style.cursor = 'pointer'; }
+                if(btnBatalkan) { btnBatalkan.classList.remove('opacity-50'); btnBatalkan.style.cursor = 'pointer'; }
+            } else {
+                if(btnBayar) { btnBayar.classList.add('opacity-50'); btnBayar.style.cursor = 'not-allowed'; }
+                if(btnBatalkan) { btnBatalkan.classList.add('opacity-50'); btnBatalkan.style.cursor = 'not-allowed'; }
+            }
+        }
+        
+        // Initial state
+        updateActionButtonsState();
 
         // Prevent the modal from opening when clicking on checkboxes (redundant since we stopPropagation, but good fallback)
         const preventModalCheckboxes = document.querySelectorAll('.prevent-modal');
@@ -524,11 +543,25 @@
         });
 
         // Handle "Bayar" button click
-        // Handle "Bayar" button click
-        const modalPayBtn = document.querySelector('.modal-pay');
+        const modalPayBtn = document.querySelector('.btn-bayar-kilat');
         if (modalPayBtn) {
-            modalPayBtn.addEventListener('click', function() {
+            modalPayBtn.addEventListener('click', function(e) {
+                e.preventDefault();
                 const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+                
+                if (selectedCheckboxes.length === 0) {
+                    Swal.fire({
+                        title: 'Pilih Tagihan',
+                        text: 'Silakan pilih item pembayaran terlebih dahulu.',
+                        icon: 'warning',
+                        confirmButtonColor: '#2563EB'
+                    });
+                    return;
+                }
+                
+                // Show modal programmatically
+                $('#paymentModal').modal('show');
+                
                 const paymentDetails = document.getElementById('payment-details');
                 const totalAmountElement = document.getElementById('total-amount');
 
