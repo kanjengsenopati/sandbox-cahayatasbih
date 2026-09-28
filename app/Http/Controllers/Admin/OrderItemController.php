@@ -822,13 +822,12 @@ class OrderItemController extends Controller
             // Retrieve all carts belonging to the authenticated user and specific outlet
             $carts = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->get();
 
-            // Update stock on items and delete carts
-            foreach ($carts as $cart) {
-                $item = Item::find($cart->item_id);
-                if ($item) {
-                    $item->stock += $cart->quantity;
-                    $item->save();
-                }
+            // Update stock on items in batch
+            $itemQuantities = $carts->groupBy('item_id')->map(function ($items) {
+                return $items->sum('quantity');
+            });
+            foreach ($itemQuantities as $itemId => $qty) {
+                Item::where('id', $itemId)->increment('stock', $qty);
             }
 
             // Delete all carts

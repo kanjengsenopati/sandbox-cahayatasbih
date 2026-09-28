@@ -776,10 +776,7 @@
         posChart = Highcharts.chart('chart-container', options);
         @endif
 
-        // Load Initial Dynamic Summary
-        @if(!$isKasir)
-        fetchFilteredSummary();
-        @endif
+        // Summary is already pre-rendered by server on initial load; only re-fetch on filter changes
 
         $('#filter_status, #filter_outlet_id').on('change', function() {
             reloadTransactions();

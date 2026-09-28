@@ -40,9 +40,8 @@ class StudentController extends Controller
             session()->save();
             $data = Student::with('user', 'classroom.school', 'studentSubStatus')->hasSchool()
                 ->when(request('school_id'), function ($query) {
-                    $query->whereHas('classroom', function ($query) {
-                        $query->where('school_id', request('school_id'));
-                    });
+                    $classroomIds = \App\Models\Classroom::where('school_id', request('school_id'))->pluck('id');
+                    $query->whereIn('classroom_id', $classroomIds);
                 })
                 ->when(request('classroom_id'), function ($query) {
                     $query->where('classroom_id', request('classroom_id'));
@@ -58,8 +57,11 @@ class StudentController extends Controller
                           ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
                     });
                 })
-                ->latest();
-            $activeAy = \App\Models\AcademicYear::where('is_active', true)->first();
+                ->orderBy('students.id', 'desc');
+
+            $canEdit = Auth::user()->can('Edit Santri');
+            $canDelete = Auth::user()->can('Delete Santri');
+            $csrfToken = csrf_token();
 
             return DataTables::of($data)
                 ->filterColumn('student', function($query, $keyword) {
@@ -167,28 +169,33 @@ class StudentController extends Controller
                         </div>
                     </div>';
                 })
-                ->addColumn('action', function ($data) {
+                ->addColumn('action', function ($data) use ($canEdit, $canDelete, $csrfToken) {
                     $actionShow = route('student.show', $data->id);
                     $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
                     $actionPrint = route('student.generate-student-card', $data->id);
 
-                    $editBtnHtml = '';
-                    if (Auth::user()->can('Edit Santri')) {
-                        $editBtnHtml = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit'></i></button>";
+                    $html = "<div class='d-flex justify-content-center align-items-center'>" .
+                        "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-3'></i></button>";
+
+                    if ($canEdit) {
+                        $html .= "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit'></i></button>";
                     }
 
-                    return "<div class='d-flex justify-content-center align-items-center'>" .
-                        "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-3'></i></button>" .
-                        $editBtnHtml .
-                        view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
-                        "</div>";
+                    $html .= "<div><a href='{$actionPrint}' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3' title='Cetak Kartu'><i class='fas fa-id-card'></i></a></div>";
+
+                    if ($canDelete) {
+                        $html .= "<div><a data-id='form{$data->id}' type='button' id='btnDelete{$data->id}' class='btn-delete btn btn-icon btn-active-light-primary w-30px h-30px me-3' title='Hapus Santri'><i class='fas fa-trash-alt' style='pointer-events: none;'></i></a><form id='form{$data->id}' action='{$actionDelete}' method='post'><input type='hidden' name='_token' value='{$csrfToken}'><input type='hidden' name='_method' value='delete'></form></div>";
+                    }
+
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent', 'student'])
                 ->make(true);
         }
-        $schools = \Illuminate\Support\Facades\Cache::remember('student_filter_schools', 3600, function() {
+        $adminId = Auth::id() ?? 'all';
+        $schools = \Illuminate\Support\Facades\Cache::remember('student_filter_schools_' . $adminId, 3600, function() {
             return School::hasSchool()->select('id', 'name')->orderBy('name')->get();
         });
         $studentSubStatuses = \Illuminate\Support\Facades\Cache::remember('student_sub_statuses', 3600, function() {

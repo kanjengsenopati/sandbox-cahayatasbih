@@ -60,9 +60,16 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select form-select-sm" id="filter_classroom_id">
-                                            <option value="">Semua Kelas</option>
-                                        </select>
+                                        <div class="dropdown" id="report_bill_student_classroom_dropdown_container" style="position: relative !important;">
+                                            <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                            <button class="btn btn-light border bg-white fs-7 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 38px; cursor: pointer;">
+                                                <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                            </button>
+                                            <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 520px; width: 620px; max-width: 95vw; max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; left: 0 !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                                <div class="text-muted fs-7 p-3 text-center">Pilih Lembaga terlebih dahulu</div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="form-label">Tagihan</label>
@@ -175,32 +182,44 @@
                     <div class="tab-content" id="reportTabContent">
                         {{-- TAB 1: Data Tagihan --}}
                         <div class="tab-pane fade show active" id="data-tagihan" role="tabpanel" aria-labelledby="data-tagihan-tab">
-                            {{-- Summary Cards --}}
-                            <div class="d-flex flex-wrap gap-2 mt-4 mb-4" style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
-                                <div class="card bg-light-warning bg-active-danger flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-bullseye text-danger fs-2"></i></div>
-                                        <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Target Pemasukan</div>
-                                            <div class="text-danger fs-3 fw-bolder" id="target-revenue">Rp. 0</div>
+                            {{-- Summary Cards (3 Kolom Seimbang) --}}
+                            <div class="row g-4 mt-1 mb-4">
+                                <div class="col-12 col-md-4">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(245, 158, 11, 0.06);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(245, 158, 11, 0.15); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 48px;">
+                                                <i class="fas fa-bullseye fs-3" style="color: #d97706 !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest mb-1" style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Target Pemasukan</div>
+                                                <div class="fs-3 fw-bolder" id="target-revenue" style="color: #d97706;">Rp. 0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card bg-light-primary bg-active-primary flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-check-circle text-primary fs-2"></i></div>
-                                        <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Lunas</div>
-                                            <div class="text-primary fs-3 fw-bolder" id="total-paid">Rp. 0</div>
+                                <div class="col-12 col-md-4">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(16, 185, 129, 0.06);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(16, 185, 129, 0.15); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 48px;">
+                                                <i class="fas fa-check-circle fs-3" style="color: #10b981 !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest mb-1" style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Lunas</div>
+                                                <div class="fs-3 fw-bolder" id="total-paid" style="color: #10b981;">Rp. 0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card bg-light-danger bg-active-danger flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-times-circle text-danger fs-2"></i></div>
-                                        <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Belum Lunas</div>
-                                            <div class="text-danger fs-3 fw-bolder" id="total-unpaid">Rp. 0</div>
+                                <div class="col-12 col-md-4">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(220, 38, 38, 0.06);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(220, 38, 38, 0.15); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 48px;">
+                                                <i class="fas fa-times-circle fs-3" style="color: #dc2626 !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest mb-1" style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Belum Lunas</div>
+                                                <div class="fs-3 fw-bolder" id="total-unpaid" style="color: #dc2626;">Rp. 0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -236,49 +255,57 @@
                                 </button>
                             </div>
 
-                            {{-- Summary Cards Rekap - Styled with PakRT guidelines --}}
-                            <div class="d-flex flex-wrap gap-3 mt-4 mb-4" style="border: none; padding: 0;">
-                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(37, 99, 235, 0.05); min-width: 200px;">
-                                    <div class="card-body d-flex align-items-center p-6">
-                                        <div class="me-4" style="background-color: rgba(37, 99, 235, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-users text-primary fs-4" style="color: #2563eb !important;"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Santri</div>
-                                            <div class="fs-3 fw-bolder" id="rekap-total-students" style="color: #0f172a;">0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(245, 158, 11, 0.05); min-width: 200px;">
-                                    <div class="card-body d-flex align-items-center p-6">
-                                        <div class="me-4" style="background-color: rgba(245, 158, 11, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-bullseye text-warning fs-4" style="color: #f59e0b !important;"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Tagihan</div>
-                                            <div class="fs-3 fw-bolder text-warning" id="rekap-total-amount" style="color: #d97706 !important;">Rp. 0</div>
+                            {{-- Summary Cards Rekap (4 Kolom Rata) --}}
+                            <div class="row g-4 mt-1 mb-4">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(37, 99, 235, 0.05);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(37, 99, 235, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 44px;">
+                                                <i class="fas fa-users text-primary fs-4" style="color: #2563eb !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Santri</div>
+                                                <div class="fs-3 fw-bolder" id="rekap-total-students" style="color: #0f172a;">0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(16, 185, 129, 0.05); min-width: 200px;">
-                                    <div class="card-body d-flex align-items-center p-6">
-                                        <div class="me-4" style="background-color: rgba(16, 185, 129, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-check-circle text-success fs-4" style="color: #10b981 !important;"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Lunas</div>
-                                            <div class="fs-3 fw-bolder text-success" id="rekap-total-paid" style="color: #10b981 !important;">Rp. 0</div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(245, 158, 11, 0.05);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(245, 158, 11, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 44px;">
+                                                <i class="fas fa-bullseye text-warning fs-4" style="color: #f59e0b !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Tagihan</div>
+                                                <div class="fs-3 fw-bolder text-warning" id="rekap-total-amount" style="color: #d97706 !important;">Rp. 0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(220, 38, 38, 0.05); min-width: 200px;">
-                                    <div class="card-body d-flex align-items-center p-6">
-                                        <div class="me-4" style="background-color: rgba(220, 38, 38, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-exclamation-circle text-danger fs-4" style="color: #dc2626 !important;"></i>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(16, 185, 129, 0.05);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(16, 185, 129, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 44px;">
+                                                <i class="fas fa-check-circle text-success fs-4" style="color: #10b981 !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Lunas</div>
+                                                <div class="fs-3 fw-bolder text-success" id="rekap-total-paid" style="color: #10b981 !important;">Rp. 0</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Belum Lunas</div>
-                                            <div class="fs-3 fw-bolder text-danger" id="rekap-total-unpaid" style="color: #dc2626 !important;">Rp. 0</div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card border-0 h-100" style="border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(220, 38, 38, 0.05);">
+                                        <div class="card-body d-flex align-items-center p-5">
+                                            <div class="me-4" style="background-color: rgba(220, 38, 38, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; min-width: 44px;">
+                                                <i class="fas fa-exclamation-circle text-danger fs-4" style="color: #dc2626 !important;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Belum Lunas</div>
+                                                <div class="fs-3 fw-bolder text-danger" id="rekap-total-unpaid" style="color: #dc2626 !important;">Rp. 0</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -316,17 +343,99 @@ var saldoTable, rekapTable;
 var rekapInitialized = false;
 
 $(document).ready(function() {
+    function renderStudentBillClassroomMegaMenu(classrooms) {
+        const container = $('#classroom_mega_menu');
+        container.empty();
+
+        if (!classrooms || classrooms.length === 0) {
+            container.html('<div class="text-muted fs-7 p-3 text-center">Tidak ada kelas tersedia</div>');
+            return;
+        }
+
+        const groups = {};
+        classrooms.forEach(c => {
+            let match = (c.name || '').match(/^(\d+)/);
+            let key = match ? match[1] : 'Lainnya';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(c);
+        });
+
+        const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+        container.append(resetBtn);
+
+        const sortedKeys = Object.keys(groups).sort((a,b) => {
+            let numA = parseInt(a);
+            let numB = parseInt(b);
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            return numA - numB;
+        });
+
+        const row = $('<div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4"></div>');
+        sortedKeys.forEach(key => {
+            const col = $('<div class="col"></div>');
+            const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+            col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+            const list = $('<div class="d-flex flex-column gap-1"></div>');
+            groups[key].forEach(c => {
+                list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 30px;">
+                    <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                    <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                </button>`);
+            });
+            col.append(list);
+            row.append(col);
+        });
+        container.append(row);
+    }
+
+    $(document).on('click', '#classroom_mega_menu .classroom-item', function(e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+
+        $('#filter_classroom_id').val(id);
+        if (id) {
+            $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+        } else {
+            $('#filter_classroom_btn_text').text('Semua Kelas');
+        }
+
+        $('#classroom_mega_menu .class-check-icon').addClass('d-none');
+        $('#classroom_mega_menu .classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+        if (id) {
+            $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+            $(this).find('.class-check-icon').removeClass('d-none');
+        }
+
+        const dropdownEl = document.getElementById('classroom_mega_menu');
+        if (dropdownEl) {
+            const bsDropdown = bootstrap.Dropdown.getInstance(document.getElementById('filter_classroom_btn'));
+            if (bsDropdown) bsDropdown.hide();
+        }
+
+        reloadAllTables();
+    });
+
     // School -> Classroom cascade & refresh Bill Types
     $('#filter_school_id').on('change', function() {
+        var schoolId = $(this).val();
+        $('#filter_classroom_id').val('');
+        $('#filter_classroom_btn_text').text('Semua Kelas');
+
+        if (!schoolId) {
+            $('#classroom_mega_menu').html('<div class="text-muted fs-7 p-3 text-center">Pilih Lembaga terlebih dahulu</div>');
+            refreshBillTypes();
+            reloadAllTables();
+            return;
+        }
+
         $.ajax({
             url: "{{ route('report-bill.get-classroom') }}",
             type: "GET",
-            data: { school_id: $(this).val() },
+            data: { school_id: schoolId },
             success: function(response) {
-                $('#filter_classroom_id').empty().append('<option value="">Semua Kelas</option>');
-                $.each(response.data, function(key, value) {
-                    $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                });
+                renderStudentBillClassroomMegaMenu(response.data || []);
             }
         });
 

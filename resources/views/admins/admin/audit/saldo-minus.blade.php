@@ -188,7 +188,7 @@
                                 <label class="form-label fs-8 fw-bolder text-gray-700 mb-1">Kelas</label>
                                 <div class="dropdown" id="audit_classroom_dropdown_container" style="position: relative !important;">
                                     <input type="hidden" id="filter_classroom" value="">
-                                    <button class="btn btn-light form-select form-select-sm fs-8 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer;">
+                                    <button class="btn btn-light border bg-white fs-8 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer;">
                                         <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                         <i class="fas fa-chevron-down fs-9 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                     </button>

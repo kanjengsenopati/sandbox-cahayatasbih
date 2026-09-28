@@ -1217,22 +1217,36 @@
         }).then((result) => {
         // Jika pengguna menekan tombol "Ya"
         if (result.isConfirmed) {
-        // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
-        axios.post("{{ route('order-item.delete-all-cart') }}", {
-            mode: requestMode,
-            outlet_id: requestOutletId
-        })
-        .then(function (response) {
-            var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // For clear cart, reloading catalog is fine
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
-        }).catch(function (error) {
-        console.error(error);
-        });
+            // 1. Optimistic instant visual stock restoration (0ms)
+            currentCartData.forEach(function(c) {
+                var itemId = c.item?.id || c.item_id;
+                if (itemId && c.quantity) {
+                    changeVisualStock(itemId, c.quantity);
+                }
+            });
+
+            // 2. Optimistic instant cart clear & price reset (0ms)
+            currentCartData = [];
+            renderCartTable(currentCartData);
+            _renderTotalPrice(0);
+
+            // 3. Send delete-all request in background
+            axios.post("{{ route('order-item.delete-all-cart') }}", {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            })
+            .then(function (response) {
+                var data = response.data.data;
+                if (data) {
+                    currentCartData = data.carts || [];
+                    renderCartTable(currentCartData);
+                    updateTotalPrice(data.total_price);
+                }
+            }).catch(function (error) {
+                console.error(error);
+                refreshProductList();
+                loadProductCatalog();
+            });
         }
         });
     }

@@ -53,8 +53,10 @@ class PosTransactionController extends Controller
         $hasOutletRestriction = count($authOutletIds) > 0;
         $outletId = $request->input('outlet_id');
 
-        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = \Illuminate\Support\Facades\Cache::remember('koperasi_outlet_id', 86400, function() {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        });
 
         if (!$outletId && !$hasOutletRestriction) {
             if ($mode === 'outlet') {
@@ -274,6 +276,9 @@ class PosTransactionController extends Controller
                     'month_count' => number_format($monthStats->count ?? 0, 0, ',', '.'),
                 ]);
             } elseif ($request->data == 'table') {
+                $canDeletePos = Auth::user()->can('Delete Transaksi POS');
+                $csrfToken = csrf_token();
+
                 return DataTables::of($data)
                     ->addColumn('payment_code', function ($data) {
                         return '<strong>' . ($data->payment_code ?? '-') . '</strong>';
@@ -331,15 +336,15 @@ class PosTransactionController extends Controller
                     ->addColumn('outlet', function ($data) {
                         return $data->outlet?->name ?? '-';
                     })
-                    ->addColumn('action', function ($data) use ($hasOutletRestriction) {
+                    ->addColumn('action', function ($data) use ($hasOutletRestriction, $canDeletePos, $csrfToken) {
                         $actionDelete = route('pos-transaction.destroy', $data->id);
                         $invoiceUrl = route('order-item-history.print', $data->id);
                         
                         $html = "<div class='d-flex gap-2 justify-content-center'>";
                         $html .= "<a href='" . $invoiceUrl . "' target='_blank' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1' title='Cetak Invoice'><i class='fa-solid fa-print text-primary fs-6'></i></a>";
                         
-                        if (!$hasOutletRestriction) { // Hanya superadmin yang bisa hapus transaksi
-                            $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Transaksi POS']);
+                        if (!$hasOutletRestriction && $canDeletePos) {
+                            $html .= "<div><a data-id='form{$data->id}' type='button' id='btnDelete{$data->id}' class='btn-delete btn btn-icon btn-active-light-primary w-30px h-30px me-3' title='Hapus Transaksi'><i class='fas fa-trash-alt' style='pointer-events: none;'></i></a><form id='form{$data->id}' action='{$actionDelete}' method='post'><input type='hidden' name='_token' value='{$csrfToken}'><input type='hidden' name='_method' value='delete'></form></div>";
                         }
                         
                         $html .= "</div>";
@@ -533,9 +538,14 @@ class PosTransactionController extends Controller
                 }
             });
 
-        $totalTransaction = (clone $transactionQueryGlobal)->count();
-        $totalSales = (clone $transactionQueryGlobal)->sum('pay_amount');
-        $totalIncome = (clone $transactionQueryGlobal)->sum('profit');
+        $globalAggregates = (clone $transactionQueryGlobal)->selectRaw('
+            COUNT(id) as total_transaction,
+            COALESCE(SUM(pay_amount), 0) as total_sales,
+            COALESCE(SUM(profit), 0) as total_income
+        ')->first();
+        $totalTransaction = $globalAggregates->total_transaction ?? 0;
+        $totalSales = $globalAggregates->total_sales ?? 0;
+        $totalIncome = $globalAggregates->total_income ?? 0;
 
         $admins = \App\Models\Admin::orderBy('name')->get();
 

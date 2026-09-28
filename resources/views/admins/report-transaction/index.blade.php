@@ -84,7 +84,7 @@
                                         <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Kelas</label>
                                         <div class="dropdown" id="report_tx_classroom_dropdown_container" style="position: relative !important;">
                                             <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
-                                            <button class="btn btn-light form-select form-select-sm fs-7 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 38px; cursor: pointer;">
+                                            <button class="btn btn-light border bg-white fs-7 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 38px; cursor: pointer;">
                                                 <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
                                                 <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
                                             </button>
