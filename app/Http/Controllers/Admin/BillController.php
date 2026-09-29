@@ -417,7 +417,7 @@ class BillController extends Controller
 
     private function formatActionColumn($transaction)
     {
-        if (!Auth::user()->can('Edit Tagihan')) {
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Edit Tagihan')) {
             return '';
         }
 
@@ -689,7 +689,7 @@ class BillController extends Controller
 
     private function formatArchiveActionColumn($transaction)
     {
-        if (!Auth::user()->can('Edit Tagihan')) {
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Delete Tagihan') && !Auth::user()->can('Edit Tagihan')) {
             return '';
         }
 
@@ -720,6 +720,10 @@ class BillController extends Controller
      */
     public function store(BillPaymentRequest $request)
     {
+        if (!Auth::user()->can('Create Tagihan') && !Auth::user()->can('Manage Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk memproses transaksi pembayaran tagihan.');
+        }
+
         $studentId = $request->student_id;
         $lockKey = "student_transaction_{$studentId}";
 
@@ -794,6 +798,10 @@ class BillController extends Controller
      */
     public function update(UpdateTransactionStatusRequest $request, string $id)
     {
+        if (!Auth::user()->can('Edit Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki izin untuk mengubah status pembayaran tagihan.');
+        }
+
         $transaction = Transaction::findOrFail($id);
         $data = $request->validated();
         $data['admin_id'] = Auth::id();
@@ -1169,6 +1177,10 @@ class BillController extends Controller
 
     public function deleteStudentBill(Request $request)
     {
+        if (!Auth::user()->can('Delete Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk menghapus tagihan santri.');
+        }
+
         $request->validate([
             'student_id' => 'required',
             'bill_type_id' => 'required',
@@ -1458,6 +1470,10 @@ class BillController extends Controller
 
     public function confirmImport(Request $request)
     {
+        if (!Auth::user()->can('Create Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki izin untuk mengimpor data tagihan.'], 403);
+        }
+
         $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'bill_type_id' => 'required|exists:bill_types,id',
@@ -1761,6 +1777,10 @@ class BillController extends Controller
 
     public function rollbackImport($id)
     {
+        if (!Auth::user()->can('Delete Tagihan') && !Auth::user()->can('Edit Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk membatalkan riwayat impor.');
+        }
+
         $importLog = ImportLog::where('id', $id)
             ->where('status', ImportLog::STATUS_ACTIVE)
             ->firstOrFail();

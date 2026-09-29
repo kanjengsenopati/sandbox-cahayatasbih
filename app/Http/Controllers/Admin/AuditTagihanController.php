@@ -360,7 +360,7 @@ class AuditTagihanController extends Controller
     private function formatArchiveActionColumn($transaction)
     {
         $user = Auth::user();
-        if (!$user || (!$user->can('Edit Tagihan') && !$user->hasRole('Super Admin') && !$user->hasRole('SUPER ADMIN'))) {
+        if (!$user || (!$user->can('Edit Tagihan') && !$user->can('Delete Tagihan') && !$user->hasRole('Super Admin') && !$user->hasRole('SUPER ADMIN'))) {
             return '';
         }
 
@@ -381,7 +381,7 @@ class AuditTagihanController extends Controller
     public function hideArchive($id)
     {
         $user = Auth::user();
-        if (!$user || (!$user->can('Edit Tagihan') && !$user->hasRole('Super Admin') && !$user->hasRole('SUPER ADMIN'))) {
+        if (!$user || (!$user->can('Edit Tagihan') && !$user->can('Delete Tagihan') && !$user->hasRole('Super Admin') && !$user->hasRole('SUPER ADMIN'))) {
             return response()->json([
                 'code' => '403',
                 'message' => 'Anda tidak memiliki hak akses untuk menghapus arsip.'

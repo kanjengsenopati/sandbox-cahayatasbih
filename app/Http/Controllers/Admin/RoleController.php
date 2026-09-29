@@ -181,6 +181,10 @@ class RoleController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        if (strtolower($role->name) === 'super admin' && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Hanya Super Admin yang berhak mengubah konfigurasi peran Super Admin');
+        }
+
         $request->validate([
             'name' => 'required',
             'permissions' => 'required|array'
@@ -209,6 +213,10 @@ class RoleController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        if (strtolower($role->name) === 'super admin') {
+            return back()->with('error', 'Peran Super Admin adalah peran sistem utama dan tidak dapat dihapus');
+        }
+
         $role->delete();
         return back()->with('success', 'Data berhasil dihapus');
     }
@@ -220,6 +228,10 @@ class RoleController extends Controller
         }
 
         $role = Role::findOrFail($id);
+
+        if (strtolower($role->name) === 'super admin' && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Hanya Super Admin yang berhak menugaskan pengguna ke peran Super Admin');
+        }
         $request->validate([
             'admin_ids' => 'array',
         ]);

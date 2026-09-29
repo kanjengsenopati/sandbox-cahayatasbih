@@ -602,8 +602,8 @@ class PosTransactionController extends Controller
      */
     public function destroy(string $id)
     {
-        if (count(auth()->user()->getOutletIds()) > 0 && !auth()->user()->hasRole('Super Admin')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus transaksi');
+        if (!auth()->user()->hasRole('Super Admin') && !auth()->user()->can('Delete Transaksi POS')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk menghapus transaksi POS');
         }
 
         try {

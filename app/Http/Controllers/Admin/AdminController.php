@@ -137,6 +137,9 @@ class AdminController extends Controller
 
             if ($request->role_ids) {
                 $roles = Role::whereIn('id', $request->role_ids)->pluck('name')->toArray();
+                if (in_array('Super Admin', $roles) && !Auth::user()->hasRole('Super Admin')) {
+                    throw new \Exception('Hanya Super Admin yang berhak memberikan peran Super Admin');
+                }
                 $admin->assignRole($roles);
             }
 
@@ -238,6 +241,9 @@ class AdminController extends Controller
 
         if ($request->role_ids) {
             $roles = Role::whereIn('id', $request->role_ids)->pluck('name')->toArray();
+            if (in_array('Super Admin', $roles) && !Auth::user()->hasRole('Super Admin')) {
+                return redirect()->back()->with('error', 'Hanya Super Admin yang berhak memberikan peran Super Admin');
+            }
             $admin->syncRoles($roles);
         }
 
@@ -273,6 +279,15 @@ class AdminController extends Controller
         if (!Auth::user()->can('Delete Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+
+        if ($admin->id === Auth::id()) {
+            return redirect()->back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri');
+        }
+
+        if ($admin->hasRole('Super Admin') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Hanya Super Admin yang berhak menghapus akun Super Admin');
+        }
+
         file_exists($admin->avatar) ? unlink($admin->avatar) : '';
         $admin->adminSchool()->forceDelete();
         $admin->adminOutlet()->forceDelete();
@@ -282,12 +297,16 @@ class AdminController extends Controller
 
     public function impersonate(Admin $admin)
     {
-        if (!Auth::user()->can('Manage Admin')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        if (!Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, hanya Super Admin yang memiliki hak akses untuk impersonate akun');
         }
 
         if ($admin->id === Auth::id()) {
             return redirect()->back()->with('error', 'Anda tidak dapat meng-impersonate diri sendiri');
+        }
+
+        if ($admin->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Tidak diizinkan meng-impersonate sesama Super Admin');
         }
 
         $impersonatorId = Auth::id();

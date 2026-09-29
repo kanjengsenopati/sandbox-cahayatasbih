@@ -931,6 +931,10 @@ class StudentController extends Controller
 
     public function bulkUpdateSubStatus(\Illuminate\Http\Request $request)
     {
+        if (!Auth::user()->can('Edit Santri') && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki izin untuk memperbarui status santri'], 403);
+        }
+
         $ids = $request->ids;
         $subStatusId = $request->sub_status_id;
 

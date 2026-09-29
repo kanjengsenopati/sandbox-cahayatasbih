@@ -12,7 +12,12 @@ class PermissionController extends Controller
 {
     public function __construct()
     {
-        // $this->middleware(['permission:permission']);
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user() || !auth()->user()->hasRole('Super Admin')) {
+                return redirect('/dashboard')->with('error', 'Maaf, hanya Super Admin yang dapat mengelola Permission.');
+            }
+            return $next($request);
+        });
     }
     /**
      * Display a listing of the resource.

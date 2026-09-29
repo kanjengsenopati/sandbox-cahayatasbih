@@ -482,19 +482,25 @@
                                                             <a class="nav-link text-slate-600" data-bs-toggle="tab"
                                                                 href="#kt_tab_pane_5">Lainnya</a>
                                                         </li>
+                                                        @php
+                                                            $canProcessPayment = Auth::user()->hasRole('Super Admin') || Auth::user()->can('Create Tagihan') || Auth::user()->can('Edit Tagihan');
+                                                            $canCancelPayment = Auth::user()->hasRole('Super Admin') || Auth::user()->can('Delete Tagihan') || Auth::user()->can('Edit Tagihan');
+                                                        @endphp
+                                                        @if ($canProcessPayment || $canCancelPayment)
                                                         <div
                                                             class="d-flex justify-content-end align-items-center mb-3 ms-auto">
+                                                            @if ($canProcessPayment)
                                                             <input type="checkbox" id="select-all">
-                                                            <label for="select-all" class="ms-2 mb-0">Bayar
-                                                                Semua</label>
-                                                            <!-- Tempatkan tombol "Bayar" di lokasi yang sesuai -->
-                                                            @if (Auth::user()->can('Edit Tagihan'))
+                                                            <label for="select-all" class="ms-2 mb-0">Bayar Semua</label>
                                                             <button type="button" class="btn btn-primary btn-bayar-kilat ms-2 opacity-50"
                                                                 style="min-width: 100px; cursor: not-allowed;">Bayar</button>
+                                                            @endif
+                                                            @if ($canCancelPayment)
                                                             <button type="button" class="btn btn-danger btn-batalkan ms-2 opacity-50"
                                                                 style="min-width: 100px; cursor: not-allowed;">Batalkan</button>
                                                             @endif
                                                         </div>
+                                                        @endif
                                                     </ul>
 
                                                     <div class="tab-content" id="myTabContent">

@@ -247,21 +247,12 @@
                                                     @php
                                                         $user = Auth::user();
                                                         $canEditStatus = false;
+                                                        $canPay = false;
                                                         if ($user) {
-                                                            if ($user->hasRole('Super Admin') || $user->can('Edit Status Tagihan')) {
+                                                            if ($user->hasRole('Super Admin') || $user->can('Edit Status Tagihan') || $user->can('Edit Tagihan') || $user->hasRole('Bendahara')) {
                                                                 $canEditStatus = true;
-                                                            } elseif ($user->hasRole('Bendahara')) {
-                                                                $username = strtolower($user->username ?? '');
-                                                                $name = strtolower($user->name ?? '');
-                                                                if (
-                                                                    str_contains($username, 'khoirus') || 
-                                                                    str_contains($username, 'paramita') ||
-                                                                    str_contains($name, 'khoirus') || 
-                                                                    str_contains($name, 'paramita')
-                                                                ) {
-                                                                    $canEditStatus = true;
-                                                                }
                                                             }
+                                                            $canPay = $user->hasRole('Super Admin') || $user->can('Create Tagihan') || $user->can('Edit Tagihan');
                                                         }
                                                     @endphp
                                                     <div class="d-flex align-items-center gap-2">
@@ -281,10 +272,14 @@
                                                                     <i class="fas fa-check me-1"></i> Ubah Status
                                                                 </a>
                                                             @endif
-                                                            @if ($isUnpaid && $paymentLink)
-                                                                <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm text-nowrap">Ke Halaman Pembayaran</a>
+                                                            @if ($canPay)
+                                                                @if ($isUnpaid && $paymentLink)
+                                                                    <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm text-nowrap">Ke Halaman Pembayaran</a>
+                                                                @else
+                                                                    <button type="button" class="btn btn-primary btn-bayar btn-sm text-nowrap">Bayar</button>
+                                                                @endif
                                                             @else
-                                                                <button type="button" class="btn btn-primary btn-bayar btn-sm text-nowrap">Bayar</button>
+                                                                <span class="badge badge-light-warning text-warning fs-9 fw-bold">Belum Lunas</span>
                                                             @endif
                                                         @endif
                                                     </div>

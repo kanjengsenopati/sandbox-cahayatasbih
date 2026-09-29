@@ -22,6 +22,52 @@ use App\Http\Requests\Admin\PaymentRateRequest;
 
 class PaymentRateController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            if ($user->hasRole('Super Admin')) {
+                return $next($request);
+            }
+
+            $action = $request->route() ? $request->route()->getActionMethod() : '';
+
+            // Read actions
+            if (in_array($action, ['index', 'show', 'getClassroom', 'getStudent', 'getBillDetails'])) {
+                if (!$user->can('Manage Tarif Pembayaran') && !$user->can('Manage Jenis Bayar') && !$user->can('Manage Item Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk melihat Tarif Pembayaran.');
+                }
+            }
+
+            // Create actions
+            if (in_array($action, ['create', 'store', 'generate', 'generateStudent'])) {
+                if (!$user->can('Create Tarif Pembayaran') && !$user->can('Create Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk menambah/men-generate Tarif Pembayaran.');
+                }
+            }
+
+            // Edit actions
+            if (in_array($action, ['edit', 'update', 'updateBill'])) {
+                if (!$user->can('Edit Tarif Pembayaran') && !$user->can('Edit Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk mengubah Tarif Pembayaran.');
+                }
+            }
+
+            // Delete actions
+            if (in_array($action, ['destroy', 'deleteBill', 'deleteBillsMass'])) {
+                if (!$user->can('Delete Tarif Pembayaran') && !$user->can('Delete Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk menghapus Tarif Pembayaran.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -835,6 +881,11 @@ class PaymentRateController extends Controller
 
     private function renderActions($data, $billTypeId)
     {
+        $user = auth()->user();
+        if (!$user || (!$user->hasRole('Super Admin') && !$user->can('Delete Tarif Pembayaran') && !$user->can('Delete Tagihan'))) {
+            return "<div class='d-flex justify-content-center'><span class='text-muted fs-7'>-</span></div>";
+        }
+
         $deleteForm = '<form action="' . route('delete-student-bill') . '" method="POST" style="display:inline;">
             ' . csrf_field() . '
             ' . method_field('DELETE') . '

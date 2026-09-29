@@ -790,6 +790,10 @@ class CashFlowController extends Controller
      */
     public function store(CashFlowRequest $request)
     {
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->can('Manage Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengajukan Arus Kas.');
+        }
+
         $data = $request->validated();
         $cashflowCount = CashFlow::whereDate('created_at', now())->count();
         $data['payment_code'] = 'CT-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
@@ -822,6 +826,10 @@ class CashFlowController extends Controller
      */
     public function edit(CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Edit Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengedit Arus Kas.');
+        }
+
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
         $outlets = \App\Models\Outlet::orderBy('name')->get();
@@ -833,6 +841,10 @@ class CashFlowController extends Controller
      */
     public function update(CashFlowRequest $request, CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Edit Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengubah Arus Kas.');
+        }
+
         $data = $request->validated();
         $data['amount'] = preg_replace('/\D/', '', $data['amount']);
         $data['sender_id'] = Auth::id();
@@ -855,6 +867,10 @@ class CashFlowController extends Controller
      */
     public function destroy(CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Delete Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk menghapus Arus Kas.');
+        }
+
         $cashflow->delete();
         return redirect()->route('cashflow.index')->with('success', 'Berhasil Menghapus Arus Kas');
     }
@@ -862,25 +878,37 @@ class CashFlowController extends Controller
     public function approve($id)
     {
         $cashflow = CashFlow::findOrFail($id);
-        // if (Auth::id() == $cashflow->receiver_id && $cashflow->status == CashFlow::STATUS_PENDING) {
+        
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Edit Arus Kas') && Auth::id() != $cashflow->receiver_id) {
+            return response()->json(['message' => 'Maaf, Anda tidak berhak menyetujui Arus Kas ini.'], 403);
+        }
+
+        if ($cashflow->status !== CashFlow::STATUS_PENDING) {
+            return response()->json(['message' => 'Arus Kas ini sudah diproses sebelumnya.'], 422);
+        }
+
         $cashflow->status = CashFlow::STATUS_APPROVED;
         $cashflow->save();
 
         return response()->json(['message' => 'Arus Kas telah disetujui.']);
-        // }
-        return response()->json(['message' => 'Tidak dapat menyetujui Arus Kas.'], 422);
     }
 
     public function reject(Request $request, $id)
     {
         $cashflow = CashFlow::findOrFail($id);
-        // if (Auth::id() == $cashflow->receiver_id && $cashflow->status == CashFlow::STATUS_PENDING) {
+
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Edit Arus Kas') && Auth::id() != $cashflow->receiver_id) {
+            return response()->json(['message' => 'Maaf, Anda tidak berhak menolak Arus Kas ini.'], 403);
+        }
+
+        if ($cashflow->status !== CashFlow::STATUS_PENDING) {
+            return response()->json(['message' => 'Arus Kas ini sudah diproses sebelumnya.'], 422);
+        }
+
         $cashflow->status = CashFlow::STATUS_REJECTED;
         $cashflow->reason = $request->reason;
         $cashflow->save();
 
         return response()->json(['message' => 'Arus Kas telah ditolak.']);
-        // }
-        return response()->json(['message' => 'Tidak dapat menolak Arus Kas.'], 422);
     }
 }

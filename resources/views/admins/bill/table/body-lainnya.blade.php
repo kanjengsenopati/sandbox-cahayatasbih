@@ -43,8 +43,13 @@
 </style>
 @endpush
 
+@php
+    $canManageBill = auth()->user()->hasRole('Super Admin') || auth()->user()->can('Create Tagihan');
+    $canPayBill = auth()->user()->hasRole('Super Admin') || auth()->user()->can('Create Tagihan') || auth()->user()->can('Edit Tagihan');
+@endphp
+
 <div class="accordion" id="accordionLainnyaParent">
-    @if(isset($ungeneratedOtherRates) && $ungeneratedOtherRates->isNotEmpty())
+    @if($canManageBill && isset($ungeneratedOtherRates) && $ungeneratedOtherRates->isNotEmpty())
     {{-- Ada tarif yang sudah di-mapping admin tapi belum di-generate → tampilkan shortcut buttons --}}
     <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 my-4">
         <span class="svg-icon svg-icon-2tx svg-icon-primary me-4">
@@ -101,12 +106,14 @@
                         <strong>Panduan Admin:</strong> Silakan masuk ke menu <a href="{{ route('bill-type.index') }}" class="fw-bolder text-primary">Data Jenis Bayar</a>, lalu klik tombol sinkronisasi <i class="fas fa-sync text-success me-1"></i> <strong>Generasi Tagihan</strong> pada kelas siswa ini ({{ $displayClassName }}).
                     </span>
 
+                        @if($canManageBill)
                         <form action="{{ route('bill.generate-student-bills', ['student_id' => $student->id, 'academic_year_id' => request('academic_year_id')]) }}" method="POST" class="mt-3">
                             @csrf
                             <button type="submit" class="btn btn-sm btn-primary">
                                 <i class="fas fa-sync-alt me-1"></i> Generate Bill Lainnya
                             </button>
                         </form>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -228,7 +235,7 @@
                                 @endphp
                                 @if($billDetail)
                                 <div class="col-12">
-                                    <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
+                                    <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ ($showModal && $canPayBill) ? 'cursor-pointer clickable-payment-card' : '' }}">
                                         <div class="d-flex align-items-center justify-content-between gap-3">
                                             <!-- Left side: Month & Year -->
                                             <div class="d-flex align-items-center gap-2">
@@ -266,6 +273,7 @@
                                                         <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                                     </span>
                                                 @elseif($showModal)
+                                                    @if($canPayBill)
                                                     <div class="form-check form-check-custom form-check-solid form-check-sm">
                                                         <input type="checkbox" 
                                                             name="bill_months[{{ $bill->id }}][]" 
@@ -283,6 +291,9 @@
                                                             Bayar
                                                         </label>
                                                     </div>
+                                                    @else
+                                                    <span class="badge badge-light-warning text-warning fw-bold fs-8">Belum Lunas</span>
+                                                    @endif
                                                 @else
                                                     <span class="badge badge-light text-slate-400 fs-8">-</span>
                                                 @endif
@@ -374,7 +385,7 @@
     
                         @if($billDetail)
                         <div class="col-12">
-                            <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
+                            <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ ($showModal && $canPayBill) ? 'cursor-pointer clickable-payment-card' : '' }}">
                                 <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
                                     
                                     <!-- Left side: Month & Year -->
@@ -445,6 +456,7 @@
                                         <!-- Unpaid action: Klik Bayar -->
                                         <div class="d-flex align-items-center ms-md-auto">
                                             @if($showModal)
+                                                @if($canPayBill)
                                                 <div class="form-check form-check-custom form-check-solid form-check-sm">
                                                     <input type="checkbox" 
                                                         name="bill_months[{{ $bill->id }}][]" 
@@ -462,6 +474,9 @@
                                                         Bayar
                                                     </label>
                                                 </div>
+                                                @else
+                                                <span class="badge badge-light-warning text-warning fw-bold fs-8">Belum Lunas</span>
+                                                @endif
                                             @else
                                                 <span class="badge badge-light text-slate-400 fs-8">-</span>
                                             @endif
