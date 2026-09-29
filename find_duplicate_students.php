@@ -20,11 +20,12 @@ echo "Found " . $duplicates->count() . " duplicate student name groups.\n";
 foreach ($duplicates as $dup) {
     $students = Student::where('name', $dup->name)
         ->with('classroom.school')
+        ->withCount('bills')
         ->get();
     
     echo "Group: '{$dup->name}'\n";
     foreach ($students as $s) {
-        $billCount = $s->bills()->count();
+        $billCount = $s->bills_count;
         $school = $s->classroom->school->name ?? '-';
         $class = $s->classroom->name ?? '-';
         echo "  - ID: {$s->id} | NIS: {$s->nis} | UPT: {$school} | Class: {$class} | Bills: {$billCount} | Saldo: {$s->saldo}\n";

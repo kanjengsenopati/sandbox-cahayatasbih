@@ -33,6 +33,11 @@
     $(document).on('processing.dt', function(e, settings, processing) {
         var wrapper = $(e.target).closest('.dataTables_wrapper');
         if (processing) {
+            // If table has valid cached data ready, suppress the floating "Mohon Tunggu" popup!
+            if (settings && settings._swrServingCache) {
+                wrapper.removeClass('dt-processing-active');
+                return;
+            }
             wrapper.addClass('dt-processing-active');
             var $proc = wrapper.find('div.dataTables_processing');
             if ($proc.length && (!$proc.find('.spinner-border').length || $proc.text().includes('Processing') || $proc.text().includes('Sedang memproses'))) {
@@ -148,6 +153,8 @@
             // 5. IF CACHE HIT -> RENDER INSTANTLY (0ms!)
             if (cachedData && cachedData.data && Array.isArray(cachedData.data)) {
                 renderedFromCache = true;
+                if (settings) settings._swrServingCache = true;
+
                 var cachedResponse = $.extend(true, {}, cachedData);
                 cachedResponse.draw = data.draw;
 
@@ -157,6 +164,8 @@
 
                 // Instant draw from cache
                 callback(cachedResponse);
+            } else {
+                if (settings) settings._swrServingCache = false;
             }
 
             // 6. BACKGROUND AUTO-SYNC (or normal server fetch if no cache)
@@ -170,6 +179,7 @@
 
             ajaxOptions.success = function(json) {
                 if (!json || typeof json !== 'object') {
+                    if (settings) settings._swrServingCache = false;
                     if (origSuccess) origSuccess(json);
                     return;
                 }
@@ -186,6 +196,7 @@
 
                 if (!renderedFromCache) {
                     // Cache miss / first load -> normal render (dismisses the "Mohon Tunggu" popup)
+                    if (settings) settings._swrServingCache = false;
                     callback(json);
                 } else {
                     // Cache hit -> check if fresh data differs from cached data
@@ -200,12 +211,14 @@
                         json.draw = data.draw;
                         callback(json);
                     }
+                    if (settings) settings._swrServingCache = false;
                 }
 
                 if (origSuccess) origSuccess(json);
             };
 
             ajaxOptions.error = function(xhr, status, error) {
+                if (settings) settings._swrServingCache = false;
                 if (!renderedFromCache) {
                     callback({
                         draw: data.draw,

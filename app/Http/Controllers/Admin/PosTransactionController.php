@@ -22,6 +22,8 @@ class PosTransactionController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        session()->save();
+
         // Restrict report access by role and mode parameter
         $user = Auth::user();
         $mode = $request->input('mode');
@@ -416,44 +418,48 @@ class PosTransactionController extends Controller
             $targetDateMonthStart = $targetDate->copy()->startOfMonth();
             $targetDateMonthEnd   = $targetDate->copy()->endOfMonth();
 
-            $rekapRaw = \DB::selectOne("
-                SELECT
-                    COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN pay_amount ELSE 0 END), 0) as today_sales,
-                    COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN profit ELSE 0 END), 0)     as today_profit,
-                    COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END)                            as today_count,
-                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as week_sales,
-                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as week_profit,
-                    COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as week_count,
-                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as month_sales,
-                    COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as month_profit,
-                    COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as month_count
-                FROM point_of_sale_transactions
-                WHERE status = ?
-                " . ($hasOutletRestriction ? 'AND outlet_id IN (' . implode(',', array_fill(0, count($authOutletIds), '?')) . ')' : ''),
-                array_merge(
-                    // today x3
-                    [$targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d')],
-                    // week x3
-                    [$targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd],
-                    // month x3
-                    [$targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd],
-                    // status + outlet restriction
-                    [PointOfSaleTransaction::STATUS_SUCCESS],
-                    $hasOutletRestriction ? $authOutletIds : []
-                )
-            );
+            $rekapWaktuComputation = function() use ($targetDateToday, $targetDateWeekStart, $targetDateWeekEnd, $targetDateMonthStart, $targetDateMonthEnd, $hasOutletRestriction, $authOutletIds) {
+                $rekapRaw = \DB::selectOne("
+                    SELECT
+                        COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN pay_amount ELSE 0 END), 0) as today_sales,
+                        COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN profit ELSE 0 END), 0)     as today_profit,
+                        COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END)                            as today_count,
+                        COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as week_sales,
+                        COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as week_profit,
+                        COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as week_count,
+                        COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as month_sales,
+                        COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as month_profit,
+                        COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as month_count
+                    FROM point_of_sale_transactions
+                    WHERE status = ?
+                    " . ($hasOutletRestriction ? 'AND outlet_id IN (' . implode(',', array_fill(0, count($authOutletIds), '?')) . ')' : ''),
+                    array_merge(
+                        [$targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d')],
+                        [$targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd],
+                        [$targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd],
+                        [PointOfSaleTransaction::STATUS_SUCCESS],
+                        $hasOutletRestriction ? $authOutletIds : []
+                    )
+                );
+                return [
+                    'today_sales'  => $rekapRaw->today_sales ?? 0,
+                    'today_profit' => $rekapRaw->today_profit ?? 0,
+                    'today_count'  => $rekapRaw->today_count ?? 0,
+                    'week_sales'   => $rekapRaw->week_sales ?? 0,
+                    'week_profit'  => $rekapRaw->week_profit ?? 0,
+                    'week_count'   => $rekapRaw->week_count ?? 0,
+                    'month_sales'  => $rekapRaw->month_sales ?? 0,
+                    'month_profit' => $rekapRaw->month_profit ?? 0,
+                    'month_count'  => $rekapRaw->month_count ?? 0,
+                ];
+            };
 
-            $rekapWaktu = [
-                'today_sales'  => $rekapRaw->today_sales ?? 0,
-                'today_profit' => $rekapRaw->today_profit ?? 0,
-                'today_count'  => $rekapRaw->today_count ?? 0,
-                'week_sales'   => $rekapRaw->week_sales ?? 0,
-                'week_profit'  => $rekapRaw->week_profit ?? 0,
-                'week_count'   => $rekapRaw->week_count ?? 0,
-                'month_sales'  => $rekapRaw->month_sales ?? 0,
-                'month_profit' => $rekapRaw->month_profit ?? 0,
-                'month_count'  => $rekapRaw->month_count ?? 0,
-            ];
+            if (!$startDateInput && !$endDateInput) {
+                $rekapCacheKey = 'pos_rekap_default_' . ($hasOutletRestriction ? implode('_', $authOutletIds) : 'all');
+                $rekapWaktu = \Illuminate\Support\Facades\Cache::remember($rekapCacheKey, 180, $rekapWaktuComputation);
+            } else {
+                $rekapWaktu = $rekapWaktuComputation();
+            }
 
             // Rekap Dana Per Outlet (untuk Tab Serah Terima)
             $mainOutlet = $outlets->first(fn($ot) => in_array(strtoupper($ot->code), ['KPR', 'KOPERASI']) || strtoupper($ot->name) === 'KOPERASI');
@@ -511,8 +517,13 @@ class PosTransactionController extends Controller
             $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
             $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
             
-            $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds);
-            $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $outletId, $hasOutletRestriction, $authOutletIds);
+            $chartCacheKey = "pos_chart_{$year}_" . ($outletId ?: 'all') . '_' . ($hasOutletRestriction ? implode('_', $authOutletIds) : 'all');
+            [$chartCashierOmzet, $chartCashierProfit] = \Illuminate\Support\Facades\Cache::remember($chartCacheKey, 600, function() use ($year, $outletId, $hasOutletRestriction, $authOutletIds) {
+                return [
+                    $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds),
+                    $this->generateMonthlyChartData($year, 'profit', $outletId, $hasOutletRestriction, $authOutletIds),
+                ];
+            });
 
             // Count of active products
             $totalProduct = \App\Models\Item::whereIsActive(true)
@@ -548,16 +559,26 @@ class PosTransactionController extends Controller
                 }
             });
 
-        $globalAggregates = (clone $transactionQueryGlobal)->selectRaw('
-            COUNT(id) as total_transaction,
-            COALESCE(SUM(pay_amount), 0) as total_sales,
-            COALESCE(SUM(profit), 0) as total_income
-        ')->first();
+        $globalCompute = function() use ($transactionQueryGlobal) {
+            return (clone $transactionQueryGlobal)->selectRaw('
+                COUNT(id) as total_transaction,
+                COALESCE(SUM(pay_amount), 0) as total_sales,
+                COALESCE(SUM(profit), 0) as total_income
+            ')->first();
+        };
+
+        if (!$startDateInput && !$endDateInput) {
+            $globalCacheKey = "pos_global_totals_" . ($outletId ?: 'all') . '_' . ($hasOutletRestriction ? implode('_', $authOutletIds) : 'all');
+            $globalAggregates = \Illuminate\Support\Facades\Cache::remember($globalCacheKey, 180, $globalCompute);
+        } else {
+            $globalAggregates = $globalCompute();
+        }
+
         $totalTransaction = $globalAggregates->total_transaction ?? 0;
         $totalSales = $globalAggregates->total_sales ?? 0;
         $totalIncome = $globalAggregates->total_income ?? 0;
 
-        $admins = \App\Models\Admin::orderBy('name')->get();
+        $admins = \Illuminate\Support\Facades\Cache::remember('pos_admins_list', 3600, fn() => \App\Models\Admin::select('id', 'name')->orderBy('name')->get());
 
         return view('admins.pos-transaction.index', compact(
             'outlets', 

@@ -257,26 +257,24 @@
                             <h3 class="card-label fw-bolder text-slate-800 fs-5" style="color: #1e293b;">Eksekusi Script Diagnostik Integritas</h3>
                             <span class="text-muted mt-1 fw-bold fs-7">Hasil eksekusi naskah pemeriksaan integritas basis data lokal &amp; penyimpanan.</span>
                         </div>
+                        <div class="card-toolbar">
+                            <button type="button" id="btn-run-scripts-now" class="btn btn-sm btn-light-primary fw-bolder">
+                                <i class="fas fa-play me-1"></i> <span id="text-btn-scripts">Jalankan Pindai Integritas</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-6 pt-2" id="scripts-container">
-                        <!-- Skeleton Loader for Scripts -->
-                        <div class="row g-5">
-                            @for ($i = 0; $i < 3; $i++)
-                                <div class="col-12">
-                                    <div class="card border border-dashed border-gray-300 card-bordered p-5 mb-2 placeholder-glow" style="border-radius: 16px;">
-                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                            <div class="d-flex align-items-center w-50">
-                                                <span class="placeholder col-1 me-3 p-3 rounded-circle"></span>
-                                                <div class="w-75">
-                                                    <span class="placeholder col-6 mb-1"></span>
-                                                    <span class="placeholder col-10"></span>
-                                                </div>
-                                            </div>
-                                            <span class="placeholder col-2 py-3 rounded"></span>
-                                        </div>
-                                    </div>
+                        <div class="alert bg-light-primary border border-primary d-flex align-items-center justify-content-between p-5 rounded-[16px] flex-wrap gap-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-shield-alt text-primary fs-1 me-4"></i>
+                                <div class="d-flex flex-column">
+                                    <h5 class="mb-1 text-dark">Naskah Diagnostik Integritas</h5>
+                                    <span class="text-slate-600 fs-7">Pemeriksaan integritas tagihan, timestamp anomali, dan duplikasi data lokal siap dijalankan on-demand.</span>
                                 </div>
-                            @endfor
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary fw-bold px-4" onclick="document.getElementById('btn-run-scripts-now').click()">
+                                <i class="fas fa-play me-1 text-white"></i> Mulai Pindai Sekarang
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -555,6 +553,8 @@
                             container.innerHTML = data.html;
                             bindTableEvents();
                         }
+                        // Chained: Trigger AI Insight sequentially AFTER comparison is loaded & cached
+                        loadAiInsight(isRefresh);
                     })
                     .catch(err => {
                         console.error('Error loading comparison:', err);
@@ -712,6 +712,21 @@
                 }
             });
 
+            // Manual On-Demand Scripts Scan Button
+            const btnRunScriptsNow = document.getElementById('btn-run-scripts-now');
+            if (btnRunScriptsNow) {
+                btnRunScriptsNow.addEventListener('click', function () {
+                    const text = document.getElementById('text-btn-scripts');
+                    if (text) text.textContent = 'Memindai...';
+                    btnRunScriptsNow.disabled = true;
+                    loadScripts(true);
+                    setTimeout(() => {
+                        if (text) text.textContent = 'Pindai Ulang';
+                        btnRunScriptsNow.disabled = false;
+                    }, 3000);
+                });
+            }
+
             // Toolbar Refresh Button
             const btnToolbarAudit = document.getElementById('btn-toolbar-audit');
             if (btnToolbarAudit) {
@@ -723,10 +738,9 @@
                     if (text) text.textContent = 'Memperbarui Audit...';
                     btnToolbarAudit.disabled = true;
 
-                    // Trigger all 3 endpoints with refresh=1
+                    // Trigger comparison with refresh=1 (chains AI Insight), and refresh scripts
                     loadComparison(currentSearch, 1, true);
                     loadScripts(true);
-                    loadAiInsight(true);
 
                     setTimeout(() => {
                         if (icon) icon.classList.remove('fa-spin');
@@ -736,10 +750,10 @@
                 });
             }
 
-            // Initial Asynchronous Load on Page Visit
+            // Initial Asynchronous Load on Page Visit:
+            // ONLY comparison runs first to avoid saturating PHP worker pool!
+            // It will sequentially trigger loadAiInsight once cached.
             loadComparison('', 1, false);
-            loadScripts(false);
-            loadAiInsight(false);
         });
     </script>
 @endsection

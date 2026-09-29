@@ -20,11 +20,12 @@ echo "Found " . $duplicates->count() . " duplicate BillType name groups.\n";
 foreach ($duplicates as $dup) {
     $types = BillType::where('name', $dup->name)
         ->where('academic_year_id', $dup->academic_year_id)
+        ->withCount('bills')
         ->get();
     
     echo "Group: '{$dup->name}' | AY: {$dup->academic_year_id}\n";
     foreach ($types as $t) {
-        $billCount = $t->bills()->count();
+        $billCount = $t->bills_count;
         echo "  - ID: {$t->id} | Created: {$t->created_at} | Bills: {$billCount}\n";
     }
 }

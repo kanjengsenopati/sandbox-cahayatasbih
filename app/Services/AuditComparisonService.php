@@ -14,9 +14,23 @@ class AuditComparisonService
      */
     public function getComparisonData(?string $search = null, int $page = 1, int $perPage = 10): array
     {
-        $raw = Cache::remember('audit_diagnostics_raw_comparison', 600, function () {
-            return $this->computeRawComparisonData();
-        });
+        $raw = Cache::get('audit_diagnostics_raw_comparison');
+        if (!$raw) {
+            try {
+                $raw = Cache::lock('audit_raw_comparison_lock', 60)->block(30, function () {
+                    if ($cached = Cache::get('audit_diagnostics_raw_comparison')) {
+                        return $cached;
+                    }
+                    $data = $this->computeRawComparisonData();
+                    Cache::put('audit_diagnostics_raw_comparison', $data, 1800);
+                    return $data;
+                });
+            } catch (\Throwable $e) {
+                $raw = Cache::remember('audit_diagnostics_raw_comparison', 1800, function () {
+                    return $this->computeRawComparisonData();
+                });
+            }
+        }
 
         $summaries = $raw['summaries'] ?? [];
         $discrepancies = $raw['discrepancies'] ?? [];
@@ -80,19 +94,25 @@ class AuditComparisonService
             'saving' => ['local' => $localTotalSaving, 'master' => $masterTotalSaving, 'diff' => $localTotalSaving - $masterTotalSaving],
         ];
 
-        // 2. Fetch all local and master students keyed by ID (UUID)
-        $localStudents = DB::connection('mysql')->table('students')->whereNull('deleted_at')->get()->keyBy('id');
-        $masterStudents = DB::connection('mysql_master')->table('students')->whereNull('deleted_at')->get()->keyBy('id');
+        // 2. Fetch all local and master students keyed by ID (UUID) with required columns only
+        $localStudents = DB::connection('mysql')->table('students')
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'nis', 'saldo', 'saving', 'classroom_id')
+            ->get()->keyBy('id');
+        $masterStudents = DB::connection('mysql_master')->table('students')
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'nis', 'saldo', 'saving', 'classroom_id')
+            ->get()->keyBy('id');
 
         // Reference tables local
-        $localClassrooms = DB::connection('mysql')->table('classrooms')->get()->keyBy('id');
-        $localSchools = DB::connection('mysql')->table('schools')->get()->keyBy('id');
-        $localAcademicYears = DB::connection('mysql')->table('academic_years')->get()->keyBy('id');
+        $localClassrooms = DB::connection('mysql')->table('classrooms')->select('id', 'name', 'school_id')->get()->keyBy('id');
+        $localSchools = DB::connection('mysql')->table('schools')->select('id', 'name')->get()->keyBy('id');
+        $localAcademicYears = DB::connection('mysql')->table('academic_years')->select('id', 'name')->get()->keyBy('id');
 
         // Reference tables master
-        $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->get()->keyBy('id');
-        $masterSchools = DB::connection('mysql_master')->table('schools')->get()->keyBy('id');
-        $masterAcademicYears = DB::connection('mysql_master')->table('academic_years')->get()->keyBy('id');
+        $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->select('id', 'name', 'school_id')->get()->keyBy('id');
+        $masterSchools = DB::connection('mysql_master')->table('schools')->select('id', 'name')->get()->keyBy('id');
+        $masterAcademicYears = DB::connection('mysql_master')->table('academic_years')->select('id', 'name')->get()->keyBy('id');
 
         // 3. BULK PRE-FETCH: Grouped aggregations to eliminate N+1 queries
         $localBillsMap = DB::connection('mysql')->table('bills')
@@ -110,6 +130,7 @@ class AuditComparisonService
 
         $localHistoryMap = DB::connection('mysql')->table('student_classroom_histories')
             ->whereNull('deleted_at')
+            ->select('student_id', 'academic_year_id', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get()
             ->unique('student_id')
@@ -130,6 +151,7 @@ class AuditComparisonService
 
         $masterHistoryMap = DB::connection('mysql_master')->table('student_classroom_histories')
             ->whereNull('deleted_at')
+            ->select('student_id', 'academic_year_id', 'created_at')
             ->orderBy('created_at', 'desc')
             ->get()
             ->unique('student_id')
