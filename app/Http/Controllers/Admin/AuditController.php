@@ -104,35 +104,72 @@ class AuditController extends Controller
     }
 
     /**
-     * Show system diagnostics UI.
+     * Show system diagnostics UI (instant page load with skeleton loaders).
      */
-    public function diagnosticsIndex(Request $request, AuditComparisonService $comparisonService)
+    public function diagnosticsIndex(Request $request)
     {
         if (!Auth::user()->can('Manage Audit dan Sinkron')) {
             return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        return view('admins.admin.audit.diagnostics');
+    }
+
+    /**
+     * AJAX endpoint to fetch audit comparison data asynchronously.
+     */
+    public function ajaxComparison(Request $request, AuditComparisonService $comparisonService)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
         session()->save();
 
-        // Cache diagnostic CLI script execution results for 5 minutes unless refresh parameter is requested
-        if ($request->has('refresh')) {
-            Cache::forget('audit_diagnostics_results');
+        if ($request->boolean('refresh')) {
             Cache::forget('audit_diagnostics_raw_comparison');
             Cache::forget('audit_ai_insight');
         }
 
-        $results = Cache::remember('audit_diagnostics_results', 300, function () {
+        $search = $request->input('search');
+        $page = (int) $request->input('page', 1);
+
+        $comparison = $comparisonService->getComparisonData($search, $page, 10);
+
+        $html = view('admins.admin.audit.partials.comparison-table', compact('comparison'))->render();
+
+        return response()->json([
+            'summaries' => $comparison['summaries'],
+            'total_discrepancies' => $comparison['total_discrepancies'],
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint to fetch diagnostic integrity scripts results asynchronously.
+     */
+    public function ajaxScripts(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
+        session()->save();
+
+        if ($request->boolean('refresh')) {
+            Cache::forget('audit_diagnostics_results');
+        }
+
+        $results = Cache::remember('audit_diagnostics_results', 3600, function () {
             $service = new AuditService();
             return $service->runAll();
         });
 
-        $search = $request->input('search');
-        $page = (int) $request->input('page', 1);
+        $html = view('admins.admin.audit.partials.scripts-output', compact('results'))->render();
 
-        // Fast bulk comparison data with caching, search & pagination (default 10)
-        $comparison = $comparisonService->getComparisonData($search, $page, 10);
-
-        return view('admins.admin.audit.diagnostics', compact('results', 'comparison'));
+        return response()->json([
+            'html' => $html,
+        ]);
     }
 
     /**
@@ -273,9 +310,17 @@ class AuditController extends Controller
             return response()->json(['html' => 'Akses ditolak.'], 403);
         }
 
+        session()->save();
+
         $comparison = $comparisonService->getComparisonData();
+        $cacheKey = 'audit_ai_insight_' . count($comparison['discrepancies']);
+
+        if ($request->boolean('refresh')) {
+            Cache::forget($cacheKey);
+            Cache::forget('audit_ai_insight');
+        }
         
-        $aiInsight = Cache::remember('audit_ai_insight_' . count($comparison['discrepancies']), 1800, function () use ($comparisonService, $comparison) {
+        $aiInsight = Cache::remember($cacheKey, 1800, function () use ($comparisonService, $comparison) {
             return $comparisonService->generateAiInsight($comparison);
         });
 

@@ -100,6 +100,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::match(['put', 'post', 'delete'], 'transaction/{id}/hide-archive', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'hideArchive'])->name('admin.transaction.hide-archive');
     Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
+    Route::get('audit/diagnostics/comparison', [App\Http\Controllers\Admin\AuditController::class, 'ajaxComparison'])->name('admin.audit.diagnostics.comparison');
+    Route::get('audit/diagnostics/scripts', [App\Http\Controllers\Admin\AuditController::class, 'ajaxScripts'])->name('admin.audit.diagnostics.scripts');
     Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
     Route::get('audit/duplicate-students', [App\Http\Controllers\Admin\AuditController::class, 'duplicatesIndex'])->name('admin.audit.duplicates');
     Route::get('audit/simulation', [App\Http\Controllers\Admin\AuditController::class, 'simulationIndex'])->name('admin.audit.simulation');
