@@ -707,6 +707,13 @@ class OrderItemController extends Controller
                 ->lockForUpdate() // Lock the row for update to prevent race conditions
                 ->first();
 
+            if (!$cart && $request->filled('item_id')) {
+                $cart = PointOfSaleCart::where('item_id', $request->item_id)
+                    ->where('admin_id', auth()->user()->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
             if (!$cart) {
                 // Rollback transaction if cart is not found
                 DB::rollback();
@@ -751,6 +758,13 @@ class OrderItemController extends Controller
                 ->where('admin_id', auth()->user()->id)
                 ->lockForUpdate() // Lock the row for update to prevent race conditions
                 ->first();
+
+            if (!$cart && $request->filled('item_id')) {
+                $cart = PointOfSaleCart::where('item_id', $request->item_id)
+                    ->where('admin_id', auth()->user()->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             if (!$cart) {
                 // Rollback transaction if cart is not found
