@@ -104,7 +104,7 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
             }
 
             foreach ($transactions as $transaction) {
-                $createdDate = $transaction->created_at ? $transaction->created_at->format('Y-m-d') : '';
+                $createdDate = $transaction->created_at ? Carbon::parse($transaction->created_at)->format('Y-m-d') : '';
                 $key = $transaction->student_id . '_' . $createdDate . '_' . $transaction->type;
                 
                 if ($currentKey !== $key) {
