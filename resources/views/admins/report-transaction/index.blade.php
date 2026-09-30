@@ -803,21 +803,34 @@
     // Helper function to safely copy text to clipboard
     function copyTextToClipboard(text) {
         if (navigator.clipboard && window.isSecureContext) {
-            return navigator.clipboard.writeText(text);
-        } else {
-            let textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            textArea.style.top = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            return new Promise((resolve, reject) => {
-                document.execCommand('copy') ? resolve() : reject();
-                textArea.remove();
+            return navigator.clipboard.writeText(text).catch(function(err) {
+                console.warn('navigator.clipboard.writeText gagal, beralih ke fallback execCommand:', err);
+                return copyTextWithFallback(text);
             });
         }
+        return copyTextWithFallback(text);
+    }
+
+    function copyTextWithFallback(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        textArea.setAttribute('readonly', '');
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return new Promise(function(resolve, reject) {
+            try {
+                var successful = document.execCommand('copy');
+                textArea.remove();
+                successful ? resolve() : reject(new Error('execCommand returned false'));
+            } catch (err) {
+                textArea.remove();
+                reject(err);
+            }
+        });
     }
 
     // Helper to download TSV/CSV for Google Sheets import
@@ -877,33 +890,33 @@
 
                     function showSuccessModal(copiedSuccessfully) {
                         var copyBadge = copiedSuccessfully
-                            ? '<span class="badge badge-light-success fs-7 fw-bold"><i class="fas fa-check-circle text-success me-1"></i> Data Otomatis Tersalin ke Clipboard</span>'
-                            : '<span class="badge badge-light-warning fs-7 fw-bold"><i class="fas fa-info-circle text-warning me-1"></i> Silakan Klik Tombol Salin di Bawah</span>';
+                            ? '<span class="badge badge-light-success fs-7 fw-bold py-2 px-3"><i class="fas fa-check-circle text-success me-1"></i> Data Transaksi Berhasil Disalin ke Clipboard!</span>'
+                            : '<span class="badge badge-light-warning fs-7 fw-bold py-2 px-3"><i class="fas fa-info-circle text-warning me-1"></i> Klik "Buka Google Sheets" di bawah untuk menyalin otomatis</span>';
 
                         Swal.fire({
                             icon: 'success',
-                            title: '<span class="text-success fs-3 fw-bolder">Siap Masuk Google Sheets!</span>',
+                            title: '<span class="text-success fs-3 fw-bolder">Data Siap Ditempel ke Google Sheets!</span>',
                             html: `
                                 <div class="text-start fs-7 text-gray-700 mt-2">
                                     <p class="mb-2">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
-                                    <div class="mb-3">${copyBadge}</div>
+                                    <div class="mb-3 text-center">${copyBadge}</div>
                                     <div class="p-3 bg-light-primary rounded-3 border border-primary border-dashed mb-3">
-                                        <div class="d-flex align-items-center mb-1">
-                                            <i class="fas fa-paste text-primary fs-3 me-2"></i>
-                                            <span class="fw-bolder text-gray-800 fs-7">Cara Menempelkan ke Google Sheets:</span>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-info-circle text-primary fs-4 me-2"></i>
+                                            <span class="fw-bolder text-gray-900 fs-7">Cara Menampilkan Data di Google Sheets:</span>
                                         </div>
-                                        <div class="ms-7 fs-8 text-gray-600">
-                                            1. Klik tombol <strong>Buka Google Sheets</strong> di bawah.<br>
-                                            2. Klik sel <strong>A1</strong> pada lembar kerja baru.<br>
-                                            3. Tekan <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">⌘ + V</kbd>).
+                                        <div class="ms-6 fs-7 text-gray-700">
+                                            <div class="mb-2"><strong>1.</strong> Klik tombol hijau <strong>Buka Google Sheets</strong> di bawah.</div>
+                                            <div class="mb-2"><strong>2.</strong> Pada halaman Google Sheets yang terbuka, klik kotak <strong>A1</strong> (pojok kiri atas).</div>
+                                            <div class="mb-1"><strong>3.</strong> Tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">⌘ + V</kbd> di Mac) untuk <strong>Paste / Tempel</strong> data.</div>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
-                                        <a href="https://sheets.new" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                        <a href="https://sheets.new" target="_blank" class="btn btn-sm btn-success fw-bold" id="btn-open-sheets-link">
                                             <i class="fas fa-external-link-alt me-1"></i> Buka Google Sheets
                                         </a>
                                         <button type="button" class="btn btn-sm btn-light-primary fw-bold" id="btn-manual-copy-tsv">
-                                            <i class="fas fa-copy me-1"></i> Salin Ulang Data
+                                            <i class="fas fa-copy me-1"></i> Salin Ulang
                                         </button>
                                         <button type="button" class="btn btn-sm btn-light-info fw-bold" id="btn-manual-download-tsv">
                                             <i class="fas fa-file-download me-1"></i> Unduh File (.tsv)
@@ -913,15 +926,19 @@
                             `,
                             showConfirmButton: false,
                             showCancelButton: true,
-                            cancelButtonText: 'Selesai / Tutup',
+                            cancelButtonText: 'Tutup',
                             customClass: {
                                 cancelButton: 'btn btn-sm btn-light'
                             },
                             didOpen: () => {
+                                $('#btn-open-sheets-link').on('click', function() {
+                                    copyTextToClipboard(tsvData);
+                                });
+
                                 $('#btn-manual-copy-tsv').on('click', function() {
                                     copyTextToClipboard(tsvData).then(function() {
-                                        Swal.showValidationMessage('✓ Berhasil menyalin data ke Clipboard!');
-                                        setTimeout(() => Swal.resetValidationMessage(), 2500);
+                                        Swal.showValidationMessage('✓ Berhasil menyalin data ke Clipboard! Silakan paste (Ctrl+V) di Google Sheets.');
+                                        setTimeout(() => Swal.resetValidationMessage(), 3000);
                                     });
                                 });
 
