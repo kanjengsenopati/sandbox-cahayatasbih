@@ -141,7 +141,7 @@ Route::any('wali/{any?}', function ($any = null) {
 
 Route::prefix('ct-mobile')->group(function () {
     Route::get('/', [WaliDashboardController::class, 'app'])->name('wali.index');
-    Route::get('login', [WaliDashboardController::class, 'app'])->name('wali.login');
+    Route::get('login', [WaliDashboardController::class, 'loginPage'])->name('wali.login');
     Route::post('login', [CtMobileAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [CtMobileAuthController::class, 'logout'])->name('wali.logout');
     Route::get('logout', [CtMobileAuthController::class, 'logout']);

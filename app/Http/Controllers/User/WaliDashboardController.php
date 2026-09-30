@@ -51,6 +51,17 @@ class WaliDashboardController extends Controller
         return view('users.dashboard.pwa-app-fix');
     }
 
+    public function loginPage()
+    {
+        if (Auth::guard('wali')->check()) {
+            return redirect('/ct-mobile/#/dashboard');
+        }
+        if (Auth::guard('web')->check()) {
+            return redirect('/ct-mobile/#/penanggung-jawab/dashboard');
+        }
+        return view('users.dashboard.pwa-app-fix');
+    }
+
     public function topup()
     {
         $activeStudent = $this->resolveActiveStudent();

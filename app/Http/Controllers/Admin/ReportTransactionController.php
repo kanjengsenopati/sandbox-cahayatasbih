@@ -264,15 +264,6 @@ class ReportTransactionController extends Controller
                     ->make(true);
             }
         }
-        // Ambil list admin langsung tanpa full-table scan pada transactions
-        $admins = Admin::select('id', 'name')->orderBy('name')->get();
-        $schools = School::select('id', 'name', 'type')->orderBy('name')->get();
-        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
-            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
-            '615a34af-be2d-45f2-9830-720fea341a0c',
-            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
-            'ce389861-40ab-4523-9364-3458e9dfda1d'
-        ]);
 
         $schoolId = request()->school_id;
         if (!$schoolId) {
@@ -282,6 +273,16 @@ class ReportTransactionController extends Controller
                 $schoolId = $schoolIds[0] ?? null;
             }
         }
+
+        // Ambil list petugas yang berhak akses Entri Data Pembayaran atau memiliki riwayat transaksi
+        $admins = $this->getPaymentOfficers($schoolId);
+        $schools = School::select('id', 'name', 'type')->orderBy('name')->get();
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
+            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
+            '615a34af-be2d-45f2-9830-720fea341a0c',
+            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
+            'ce389861-40ab-4523-9364-3458e9dfda1d'
+        ]);
 
         if ($schoolId) {
             $school = \App\Models\School::find($schoolId);
@@ -439,40 +440,113 @@ class ReportTransactionController extends Controller
             ];
         })->unique('name')->sortBy('name')->values();
 
-        // 2. Dapatkan Petugas yang valid untuk Lembaga ini
-        $adminsQuery = Admin::select('id', 'name');
-        
-        if ($schoolId) {
-            // Hanya petugas yang memiliki transaksi di lembaga ini, atau yang di-assign ke lembaga ini
-            $adminsQuery->where(function($q) use ($schoolId) {
-                $q->where('school_id', $schoolId)
-                  ->orWhereHas('adminSchool', function($sq) use ($schoolId) {
-                      $sq->where('school_id', $schoolId);
-                  })
-                  ->orWhereExists(function ($eq) use ($schoolId) {
-                      $eq->select(DB::raw(1))
-                          ->from('transactions')
-                          ->join('students', 'transactions.student_id', '=', 'students.id')
-                          ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
-                          ->whereColumn('transactions.admin_id', 'admins.id')
-                          ->where('classrooms.school_id', $schoolId);
-                  });
-            });
-        } else {
-            // Default: Petugas yang pernah melakukan transaksi
-            $adminsQuery->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('transactions')
-                    ->whereColumn('transactions.admin_id', 'admins.id');
-            });
-        }
-
-        $admins = $adminsQuery->orderBy('name')->get();
+        // 2. Dapatkan Petugas yang valid untuk Lembaga ini (hanya yang berhak akses Entri Data Pembayaran / memiliki riwayat transaksi)
+        $admins = $this->getPaymentOfficers($schoolId);
 
         return response()->json([
             'bill_types' => $billTypes,
             'admins' => $admins,
         ]);
+    }
+
+    /**
+     * Dapatkan daftar petugas yang berhak mengakses Entri Data Pembayaran
+     * atau yang memiliki riwayat transaksi pembayaran.
+     *
+     * @param string|null $schoolId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPaymentOfficers(?string $schoolId = null)
+    {
+        $adminsQuery = Admin::select('admins.id', 'admins.name');
+
+        $paymentPermissions = [
+            'Manage Tagihan',
+            'Create Tagihan',
+            'Edit Tagihan',
+            'Manage Transaksi',
+            'Create Transaksi',
+        ];
+
+        $paymentRoleNames = [
+            'Super Admin',
+            'superadmin',
+            'Admin',
+            'admin',
+            'Bendahara',
+            'Petugas Keuangan',
+            'Admin Tagihan',
+            'Keuangan',
+        ];
+
+        $adminsQuery->where(function ($q) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+            // 1. Pernah mencatat transaksi (riwayat transaksi nyata)
+            $q->whereExists(function ($tq) use ($schoolId) {
+                $tq->select(DB::raw(1))
+                    ->from('transactions')
+                    ->whereColumn('transactions.admin_id', 'admins.id');
+                if ($schoolId) {
+                    $tq->join('students', 'transactions.student_id', '=', 'students.id')
+                       ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                       ->where('classrooms.school_id', $schoolId);
+                }
+            });
+
+            // 2. Memiliki hak akses ke Entri Data Pembayaran
+            $q->orWhere(function ($accessQ) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+                // Pastikan user masih aktif jika belum ada riwayat transaksi
+                $accessQ->where('admins.is_active', true);
+
+                // Cek permission / role pembayaran
+                $accessQ->where(function ($permQ) use ($paymentPermissions, $paymentRoleNames) {
+                    $permQ->whereHas('permissions', function ($pq) use ($paymentPermissions) {
+                        $pq->whereIn('name', $paymentPermissions);
+                    })
+                    ->orWhereHas('roles', function ($rq) use ($paymentPermissions, $paymentRoleNames) {
+                        $rq->whereIn('name', $paymentRoleNames)
+                           ->orWhere('name', 'like', '%Bendahara%')
+                           ->orWhere('name', 'like', '%Keuangan%')
+                           ->orWhere('name', 'like', '%Tagihan%')
+                           ->orWhereHas('permissions', function ($rpq) use ($paymentPermissions) {
+                               $rpq->whereIn('name', $paymentPermissions);
+                           });
+                    })
+                    ->orWhereExists(function ($subRole) use ($paymentRoleNames) {
+                        $subRole->select(DB::raw(1))
+                            ->from('roles')
+                            ->whereColumn('roles.id', 'admins.role_id')
+                            ->where(function ($rrq) use ($paymentRoleNames) {
+                                $rrq->whereIn('roles.name', $paymentRoleNames)
+                                    ->orWhere('roles.name', 'like', '%Bendahara%')
+                                    ->orWhere('roles.name', 'like', '%Keuangan%')
+                                    ->orWhere('roles.name', 'like', '%Tagihan%');
+                            });
+                    });
+                });
+
+                // Jika filter lembaga aktif, batasi petugas pembayaran sesuai lembaganya
+                if ($schoolId) {
+                    $accessQ->where(function ($sq) use ($schoolId) {
+                        $sq->where('admins.school_id', $schoolId)
+                           ->orWhereHas('adminSchool', function ($asq) use ($schoolId) {
+                               $asq->where('school_id', $schoolId);
+                           })
+                           ->orWhere('admins.access_scope', 'all')
+                           ->orWhereHas('roles', function ($rq) {
+                               $rq->whereIn('name', ['Super Admin', 'superadmin']);
+                           })
+                           ->orWhereExists(function ($srq) {
+                               $srq->select(DB::raw(1))
+                                   ->from('roles')
+                                   ->whereColumn('roles.id', 'admins.role_id')
+                                   ->whereIn('roles.name', ['Super Admin', 'superadmin']);
+                           });
+                    });
+                }
+            });
+        });
+
+        return $adminsQuery->orderBy('admins.name')->get();
     }
 
     /**
