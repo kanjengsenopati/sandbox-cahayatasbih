@@ -18,12 +18,13 @@ function LoginPage() {
   const [show, setShow] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("remember_me") === "true";
+      const saved = localStorage.getItem("remember_me");
+      return saved !== null ? saved === "true" : true;
     }
-    return false;
+    return true;
   });
   const [phone, setPhone] = useState(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("remember_me") === "true") {
+    if (typeof window !== "undefined") {
       return localStorage.getItem("remembered_phone") || "";
     }
     return "";
