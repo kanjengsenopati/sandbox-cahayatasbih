@@ -47,6 +47,9 @@ class OrderItemController extends Controller
     public function dashboard()
     {
         $admin = auth()->user();
+        if (!$admin || (!$admin->hasRole('Super Admin') && !$admin->can('Manage Pos Kasir') && !$admin->can('Manage Laporan Pos Multi Outlet'))) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk dashboard POS');
+        }
         $authOutletIds = $admin->getOutletIds();
         $totalTransaction = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds) {
@@ -622,6 +625,9 @@ class OrderItemController extends Controller
 
     public function addItemToCart(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk menambah barang ke keranjang', null);
+        }
         session()->save();
 
         // Begin transaction
@@ -695,6 +701,9 @@ class OrderItemController extends Controller
 
     public function deleteCart(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
         session()->save();
 
         // Begin transaction
@@ -748,6 +757,9 @@ class OrderItemController extends Controller
 
     public function updateCartQuantity(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
         session()->save();
 
         // Begin transaction
@@ -824,6 +836,9 @@ class OrderItemController extends Controller
 
     public function deleteAllCart()
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
         session()->save();
 
         // Begin transaction

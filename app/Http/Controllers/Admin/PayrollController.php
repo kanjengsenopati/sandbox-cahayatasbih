@@ -524,8 +524,8 @@ class PayrollController extends Controller
      */
     public function saveSetting(Request $request)
     {
-        if (!Auth::user()->can('Manage Payroll')) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if (!Auth::user()->can('Create Payroll') && !Auth::user()->can('Approve Payroll') && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk mengubah pengaturan gaji.'], 403);
         }
 
         // Sanitasi input nominal dengan membuang pemisah ribuan titik

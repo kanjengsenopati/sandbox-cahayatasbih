@@ -116,8 +116,8 @@ class StudentPermitController extends Controller
      */
     public function destroy(string $id)
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        if (!Auth::user()->can('Delete Perizinan') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus data perizinan.');
         }
 
         $permit = StudentPermit::findOrFail($id);

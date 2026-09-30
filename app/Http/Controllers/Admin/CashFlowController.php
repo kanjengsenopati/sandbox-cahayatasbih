@@ -779,6 +779,9 @@ class CashFlowController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengajukan Arus Kas.');
+        }
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
         $outlets = \App\Models\Outlet::orderBy('name')->get();
@@ -790,7 +793,7 @@ class CashFlowController extends Controller
      */
     public function store(CashFlowRequest $request)
     {
-        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->can('Manage Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengajukan Arus Kas.');
         }
 

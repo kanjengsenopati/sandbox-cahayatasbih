@@ -720,7 +720,7 @@ class BillController extends Controller
      */
     public function store(BillPaymentRequest $request)
     {
-        if (!Auth::user()->can('Create Tagihan') && !Auth::user()->can('Manage Tagihan') && !Auth::user()->hasRole('Super Admin')) {
+        if (!Auth::user()->can('Create Tagihan') && !Auth::user()->can('Create Transaksi') && !Auth::user()->hasRole('Super Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk memproses transaksi pembayaran tagihan.');
         }
 
@@ -1022,7 +1022,7 @@ class BillController extends Controller
         $isAuthorized = false;
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan')) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan') || $user->can('Edit Tagihan')) {
                 $isAuthorized = true;
             }
         }
@@ -1100,7 +1100,7 @@ class BillController extends Controller
         $isAuthorized = false;
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan')) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan') || $user->can('Edit Tagihan')) {
                 $isAuthorized = true;
             }
         }

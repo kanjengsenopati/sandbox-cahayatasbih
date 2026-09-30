@@ -267,8 +267,8 @@ class ProfitLossReportController extends Controller
      */
     public function storeExpense(Request $request)
     {
-        if (!Auth::user()->can('Manage Arus Kas') && !Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Rugi Laba')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat pengeluaran');
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat pengeluaran operasional');
         }
 
         $request->validate([
@@ -328,8 +328,8 @@ class ProfitLossReportController extends Controller
      */
     public function destroyExpense($id)
     {
-        if (!Auth::user()->can('Manage Arus Kas') && !Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Rugi Laba')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus pengeluaran');
+        if (!Auth::user()->can('Delete Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus pengeluaran operasional');
         }
 
         try {

@@ -44,14 +44,10 @@ class SaldoHistoryController extends Controller
             } catch (\Throwable $e) {}
 
             try {
-                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                if (method_exists($user, 'hasRole') && $user->hasRole('Super Admin')) {
                     $hasAccess = true;
                 }
             } catch (\Throwable $e) {}
-
-            if (!$hasAccess && Auth::guard('web')->check()) {
-                $hasAccess = true;
-            }
         }
 
         if (!$hasAccess) {
@@ -338,20 +334,16 @@ class SaldoHistoryController extends Controller
         $hasAccess = false;
         if ($user) {
             try {
-                if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                if ($user->can('Create Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
                     $hasAccess = true;
                 }
             } catch (\Throwable $e) {}
 
             try {
-                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                if (method_exists($user, 'hasRole') && $user->hasRole('Super Admin')) {
                     $hasAccess = true;
                 }
             } catch (\Throwable $e) {}
-
-            if (!$hasAccess && Auth::guard('web')->check()) {
-                $hasAccess = true;
-            }
         }
 
         if (!$hasAccess) {
@@ -583,7 +575,7 @@ class SaldoHistoryController extends Controller
 
     public function destroy(string $id)
     {
-        if (!Auth::user()->can('Edit Saldo Santri')) {
+        if (!Auth::user()->can('Delete Saldo Santri') && !Auth::user()->hasRole('Super Admin')) {
             return response()->json([
                 'code' => '403',
                 'message' => 'Anda tidak memiliki hak akses untuk menghapus arsip.'
@@ -612,8 +604,15 @@ class SaldoHistoryController extends Controller
 
     public function updateStatusPayment(UpdateStatusTopupSaldoRequest $request, $id)
     {
-        if (!Auth::user()->can('Edit Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        $user = Auth::user();
+        $canApprove = false;
+        if ($user) {
+            if ($user->can('Edit Saldo Santri') || $user->hasRole('Super Admin') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                $canApprove = true;
+            }
+        }
+        if (!$canApprove) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menyetujui bukti pembayaran');
         }
         $transaction = Transaction::findOrFail($id);
         $data = $request->validated();
@@ -759,7 +758,7 @@ class SaldoHistoryController extends Controller
 
     private function formatArchiveActionColumn($transaction)
     {
-        if (!Auth::user()->can('Edit Saldo Santri')) {
+        if (!Auth::user()->can('Delete Saldo Santri') && !Auth::user()->hasRole('Super Admin')) {
             return '';
         }
 
@@ -779,10 +778,10 @@ class SaldoHistoryController extends Controller
 
     public function deleteHistory($id)
     {
-        if (!Auth::user()->hasRole('Super Admin')) {
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Delete Saldo Santri')) {
             return response()->json([
                 'code' => '403',
-                'message' => 'Hanya Super Admin yang dapat menghapus riwayat saldo.'
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus riwayat saldo.'
             ], 403);
         }
 
@@ -835,20 +834,10 @@ class SaldoHistoryController extends Controller
 
         $hasAccess = false;
         try {
-            if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+            if ($user->can('Delete Saldo Santri') || (method_exists($user, 'hasRole') && $user->hasRole('Super Admin'))) {
                 $hasAccess = true;
             }
         } catch (\Throwable $e) {}
-
-        try {
-            if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
-                $hasAccess = true;
-            }
-        } catch (\Throwable $e) {}
-
-        if (!$hasAccess && Auth::guard('web')->check()) {
-            $hasAccess = true;
-        }
 
         if (!$hasAccess) {
             return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
@@ -928,7 +917,7 @@ class SaldoHistoryController extends Controller
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
                         'saldo_history_id' => $saldoHistory->id,
-                        'amount' => $amount,
+                        'amount' => $adjustAmount,
                     ]);
 
                     $resetCount++;
@@ -957,6 +946,11 @@ class SaldoHistoryController extends Controller
 
     public function recalculate(Request $request)
     {
+        $user = Auth::user();
+        if (!$user || (!$user->hasRole('Super Admin') && !$user->can('Edit Saldo Santri') && !$user->can('Manage Audit dan Sinkron'))) {
+            return response()->json(['code' => 403, 'status' => 'error', 'message' => 'Maaf, Anda tidak memiliki akses untuk merekakulasi saldo.'], 403);
+        }
+
         try {
             $studentId = $request->student_id;
             if ($studentId) {
