@@ -313,8 +313,25 @@ function TopupPage() {
             <div className="flex flex-col gap-1.5 items-end relative z-20 shrink-0">
               <button
                 onClick={() => {
-                  setDailyLimit(active?.daily_limit || 0);
-                  setLimitEnabled((active?.daily_limit || 0) > 0);
+                  let limit = 0;
+                  let enabled = false;
+                  if ((active?.daily_limit || 0) > 0) {
+                    limit = active!.daily_limit;
+                    enabled = true;
+                  } else if (active?.daily_limit === -1) {
+                    limit = 0;
+                    enabled = false;
+                  } else {
+                    if ((active?.effective_daily_limit || 0) > 0) {
+                      limit = active!.effective_daily_limit;
+                      enabled = true;
+                    } else {
+                      limit = 0;
+                      enabled = false;
+                    }
+                  }
+                  setDailyLimit(limit);
+                  setLimitEnabled(enabled);
                   setShowLimitModal(true);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-[10px] font-extrabold text-white active:scale-95 transition"
@@ -505,9 +522,13 @@ function TopupPage() {
 
               {/* Status Toggle */}
               <div className="mt-5 bg-secondary/50 rounded-2xl p-4 border border-border flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold text-foreground">Aktifkan Pembatasan</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Membatasi belanja harian santri</p>
+                <div className="flex-1 mr-3">
+                  <p className="text-xs font-bold text-foreground">Aktifkan Limit Harian</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    {active?.daily_limit === 0 && (active?.effective_daily_limit || 0) > 0 
+                      ? "Limit saat ini diatur otomatis oleh sistem sekolah. Matikan untuk membatalkan limit." 
+                      : "Membatasi belanja harian santri agar pengeluaran lebih hemat."}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -591,7 +612,10 @@ function TopupPage() {
                   Batal
                 </button>
                 <button
-                  onClick={() => updateLimitMutation.mutate(limitEnabled ? dailyLimit : 0)}
+                  onClick={() => {
+                    const payload = limitEnabled ? (dailyLimit > 0 ? dailyLimit : 0) : -1;
+                    updateLimitMutation.mutate(payload);
+                  }}
                   disabled={updateLimitMutation.isPending}
                   className="flex-1 py-3 rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 transition flex items-center justify-center gap-1"
                   style={{ background: "var(--gradient-card)" }}

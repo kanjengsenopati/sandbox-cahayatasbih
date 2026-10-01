@@ -22,8 +22,7 @@ class TransactionController extends Controller
      */
     public function index()
     {
-        $transactions = Transaction::with('student', 'transactionDetails.bill')->latest()->get();
-        return view('admin.transaction.index', compact('transactions'));
+        return redirect()->route('report-transaction.index');
     }
 
     /**
@@ -39,6 +38,10 @@ class TransactionController extends Controller
      */
     public function store(TransactionRequest $request)
     {
+        if (!auth()->user()?->can('Create Transaksi') && !auth()->user()?->can('Create Tagihan') && !auth()->user()?->hasRole('Super Admin')) {
+            return $this->failedResponse("Maaf, Anda tidak memiliki izin untuk melakukan transaksi pembayaran.", 403);
+        }
+
         DB::beginTransaction();
         try {
             // Generate payment code
@@ -109,6 +112,10 @@ class TransactionController extends Controller
 
     public function invoice($id)
     {
+        if (!auth()->user()?->can('Manage Transaksi') && !auth()->user()?->can('Manage Laporan Transaksi') && !auth()->user()?->can('Manage Tagihan') && !auth()->user()?->hasRole('Super Admin')) {
+            abort(403, 'Maaf, Anda tidak memiliki izin untuk melihat invoice transaksi.');
+        }
+
         $data = Transaction::with([
             'student.classroom.school',
             'transactionDetails.bill.billType',

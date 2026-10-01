@@ -166,72 +166,87 @@
     }
 
     $(document).ready(() => {
-        // Initialize Officer DataTable
-        var tableOfficer = $('#table-officer').DataTable({
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            ajax: "{{ route('officer.index') }}",
-            language: {
-                paginate: {
-                    next: "<i class='fa fa-angle-right'>",
-                    previous: "<i class='fa fa-angle-left'>"
-                },
-                loadingRecords: "Loading...",
-                processing: "Processing..."
-            },
-            columns: [
-                {
-                    data: null,
-                    sortable: false,
-                    searchable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                { data: 'photo', name: 'photo' },
-                { data: 'user.name', name: 'user.name', searchable: true, defaultContent: '-' },
-                { data: 'position', name: 'position', searchable: true },
-                { data: 'duty', name: 'duty', searchable: true },
-                { data: 'phone', name: 'phone', searchable: true },
-                { data: 'status', name: 'status' },
-                { data: 'action', name: 'action' }
-            ]
-        });
+        var tableOfficer = null;
+        var tableKamar = null;
 
-        // Initialize Kamar DataTable
-        var tableKamar = $('#table-asrama').DataTable({
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            ajax: "{{ route('asrama.index') }}",
-            language: {
-                paginate: {
-                    next: "<i class='fa fa-angle-right'></i>",
-                    previous: "<i class='fa fa-angle-left'></i>"
+        function initOfficerTable() {
+            if (tableOfficer) return;
+            tableOfficer = $('#table-officer').DataTable({
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('officer.index') }}",
+                language: {
+                    paginate: {
+                        next: "<i class='fa fa-angle-right'>",
+                        previous: "<i class='fa fa-angle-left'>"
+                    },
+                    loadingRecords: "Loading...",
+                    processing: "Processing..."
                 },
-                loadingRecords: "Loading...",
-                processing: "Processing..."
-            },
-            columns: [
-                {
-                    data: null,
-                    sortable: false,
-                    searchable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
+                columns: [
+                    {
+                        data: null,
+                        sortable: false,
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    },
+                    { data: 'photo', name: 'photo' },
+                    { data: 'user.name', name: 'user.name', searchable: true, defaultContent: '-' },
+                    { data: 'position', name: 'position', searchable: true },
+                    { data: 'duty', name: 'duty', searchable: true },
+                    { data: 'phone', name: 'phone', searchable: true },
+                    { data: 'status', name: 'status' },
+                    { data: 'action', name: 'action' }
+                ]
+            });
+        }
+
+        function initKamarTable() {
+            if (tableKamar) return;
+            tableKamar = $('#table-asrama').DataTable({
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('asrama.index') }}",
+                language: {
+                    paginate: {
+                        next: "<i class='fa fa-angle-right'></i>",
+                        previous: "<i class='fa fa-angle-left'></i>"
+                    },
+                    loadingRecords: "Loading...",
+                    processing: "Processing..."
                 },
-                { data: 'name', name: 'name', orderable: true, searchable: true },
-                { data: 'host_name', name: 'hostAdmin.name', orderable: true, searchable: true },
-                { data: 'host_phone', name: 'hostAdmin.phone', orderable: true, searchable: true },
-                { data: 'student_count', name: 'students_count', orderable: false, searchable: false },
-                { data: 'btnAction', name: 'btnAction', className: 'text-center', orderable: false, searchable: false, responsivePriority: -1 }
-            ]
-        });
+                columns: [
+                    {
+                        data: null,
+                        sortable: false,
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    },
+                    { data: 'name', name: 'name', orderable: true, searchable: true },
+                    { data: 'host_name', name: 'hostAdmin.name', orderable: true, searchable: true },
+                    { data: 'host_phone', name: 'hostAdmin.phone', orderable: true, searchable: true },
+                    { data: 'student_count', name: 'students_count', orderable: false, searchable: false },
+                    { data: 'btnAction', name: 'btnAction', className: 'text-center', orderable: false, searchable: false, responsivePriority: -1 }
+                ]
+            });
+        }
+
+        // Initialize only the active tab's table on load
+        @if(($activeTab ?? 'officer') === 'officer')
+            initOfficerTable();
+        @else
+            initKamarTable();
+        @endif
 
         // Expand/Collapse child row showing Santri list in Kamar DataTable
         $('#table-asrama tbody').on('click', '.btn-toggle-students', function () {
+            if (!tableKamar) return;
             var tr = $(this).closest('tr');
             var row = tableKamar.row(tr);
             var chevron = $(this).find('.btn-chevron');
@@ -247,11 +262,13 @@
             }
         });
 
-        // Update URL state on Tab Switch
-        $('#tab_link_officer').on('click', function() {
+        // Update URL state and lazy-load DataTable on Tab Switch
+        $('#tab_link_officer').on('click shown.bs.tab', function() {
+            initOfficerTable();
             history.pushState(null, '', "{{ route('officer.index') }}");
         });
-        $('#tab_link_kamar').on('click', function() {
+        $('#tab_link_kamar').on('click shown.bs.tab', function() {
+            initKamarTable();
             history.pushState(null, '', "{{ route('asrama.index') }}");
         });
     });

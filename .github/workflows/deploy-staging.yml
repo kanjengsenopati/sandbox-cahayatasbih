@@ -1,0 +1,106 @@
+name: Deploy Staging to VPS
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Sync Files to VPS via Rsync
+        uses: easingthemes/ssh-deploy@v5.0.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: ${{ secrets.VPS_USER }}
+          TARGET: "/www/wwwroot/sim.cahayatasbih.or.id"
+          EXCLUDE: "/.git/, /.github/, /node_modules/, /vendor/, /.env, /storage/, /public/.user.ini"
+
+      - name: Run Post-Deploy Commands on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            
+            cd /www/wwwroot/sim.cahayatasbih.or.id
+            mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
+            chmod -R 775 bootstrap/cache storage 2>/dev/null || true
+            
+            # Switch to PHP 8.3 to avoid PHP 8.4 deprecation failures in older Laravel packages
+            PHP_BIN="/www/server/php/83/bin/php"
+            if [ ! -x "$PHP_BIN" ]; then
+                PHP_BIN="$(command -v php || true)"
+            fi
+            
+            # Set queue to database BEFORE caching config
+            sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' .env || true
+            
+            "$PHP_BIN" artisan optimize:clear
+            
+            if [ -x /usr/bin/composer ]; then
+                COMPOSER_BIN=/usr/bin/composer
+            else
+                COMPOSER_BIN="$(command -v composer || true)"
+            fi
+            
+            "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+            
+            "$PHP_BIN" artisan migrate --force
+            "$PHP_BIN" artisan config:cache
+            "$PHP_BIN" artisan route:cache
+            "$PHP_BIN" artisan view:cache
+            
+            "$PHP_BIN" -r "if(function_exists('opcache_reset')){opcache_reset();}" || true
+            
+            # The .user.ini file is often immutable in aaPanel. Allow chown to skip errors.
+            chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id 2>/dev/null || true
+            chmod -R 775 bootstrap/cache storage 2>/dev/null || true
+            
+            "$PHP_BIN" artisan tinker --execute="
+                foreach (['dev@gmail.com', 'superadmin@gmail.com'] as \$email) {
+                    \$admin = App\Models\Admin::where('email', \$email)->first();
+                    if (\$admin) {
+                        \$admin->password = bcrypt('password');
+                        \$admin->is_active = 1;
+                        \$admin->save();
+                    }
+                }
+            "
+            
+            if ! /etc/init.d/php-fpm-83 reload 2>/dev/null; then
+                /etc/init.d/php-fpm-83 restart 2>/dev/null || true
+            fi
+            
+            if ! nginx -s reload 2>/dev/null; then
+                systemctl reload nginx 2>/dev/null || true
+            fi
+            
+            if command -v supervisorctl >/dev/null 2>&1; then
+                supervisorctl reread || true
+                supervisorctl update || true
+                supervisorctl restart cahayatasbih-worker:* || true
+            else
+                # Stop only the Laravel worker, without matching the SSH command
+                worker_pids="$(pgrep -f "^${PHP_BIN//\//\\/} artisan queue:work" || true)"
+                if [ -n "$worker_pids" ]; then
+                    kill $worker_pids || true
+                    sleep 2
+                fi
+                
+                nohup setsid "$PHP_BIN" artisan queue:work database \
+                  --sleep=3 \
+                  --tries=3 \
+                  --timeout=90 \
+                  </dev/null \
+                  >> storage/logs/worker.log 2>&1 &
+                disown || true
+            fi

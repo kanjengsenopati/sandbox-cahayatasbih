@@ -57,12 +57,10 @@ class CheckoutController extends BaseWaliApiController
         }
 
         try {
-            DB::beginTransaction();
             $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
             
             if ($paymentMethod->type === \App\Models\PaymentMethod::TYPE_BALANCE) {
                 if (!$student->isPwaSaldoPaymentAllowed()) {
-                    DB::rollBack();
                     $appSetting = \App\Models\ApplicationSetting::first();
                     $msg = !empty($appSetting->pwa_saldo_payment_disabled_message) 
                         ? $appSetting->pwa_saldo_payment_disabled_message 
@@ -74,36 +72,18 @@ class CheckoutController extends BaseWaliApiController
                 }
             }
             
+            // createTransaction menggunakan DB::transaction internal — menjaga ACID tanpa nested lock
             $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
             
             if ($transaction instanceof \Illuminate\Http\JsonResponse) {
-                DB::rollBack();
                 return $transaction;
             }
-
-            // Check if transaction detail was already created (e.g. if paid via saldo)
-            $existingDetailsCount = TransactionDetail::where('transaction_id', $transaction->id)->count();
-            
-            if ($existingDetailsCount == 0) {
-                $customAmounts = $request->custom_amounts ?? [];
-                foreach ($request->bill_ids as $billId) {
-                    $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
-                    TransactionDetail::create([
-                        'transaction_id' => $transaction->id,
-                        'bill_id' => $billId,
-                        'amount' => $customAmount,
-                    ]);
-                }
-            }
-
-            DB::commit();
 
             return response()->json([
                 'message' => 'Checkout successful',
                 'transaction' => $transaction,
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Checkout Error: ' . $e->getMessage(), [
                 'student_id' => $student->id,
                 'exception' => $e
@@ -113,7 +93,7 @@ class CheckoutController extends BaseWaliApiController
                 'error' => $e->getMessage()
             ], 500);
         } finally {
-            $lock->release();
+            optional($lock)->release();
         }
     }
 }

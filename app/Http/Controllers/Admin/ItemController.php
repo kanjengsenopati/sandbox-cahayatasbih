@@ -25,18 +25,21 @@ class ItemController extends Controller
     {
         $user = auth()->user();
         if ($user && ($user->isKasirOutlet() || $user->hasRole('Kasir Karyawan Outlet'))) {
-            $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
-            if ($kasirOutletRole) {
-                $kasirOutletPermissions = [
-                    'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
-                    'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
-                    'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
-                    'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
-                ];
-                foreach ($kasirOutletPermissions as $p) {
-                    \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+            if (!Cache::has('kasir_outlet_perms_synced_v1')) {
+                $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
+                if ($kasirOutletRole) {
+                    $kasirOutletPermissions = [
+                        'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
+                        'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
+                        'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
+                        'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
+                    ];
+                    foreach ($kasirOutletPermissions as $p) {
+                        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+                    }
+                    $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
                 }
-                $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
+                Cache::forever('kasir_outlet_perms_synced_v1', true);
             }
         }
 
@@ -52,6 +55,7 @@ class ItemController extends Controller
         }
 
         if (request()->ajax()) {
+            session()->save();
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
@@ -249,13 +253,17 @@ class ItemController extends Controller
 
     public function searchItem(Request $request)
     {
+        session()->save();
+
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
         if (!$request->search) {
-            $items = Item::with('categoryItem')->where('stock', '>', 0)
+            $items = Item::with('categoryItem:id,name')
+                ->select(['id', 'name', 'code', 'selling_price', 'stock', 'image', 'category_item_id', 'outlet_id'])
+                ->where('stock', '>', 0)
                 ->when($outletId, function($q) use ($outletId, $koperasiId) {
                     $q->where(function($query) use ($outletId, $koperasiId) {
                         $query->where('outlet_id', $outletId);
@@ -266,6 +274,7 @@ class ItemController extends Controller
                 })
                 ->where('is_active', true)
                 ->orderBy('stock', 'asc') // Order by stock in ascending order
+                ->limit(40)
                 ->get();
 
             return $this->postSuccessResponse("Berhasil mengambil data", $items);
@@ -280,6 +289,8 @@ class ItemController extends Controller
 
     public function searchItemCode(Request $request)
     {
+        session()->save();
+
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
@@ -304,13 +315,17 @@ class ItemController extends Controller
 
     public function searchItemName(Request $request)
     {
+        session()->save();
+
         $searchTerm = strtolower($request->search);
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-        $items = Item::with('categoryItem')->whereIsActive(true)
+        $items = Item::with('categoryItem:id,name')
+            ->select(['id', 'name', 'code', 'selling_price', 'stock', 'image', 'category_item_id', 'outlet_id'])
+            ->whereIsActive(true)
             ->when($outletId, function($q) use ($outletId, $koperasiId) {
                 $q->where(function($query) use ($outletId, $koperasiId) {
                     $query->where('outlet_id', $outletId);
@@ -320,6 +335,7 @@ class ItemController extends Controller
                 });
             })
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+            ->limit(30)
             ->get();
 
         if ($items->isEmpty()) {

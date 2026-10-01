@@ -47,7 +47,8 @@ class TopupController extends BaseWaliApiController
         // Link transaction to saldo history
         \App\Models\TransactionDetail::create([
             'transaction_id' => $transaction->id,
-            'saldo_history_id' => $saldoHistory->id
+            'saldo_history_id' => $saldoHistory->id,
+            'amount' => $transaction->pay_amount,
         ]);
 
         return response()->json([

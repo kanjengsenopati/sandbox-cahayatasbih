@@ -52,6 +52,11 @@
         border-color: #2563eb !important;     /* Accent Primary */
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08), 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
     }
+    .month-card.clickable-payment-card,
+    .month-card.clickable-payment-card * {
+        cursor: pointer !important;
+        user-select: none;
+    }
     .form-check-custom .form-check-input {
         width: 1.5rem;
         height: 1.5rem;
@@ -59,8 +64,13 @@
 </style>
 @endpush
 
+@php
+    $canManageBill = auth()->user()->hasRole('Super Admin') || auth()->user()->can('Create Tagihan');
+    $canPayBill = auth()->user()->hasRole('Super Admin') || auth()->user()->can('Create Tagihan') || auth()->user()->can('Edit Tagihan');
+@endphp
+
 <div class="accordion" id="accordionKilatParent">
-    @if(isset($ungeneratedMonthlyRates) && $ungeneratedMonthlyRates->isNotEmpty())
+    @if($canManageBill && isset($ungeneratedMonthlyRates) && $ungeneratedMonthlyRates->isNotEmpty())
     {{-- Ada tarif yang sudah di-mapping admin tapi belum di-generate → tampilkan shortcut buttons --}}
     <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 my-4">
         <span class="svg-icon svg-icon-2tx svg-icon-primary me-4">
@@ -115,10 +125,19 @@
                         <i class="fas fa-info-circle me-1 text-primary"></i>
                         <strong>Panduan Admin:</strong> Silakan masuk ke menu <a href="{{ route('bill-type.index') }}" class="fw-bolder text-primary">Data Jenis Bayar</a>, lalu klik tombol sinkronisasi <i class="fas fa-sync text-success me-1"></i> <strong>Generasi Tagihan</strong> pada kelas siswa ini ({{ $displayClassName }}).
                     </span>
+
+                        @if($canManageBill)
+                        <form action="{{ route('bill.generate-student-bills', ['student_id' => $student->id, 'academic_year_id' => request('academic_year_id')]) }}" method="POST" class="mt-3">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-sync-alt me-1"></i> Generate Bill Bulanan
+                            </button>
+                        </form>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     @else
     @foreach ($billMonth as $bill)
     @php
@@ -326,14 +345,14 @@
                             $remainingAmount = max(0, $amount - $mPaid);
                             $isPaid = ($amount > 0) && ($remainingAmount == 0);
                             $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         } elseif ($isAplikasi) {
                             $amount = 10000;
                             $mPaid = $aplikasiPaidAllocated[$month] ?? 0;
                             $remainingAmount = max(0, $amount - $mPaid);
                             $isPaid = ($amount > 0) && ($remainingAmount == 0);
                             $status = $isPaid ? 'PAID' : 'UNPAID';
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         } else {
                             $targetYearTemp = $billDetail?->year ?? ($month >= 7 ? ($bill->academicYear?->start_year ?? date('Y')) : ($bill->academicYear?->end_year ?? (date('Y') + 1)));
                             $amount = ($billDetail !== null) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp, $preloadedRates ?? null);
@@ -341,7 +360,7 @@
                             $isPaid = ($billDetail && $billDetail->status == 'PAID') || ($unpaidAmount == 0 && $paidAmount >= ($totalBillAmount ?? 0) && $amount > 0);
                             $remainingAmount = $isPaid ? 0 : ($billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount);
                             $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                         }
 
                         $modalId = "bayarKilat{$bill->id}_{$month}";
@@ -359,7 +378,7 @@
                     @endphp
 
                     <div class="col-6 col-md-4 col-lg-2">
-                        <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
+                        <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ ($showModal && $canPayBill) ? 'cursor-pointer clickable-payment-card' : '' }}">
                             <!-- Header: Month & Year -->
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="fw-bold fs-7 text-slate-800">
@@ -408,6 +427,7 @@
                                         <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                     </span>
                                 @elseif($showModal)
+                                    @if($canPayBill)
                                     <div class="form-check form-check-custom form-check-solid form-check-sm">
                                         <input type="checkbox" 
                                             name="bill_months[{{ $bill->id }}][]" 
@@ -425,6 +445,9 @@
                                             Bayar
                                         </label>
                                     </div>
+                                    @else
+                                    <span class="badge badge-light-warning text-warning fw-bold fs-8">Belum Lunas</span>
+                                    @endif
                                 @else
                                     <span class="badge badge-light text-slate-400 fs-8">-</span>
                                 @endif
@@ -490,6 +513,7 @@
                 if (selectAllCheckbox) {
                     selectAllCheckbox.checked = (allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length);
                 }
+                updateActionButtonsState();
             }
         });
 
@@ -500,8 +524,26 @@
                     checkbox.checked = selectAllCheckbox.checked;
                 });
                 updateCardSelectionStates();
+                updateActionButtonsState();
             });
         }
+
+        function updateActionButtonsState() {
+            const selectedCount = document.querySelectorAll('.bill-month-checkbox:checked').length;
+            const btnBayar = document.querySelector('.btn-bayar-kilat');
+            const btnBatalkan = document.querySelector('.btn-batalkan');
+            
+            if (selectedCount > 0) {
+                if(btnBayar) { btnBayar.classList.remove('opacity-50'); btnBayar.style.cursor = 'pointer'; }
+                if(btnBatalkan) { btnBatalkan.classList.remove('opacity-50'); btnBatalkan.style.cursor = 'pointer'; }
+            } else {
+                if(btnBayar) { btnBayar.classList.add('opacity-50'); btnBayar.style.cursor = 'not-allowed'; }
+                if(btnBatalkan) { btnBatalkan.classList.add('opacity-50'); btnBatalkan.style.cursor = 'not-allowed'; }
+            }
+        }
+        
+        // Initial state
+        updateActionButtonsState();
 
         // Prevent the modal from opening when clicking on checkboxes (redundant since we stopPropagation, but good fallback)
         const preventModalCheckboxes = document.querySelectorAll('.prevent-modal');
@@ -512,11 +554,25 @@
         });
 
         // Handle "Bayar" button click
-        // Handle "Bayar" button click
-        const modalPayBtn = document.querySelector('.modal-pay');
+        const modalPayBtn = document.querySelector('.btn-bayar-kilat');
         if (modalPayBtn) {
-            modalPayBtn.addEventListener('click', function() {
+            modalPayBtn.addEventListener('click', function(e) {
+                e.preventDefault();
                 const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+                
+                if (selectedCheckboxes.length === 0) {
+                    Swal.fire({
+                        title: 'Pilih Tagihan',
+                        text: 'Silakan pilih item pembayaran terlebih dahulu.',
+                        icon: 'warning',
+                        confirmButtonColor: '#2563EB'
+                    });
+                    return;
+                }
+                
+                // Show modal programmatically
+                $('#paymentModal').modal('show');
+                
                 const paymentDetails = document.getElementById('payment-details');
                 const totalAmountElement = document.getElementById('total-amount');
 

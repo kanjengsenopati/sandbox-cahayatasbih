@@ -27,7 +27,8 @@ class MenuNavigationController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = MenuNavigation::orderBy('order')->get();
+            session()->save();
+            $data = MenuNavigation::orderBy('order');
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('menu-navigation.edit', $data->id);
@@ -68,7 +69,8 @@ class MenuNavigationController extends Controller
     public function show(string $id)
     {
         if (request()->ajax()) {
-            $data = SubMenuNavigation::where('menu_navigation_id', $id)->orderBy('order')->get();
+            session()->save();
+            $data = SubMenuNavigation::where('menu_navigation_id', $id)->orderBy('order');
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('submenu-navigation.edit', $data->id);

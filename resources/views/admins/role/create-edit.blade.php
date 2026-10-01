@@ -117,7 +117,7 @@
                                         'Bank', 'Outlet',
                                         'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                         'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
-                                        'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
+                                        'Pos Kasir', 'Tagihan', 'Transaksi', 'Tarif Pembayaran', 'Status Tagihan', 'Perilaku Santri',
                                         'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
                                         'PPDB',
                                         'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Shift', 'Laporan Pos Kasir',

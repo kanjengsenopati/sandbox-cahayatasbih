@@ -38,7 +38,7 @@ if (typeof window !== "undefined") {
     const path = window.location.pathname;
     if (
         (path.endsWith("/login") || path.endsWith("/login/")) &&
-        !window.location.hash.startsWith("#/login")
+        (!window.location.hash || window.location.hash === "#" || window.location.hash === "#/")
     ) {
         window.location.hash = "#/login";
     }

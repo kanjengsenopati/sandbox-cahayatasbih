@@ -354,7 +354,7 @@
                         <label class="form-label fw-bold text-gray-700">Pilih Sekolah / Lembaga:</label>
                         <select name="school_id" id="massive-school-id" class="form-select form-select-solid">
                             <option value="">-- Pilih Sekolah --</option>
-                            @foreach(\App\Models\School::all() as $sch)
+                            @foreach($schools ?? [] as $sch)
                                 <option value="{{ $sch->id }}">{{ $sch->name }}</option>
                             @endforeach
                         </select>
@@ -364,7 +364,7 @@
                         <label class="form-label fw-bold text-gray-700">Pilih Kelas:</label>
                         <select name="classroom_id" id="massive-classroom-id" class="form-select form-select-solid">
                             <option value="">-- Pilih Kelas --</option>
-                            @foreach(\App\Models\Classroom::orderBy('name')->get() as $cls)
+                            @foreach($classrooms ?? [] as $cls)
                                 <option value="{{ $cls->id }}">{{ $cls->name }} ({{ $cls->school->name ?? '-' }})</option>
                             @endforeach
                         </select>

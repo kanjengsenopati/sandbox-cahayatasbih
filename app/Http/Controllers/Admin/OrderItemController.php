@@ -47,6 +47,9 @@ class OrderItemController extends Controller
     public function dashboard()
     {
         $admin = auth()->user();
+        if (!$admin || (!$admin->hasRole('Super Admin') && !$admin->can('Manage Pos Kasir') && !$admin->can('Manage Laporan Pos Multi Outlet'))) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk dashboard POS');
+        }
         $authOutletIds = $admin->getOutletIds();
         $totalTransaction = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds) {
@@ -67,8 +70,7 @@ class OrderItemController extends Controller
                   });
         })->sum('quantity');
         
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = $this->getKoperasiId();
 
         $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
@@ -110,13 +112,15 @@ class OrderItemController extends Controller
 
     private function getItemsDataTable()
     {
+        session()->save();
+
         $admin = auth()->user();
         $authOutletIds = $admin->getOutletIds();
 
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = $this->getKoperasiId();
 
         $data = Item::where('is_active', true)->with('categoryItem')
+            ->withSum('pointOfSaleTransactionDetails as total_selling', 'quantity')
             ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
                 $q->where(function($query) use ($authOutletIds, $koperasiId) {
                     $query->whereIn('outlet_id', $authOutletIds);
@@ -125,7 +129,7 @@ class OrderItemController extends Controller
                     }
                 });
             })
-            ->get()->sortByDesc('total_selling');
+            ->orderByDesc('total_selling');
 
         return DataTables::of($data)
             ->addColumn('status', function ($data) {
@@ -301,8 +305,7 @@ class OrderItemController extends Controller
             $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
 
             // 6. KHUSUS MODE OUTLET: Pengurangan Stok Atomik & Log StockHistory (OUT)
-            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $koperasiId = $this->getKoperasiId();
 
             if ($outletId !== $koperasiId) {
                 foreach ($carts as $cart) {
@@ -329,9 +332,6 @@ class OrderItemController extends Controller
             PointOfSaleCart::where('admin_id', $adminId)->delete();
 
             DB::commit();
-            
-            // Release lock segera setelah sukses
-            $lock->release();
 
             if ($student) {
                 $saldoFormatted = number_format($student->saldo, 0, ',', '.');
@@ -360,12 +360,11 @@ class OrderItemController extends Controller
 
             return redirect()->route('order-item.index')->with('success', $message);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollback();
-            // Release lock jika gagal
-            $lock->release();
-            
             return redirect()->back()->with('error', $e->getMessage());
+        } finally {
+            optional($lock)->release();
         }
     }
 
@@ -389,11 +388,11 @@ class OrderItemController extends Controller
         $effectiveLimit = $student->getEffectiveDailyLimit();
 
         if ($effectiveLimit > 0) {
-            // Optimasi: Cek transaksi harian
-            // Karena kita sudah pakai lockForUpdate di $student, 
-            // kalkulasi ini relatif aman selama transaksi lain juga me-lock row student yang sama.
+            // Optimasi: Cek transaksi harian menggunakan rentang tanggal agar index terpakai
+            $todayStart = now()->startOfDay();
+            $todayEnd = now()->endOfDay();
             $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                ->whereDate('paid_at', now())
+                ->whereBetween('paid_at', [$todayStart, $todayEnd])
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
 
@@ -419,8 +418,6 @@ class OrderItemController extends Controller
             'balance_before' => $balanceBefore ?? 0,
             'balance_after' => $balanceAfter ?? 0,
         ]);
-
-        \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
 
         return $history;
     }
@@ -560,8 +557,10 @@ class OrderItemController extends Controller
 
     public function getStudentByBarcode(Request $request)
     {
+        session()->save();
+
         $barcode = $request->barcode;
-        $student = Student::with('classroom')
+        $student = Student::with('classroom.school')
             ->where(function ($query) use ($barcode) {
                 $query->where('barcode', $barcode)
                       ->orWhere('nis', $barcode)
@@ -577,8 +576,10 @@ class OrderItemController extends Controller
         $student->effective_daily_limit = $effectiveLimit;
         
         if ($effectiveLimit > 0) {
+            $todayStart = now()->startOfDay();
+            $todayEnd = now()->endOfDay();
             $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                ->whereDate('paid_at', now())
+                ->whereBetween('paid_at', [$todayStart, $todayEnd])
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
                 
@@ -594,6 +595,8 @@ class OrderItemController extends Controller
 
     public function getCartData()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
@@ -612,11 +615,21 @@ class OrderItemController extends Controller
             }
         }
 
-        return $this->postSuccessResponse("Data keranjang berhasil diambil", $carts);
+        $totalPrice = $carts->sum('total');
+
+        return $this->postSuccessResponse("Data keranjang berhasil diambil", [
+            'carts' => $carts,
+            'total_price' => $totalPrice
+        ]);
     }
 
     public function addItemToCart(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk menambah barang ke keranjang', null);
+        }
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -624,8 +637,7 @@ class OrderItemController extends Controller
             $admin = auth()->user();
             $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
-            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $koperasiId = $this->getKoperasiId();
 
             $item = Item::where('code', $request->code)
                 ->when($outletId, function($q) use ($outletId, $koperasiId) {
@@ -639,6 +651,15 @@ class OrderItemController extends Controller
                 ->lockForUpdate()->first();
             if (!$item) {
                 return $this->failedResponse("Barang tidak ditemukan", null);
+            }
+
+            // Validasi stok sebelum pengurangan — cegah stok negatif
+            if ($item->stock < $request->quantity) {
+                DB::rollback();
+                return $this->failedResponse(
+                    "Stok tidak mencukupi. Tersedia: {$item->stock}, Diminta: {$request->quantity}",
+                    null
+                );
             }
 
             $cart = PointOfSaleCart::where('item_id', $item->id)->where('admin_id', auth()->user()->id)->lockForUpdate()->first();
@@ -655,15 +676,6 @@ class OrderItemController extends Controller
                 $cart->price = $item->selling_price;
                 $cart->total = $cart->quantity * $cart->price;
                 $cart->save();
-            }
-
-            // Validasi stok sebelum pengurangan — cegah stok negatif
-            if ($item->stock < $request->quantity) {
-                DB::rollback();
-                return $this->failedResponse(
-                    "Stok tidak mencukupi. Tersedia: {$item->stock}, Diminta: {$request->quantity}",
-                    null
-                );
             }
 
             // Update stock on item
@@ -689,6 +701,11 @@ class OrderItemController extends Controller
 
     public function deleteCart(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -698,6 +715,13 @@ class OrderItemController extends Controller
                 ->where('admin_id', auth()->user()->id)
                 ->lockForUpdate() // Lock the row for update to prevent race conditions
                 ->first();
+
+            if (!$cart && $request->filled('item_id')) {
+                $cart = PointOfSaleCart::where('item_id', $request->item_id)
+                    ->where('admin_id', auth()->user()->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             if (!$cart) {
                 // Rollback transaction if cart is not found
@@ -733,6 +757,11 @@ class OrderItemController extends Controller
 
     public function updateCartQuantity(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -741,6 +770,13 @@ class OrderItemController extends Controller
                 ->where('admin_id', auth()->user()->id)
                 ->lockForUpdate() // Lock the row for update to prevent race conditions
                 ->first();
+
+            if (!$cart && $request->filled('item_id')) {
+                $cart = PointOfSaleCart::where('item_id', $request->item_id)
+                    ->where('admin_id', auth()->user()->id)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             if (!$cart) {
                 // Rollback transaction if cart is not found
@@ -790,6 +826,8 @@ class OrderItemController extends Controller
 
     public function getTotalPrice()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
         $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->sum('total');
@@ -798,6 +836,11 @@ class OrderItemController extends Controller
 
     public function deleteAllCart()
     {
+        if (!Auth::user()->can('Create Pos Kasir') && !Auth::user()->hasRole('Super Admin')) {
+            return $this->failedResponse('Maaf, Anda tidak memiliki akses untuk mengubah keranjang kasir', null);
+        }
+        session()->save();
+
         // Begin transaction
         DB::beginTransaction();
 
@@ -808,13 +851,12 @@ class OrderItemController extends Controller
             // Retrieve all carts belonging to the authenticated user and specific outlet
             $carts = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->get();
 
-            // Update stock on items and delete carts
-            foreach ($carts as $cart) {
-                $item = Item::find($cart->item_id);
-                if ($item) {
-                    $item->stock += $cart->quantity;
-                    $item->save();
-                }
+            // Update stock on items in batch
+            $itemQuantities = $carts->groupBy('item_id')->map(function ($items) {
+                return $items->sum('quantity');
+            });
+            foreach ($itemQuantities as $itemId => $qty) {
+                Item::where('id', $itemId)->increment('stock', $qty);
             }
 
             // Delete all carts
@@ -838,11 +880,16 @@ class OrderItemController extends Controller
 
     public function getDailyTransaction()
     {
+        session()->save();
+
         $admin = auth()->user();
         $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
 
         // Ambil transaksi yang sesuai dengan admin, outlet, dan tanggal hari ini
-        $transactions = PointOfSaleTransaction::whereDate('paid_at', now())
+        $transactions = PointOfSaleTransaction::with(['student', 'pointOfSaleTransactionDetails.item'])
+            ->whereBetween('paid_at', [$todayStart, $todayEnd])
             ->where('admin_id', auth()->user()->id)
             ->where('outlet_id', $outletId)
             ->latest()
@@ -885,5 +932,13 @@ class OrderItemController extends Controller
             'carts' => $carts,
             'total_price' => $total
         ];
+    }
+
+    protected function getKoperasiId(): string
+    {
+        return Cache::remember('koperasi_outlet_id', 86400, function () {
+            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        });
     }
 }

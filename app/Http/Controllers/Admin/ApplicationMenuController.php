@@ -25,7 +25,8 @@ class ApplicationMenuController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = ApplicationMenu::with('scopes.school')->latest()->get();
+            session()->save();
+            $data = ApplicationMenu::with('scopes.school')->latest();
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
                     return $data->status ? '<span class="badge badge-success">Aktif</span>'

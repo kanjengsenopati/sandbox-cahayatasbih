@@ -17,7 +17,8 @@ class OutletController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
         }
         if (request()->ajax()) {
-            $data = Outlet::with('adminOutlet.admin')->latest()->get();
+            session()->save();
+            $data = Outlet::with('adminOutlet.admin')->latest();
             return DataTables::of($data)
                 ->addColumn('is_active', function ($data) {
                     return $data->is_active 
@@ -54,10 +55,13 @@ class OutletController extends Controller
                 ->rawColumns(['action', 'is_active', 'users'])
                 ->make(true);
         }
-        $allAdmins = \App\Models\Admin::where('role_id', '!=', 1)
-            ->whereNotIn('email', ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'maulana@cahayatasbih.or.id'])
-            ->orderBy('name')
-            ->get();
+        $allAdmins = \Illuminate\Support\Facades\Cache::remember('outlet_modal_admins', 3600, function() {
+            return \App\Models\Admin::where('role_id', '!=', 1)
+                ->whereNotIn('email', ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'maulana@cahayatasbih.or.id'])
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
+        });
         return view('admins.outlet.index', compact('allAdmins'));
     }
 

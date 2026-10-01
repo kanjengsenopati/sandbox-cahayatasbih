@@ -28,53 +28,30 @@ class SyncBillPaidAmount extends Command
      */
     public function handle()
     {
-        $this->info("Memulai sinkronisasi paid_amount di tabel bills...");
+        $this->info("Memulai sinkronisasi tagihan terbayar (desync heal) untuk seluruh santri...");
 
-        $bills = Bill::whereHas('transactionDetails')
-                     ->orWhere('paid_amount', '>', 0)
-                     ->get();
+        $studentIds = DB::table('transactions')
+            ->where('type', Transaction::TYPE_BILL)
+            ->whereIn('status', [Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas'])
+            ->whereNotNull('student_id')
+            ->distinct()
+            ->pluck('student_id');
 
-        $fixedCount = 0;
-        $bar = $this->output->createProgressBar(count($bills));
+        $totalStudents = count($studentIds);
+        $this->info("Ditemukan {$totalStudents} santri yang memiliki riwayat pembayaran transaksi.");
 
-        DB::beginTransaction();
-        try {
-            foreach ($bills as $bill) {
-                // Ambil total valid dari transaction_details
-                $actualPaid = DB::table('transaction_details')
-                    ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
-                    ->where('transaction_details.bill_id', $bill->id)
-                    ->where('transactions.status', Transaction::STATUS_PAID)
-                    ->whereNull('transaction_details.deleted_at')
-                    ->whereNull('transactions.deleted_at')
-                    ->sum('transaction_details.amount');
+        $bar = $this->output->createProgressBar($totalStudents);
+        $bar->start();
 
-                $currentPaid = $bill->getRawOriginal('paid_amount');
-                
-                if ($actualPaid != $currentPaid) {
-                    $newStatus = ($actualPaid >= $bill->amount) ? Bill::STATUS_PAID : ($actualPaid > 0 ? 'PARTIAL' : Bill::STATUS_UNPAID);
-                    
-                    // Kita update langsung ke database (menghindari accessor interference)
-                    DB::table('bills')->where('id', $bill->id)->update([
-                        'paid_amount' => $actualPaid,
-                        'status'      => $newStatus
-                    ]);
-
-                    $fixedCount++;
-                }
-
-                $bar->advance();
-            }
-
-            DB::commit();
-            $bar->finish();
-            $this->newLine(2);
-            $this->info("Sinkronisasi selesai! {$fixedCount} data tagihan berhasil diperbaiki.");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->newLine();
-            $this->error("Terjadi kesalahan: " . $e->getMessage());
+        $processed = 0;
+        foreach ($studentIds as $studentId) {
+            \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($studentId);
+            $processed++;
+            $bar->advance();
         }
+
+        $bar->finish();
+        $this->newLine(2);
+        $this->info("Sinkronisasi selesai! {$processed} santri telah berhasil disinkronkan datanya.");
     }
 }

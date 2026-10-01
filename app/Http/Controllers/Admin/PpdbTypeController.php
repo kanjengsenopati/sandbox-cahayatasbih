@@ -15,7 +15,8 @@ class PpdbTypeController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = PpdbType::OrderBy('name', 'asc')->get();
+            session()->save();
+            $data = PpdbType::orderBy('name', 'asc');
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
                     return $data->is_active ? '<span class="badge badge-success">Aktif</span>' :

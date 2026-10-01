@@ -26,6 +26,8 @@ export type Santri = {
     className: string;
     jenjang: string;
     cardSuffix: string;
+    effective_daily_limit: number;
+    is_custom_limit: boolean;
 };
 
 type Ctx = {
@@ -56,6 +58,8 @@ const mapSantri = (s: any): Santri => ({
     cardSuffix: s.barcode ? s.barcode.slice(-4) : "****",
     color: "from-primary to-primary-glow",
     totalDue: 0, // Fallback
+    effective_daily_limit: s.effective_daily_limit ?? s.daily_limit ?? 0,
+    is_custom_limit: s.is_custom_limit ?? false,
 });
 
 export function SantriProvider({ children }: { children: ReactNode }) {

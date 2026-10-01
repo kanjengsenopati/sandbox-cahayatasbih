@@ -43,6 +43,20 @@ class ProfileController extends BaseWaliApiController
             'avatar' => 'nullable|image|max:1024',
         ]);
 
+        if ($request->phone !== $user->phone) {
+            if (!$request->filled('current_password') || !\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+                return response()->json([
+                    'message' => 'Password saat ini diperlukan dan harus sesuai untuk mengubah nomor HP.'
+                ], 422);
+            }
+
+            if (\App\Models\Admin::whereIn('phone', $this->getPhoneVariations($request->phone))->exists()) {
+                return response()->json([
+                    'message' => 'Nomor HP ini terdaftar sebagai staf/admin pesantren. Perubahan ke nomor staf tidak diizinkan melalui aplikasi.'
+                ], 422);
+            }
+        }
+
         $data = $request->only(['name', 'email', 'phone']);
         
         if ($request->hasFile('avatar')) {

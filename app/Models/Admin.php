@@ -68,7 +68,16 @@ class Admin extends Authenticatable
 
     public function GetRoleNameAttribute()
     {
-        return $this->roles()->first()->name;
+        if ($this->roles->isEmpty()) {
+            if ($this->role_id) {
+                $r = \Spatie\Permission\Models\Role::find($this->role_id);
+                if ($r) {
+                    return $r->name;
+                }
+            }
+            return 'Admin';
+        }
+        return $this->roles->pluck('name')->implode(', ');
     }
 
     public function school(): BelongsTo
@@ -123,12 +132,25 @@ class Admin extends Authenticatable
         return $outletIds;
     }
 
+    protected ?array $memoizedRoleNamesLower = null;
+
+    /**
+     * Get memoized lowercase role names for fast repeated checks within the request lifecycle.
+     */
+    public function getRoleNamesLower(): array
+    {
+        if ($this->memoizedRoleNamesLower === null) {
+            $this->memoizedRoleNamesLower = $this->roles ? $this->roles->pluck('name')->map(fn($r) => strtolower(trim($r)))->all() : [];
+        }
+        return $this->memoizedRoleNamesLower;
+    }
+
     /**
      * Check if admin has any cashier role (case-insensitive & substring matching)
      */
     public function isKasir(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir')) {
                 return true;
@@ -142,7 +164,7 @@ class Admin extends Authenticatable
      */
     public function isKasirKoperasi(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir') && (str_contains($role, 'koperasi') || str_contains($role, 'kantin'))) {
                 return true;
@@ -156,7 +178,7 @@ class Admin extends Authenticatable
      */
     public function isKoordinatorCahayaMart(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
                 return true;
@@ -170,7 +192,7 @@ class Admin extends Authenticatable
      */
     public function isKasirOutlet(): bool
     {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
             if (str_contains($role, 'kasir') && str_contains($role, 'outlet')) {
                 return true;
@@ -266,6 +288,90 @@ class Admin extends Authenticatable
     }
 
     /**
+     * Override Spatie hasRole to support case-insensitive role name comparisons,
+     * array of roles, pipe-delimited strings, and Collection instances.
+     *
+     * @param string|int|array|\Spatie\Permission\Contracts\Role|\Illuminate\Support\Collection $roles
+     * @param string|null $guard
+     * @return bool
+     */
+    public function hasRole($roles, string $guard = null): bool
+    {
+        $this->loadMissing('roles');
+
+        if (is_string($roles) && false !== strpos($roles, '|')) {
+            $roles = explode('|', $roles);
+        }
+
+        if (is_string($roles)) {
+            $normalizedTarget = strtolower(trim($roles));
+            $collection = $guard ? $this->roles->where('guard_name', $guard) : $this->roles;
+            return $collection->contains(function ($item) use ($normalizedTarget) {
+                return strtolower(trim($item->name)) === $normalizedTarget;
+            });
+        }
+
+        if (is_int($roles)) {
+            $roleClass = $this->getRoleClass();
+            $key = (new $roleClass())->getKeyName();
+
+            return $guard
+                ? $this->roles->where('guard_name', $guard)->contains($key, $roles)
+                : $this->roles->contains($key, $roles);
+        }
+
+        if ($roles instanceof \Spatie\Permission\Contracts\Role) {
+            return $this->roles->contains($roles->getKeyName(), $roles->getKey());
+        }
+
+        if (is_array($roles) || $roles instanceof \Illuminate\Support\Collection) {
+            foreach ($roles as $role) {
+                if ($this->hasRole($role, $guard)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Cek apakah admin HANYA bertugas sebagai kasir / staff outlet,
+     * tanpa memiliki peran administratif backoffice lain (seperti Super Admin, Bendahara, TU, Piket, Asrama, dll.)
+     */
+    public function isKasirOnly(): bool
+    {
+        if (!$this->isKasir() && !$this->isKasirOutlet() && !$this->isKasirKoperasi()) {
+            return false;
+        }
+
+        if ($this->isSuperAdmin()) {
+            return false;
+        }
+
+        $roles = $this->getRoleNamesLower();
+        foreach ($roles as $role) {
+            // Jika punya peran administratif / backoffice lain selain kasir/outlet murni
+            if (
+                str_contains($role, 'admin') ||
+                str_contains($role, 'bendahara') ||
+                str_contains($role, 'piket') ||
+                str_contains($role, 'asrama') ||
+                str_contains($role, 'tata usaha') ||
+                str_contains($role, 'tu ') ||
+                str_contains($role, 'yayasan') ||
+                str_contains($role, 'kepala sekolah') ||
+                str_contains($role, 'koordinator')
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Check if admin is Super Admin
      */
     public function isSuperAdmin(): bool
@@ -274,17 +380,17 @@ class Admin extends Authenticatable
             return true;
         }
 
-        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id'])) {
+        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'superadmin@gmail.com'])) {
             return true;
         }
 
         if ($this->roles && $this->roles->contains(function ($role) {
-            return strtolower($role->name) === 'super admin';
+            return strtolower(trim($role->name)) === 'super admin';
         })) {
             return true;
         }
 
-        return $this->hasRole('Super Admin') || $this->hasRole('super admin');
+        return $this->hasRole('Super Admin');
     }
 }
 

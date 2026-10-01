@@ -21,8 +21,20 @@ class BillTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $billTypeId = $this->route('bill_type') ? ($this->route('bill_type')->id ?? $this->route('bill_type')) : $this->id;
+
         return [
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('bill_types', 'name')
+                    ->where(function ($query) {
+                        return $query->where('academic_year_id', $this->academic_year_id)
+                                     ->whereNull('deleted_at');
+                    })
+                    ->ignore($billTypeId),
+            ],
             'type' => 'required|string|in:MONTHLY,OTHER',
             'payment_input_type' => 'nullable|string|in:FIXED,FREE',
             'bill_item_id' => 'required|exists:bill_items,id',

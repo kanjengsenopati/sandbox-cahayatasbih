@@ -52,7 +52,8 @@ class AuthController extends Controller
         }
 
         // 1. Attempt Wali Santri Auth
-        $remember = $request->boolean('remember');
+        // For PWA mobile app, default to remember = true so parents stay logged in permanently
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
 
         if (!$role || $role === 'wali') {
             $waliUser = \App\Models\User::whereIn('phone', $variations)->first();

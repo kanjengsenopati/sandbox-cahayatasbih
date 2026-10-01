@@ -26,7 +26,7 @@ class DashboardController extends Controller
     {
         try {
             $user = Auth::user();
-            if ($user && $user->isKasir()) {
+            if ($user && $user->isKasirOnly()) {
                 if ($user->isKasirKoperasi()) {
                     $effectiveOutletId = $user->getEffectiveOutletId('kantin');
                     return redirect('/order-item?mode=kantin' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
@@ -36,7 +36,7 @@ class DashboardController extends Controller
                     return redirect('/order-item?mode=outlet' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
                 }
             }
-            $isOutletUser = $user->hasRole('Kasir') || $user->hasRole('Karyawan Outlet ( Non Kasir )') || request()->input('mode') === 'outlet';
+            $isOutletUser = ($user && $user->isKasirOnly()) || ($user && $user->hasRole('Karyawan Outlet ( Non Kasir )')) || request()->input('mode') === 'outlet';
 
             if ($isOutletUser) {
                 $outletIds = $user->getOutletIds();
@@ -102,31 +102,45 @@ class DashboardController extends Controller
             }
 
             // --- Default Academic Dashboard ---
-            $totalSantri = Student::where('status', Student::STATUS_ACTIVE)->count();
-            $totalStaff = Admin::where('is_active', 1)->count();
-            $totalWali = User::where('is_active', 1)->count();
-            $totalKelas = Classroom::whereNotIn('school_id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->count();
+            $dashboardData = \Illuminate\Support\Facades\Cache::remember('academic_dashboard_stats', 300, function () {
+                $totalSantri = Student::where('status', Student::STATUS_ACTIVE)->count();
+                $totalStaff = Admin::where('is_active', 1)->count();
+                $totalWali = User::where('is_active', 1)->count();
+                $totalKelas = Classroom::whereNotIn('school_id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->count();
 
-            $schoolData = School::whereNotIn('id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->withCount([
-                'classroom as total_classes',
-                'students as total_students' => function ($query) {
-                    $query->where('status', Student::STATUS_ACTIVE);
-                },
-                'students as count_l' => function ($query) {
-                    $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'L');
-                },
-                'students as count_p' => function ($query) {
-                    $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'P');
-                },
-            ])->get();
+                $schoolData = School::whereNotIn('id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->withCount([
+                    'classroom as total_classes',
+                    'students as total_students' => function ($query) {
+                        $query->where('status', Student::STATUS_ACTIVE);
+                    },
+                    'students as count_l' => function ($query) {
+                        $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'L');
+                    },
+                    'students as count_p' => function ($query) {
+                        $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'P');
+                    },
+                ])->get();
 
-            $totalLaki = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'L')->count();
-            $totalPerempuan = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'P')->count();
-            $genderRatio = [
-                'l' => $totalLaki,
-                'p' => $totalPerempuan,
-            ];
+                $totalLaki = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'L')->count();
+                $totalPerempuan = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'P')->count();
+                $genderRatio = [
+                    'l' => $totalLaki,
+                    'p' => $totalPerempuan,
+                ];
 
+                $upcomingSchedules = Schedule::with('school')
+                    ->whereDate('date', '>=', Carbon::today())
+                    ->orderBy('date', 'asc')
+                    ->limit(5)
+                    ->get();
+
+                return compact('totalSantri', 'totalStaff', 'totalWali', 'totalKelas', 'schoolData', 'genderRatio', 'upcomingSchedules');
+            });
+
+            // Extract cached data
+            extract($dashboardData);
+
+            // Dynamic login data (not cached for accurate daily stats)
             $today = Carbon::today();
             $staffLoginToday = Admin::whereDate('last_login_at', $today)->count();
             $waliLoginToday = User::whereDate('last_login', $today)->count();
@@ -139,12 +153,6 @@ class DashboardController extends Controller
                 'wali_total' => $totalWali,
                 'wali_percentage' => $totalWali > 0 ? round(($waliLoginToday / $totalWali) * 100) : 0,
             ];
-
-            $upcomingSchedules = Schedule::with('school')
-                ->whereDate('date', '>=', Carbon::today())
-                ->orderBy('date', 'asc')
-                ->limit(5)
-                ->get();
 
             return view('admins.dashboard.index', compact(
                 'isOutletUser',

@@ -42,8 +42,24 @@ function LimitPage() {
 
   useEffect(() => {
     if (limitData) {
-      setDaily(limitData.daily_limit || 0);
-      setEnabled(limitData.daily_limit > 0);
+      if (limitData.daily_limit > 0) {
+        // Limit kustom Wali aktif
+        setDaily(limitData.daily_limit);
+        setEnabled(true);
+      } else if (limitData.daily_limit === -1) {
+        // Wali secara eksplisit minta No Limit
+        setDaily(0);
+        setEnabled(false);
+      } else {
+        // Wali belum set apapun, ikuti backoffice
+        if (limitData.effective_limit > 0) {
+          setDaily(limitData.effective_limit);
+          setEnabled(true);
+        } else {
+          setDaily(0);
+          setEnabled(false);
+        }
+      }
     }
   }, [limitData]);
 
@@ -53,6 +69,7 @@ function LimitPage() {
       setSaved(true);
       queryClient.invalidateQueries({ queryKey: ["limit"] });
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setTimeout(() => navigate({ to: "/dashboard" }), 800);
     },
   });
@@ -135,8 +152,10 @@ function LimitPage() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-foreground">Aktifkan Limit Harian</p>
-              <p className="text-[11px] text-muted-foreground">
-                Transaksi ditolak otomatis jika melewati limit.
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                {limitData?.daily_limit === 0 && limitData?.effective_limit > 0 
+                  ? "Limit saat ini diatur otomatis oleh sistem sekolah. Matikan untuk membatalkan limit." 
+                  : "Transaksi ditolak otomatis jika pengeluaran harian melewati limit."}
               </p>
             </div>
             <button
@@ -223,7 +242,10 @@ function LimitPage() {
         {/* Save bar */}
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-background/0 z-40">
           <button
-            onClick={() => mutation.mutate(daily)}
+            onClick={() => {
+              const payload = enabled ? (daily > 0 ? daily : 0) : -1;
+              mutation.mutate(payload);
+            }}
             disabled={mutation.isPending}
             className="w-full py-4 rounded-2xl text-primary-foreground font-semibold text-sm shadow-[var(--shadow-glow)] flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-[0.98]"
             style={{ background: "var(--gradient-card)" }}

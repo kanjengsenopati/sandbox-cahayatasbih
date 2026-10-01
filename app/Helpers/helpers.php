@@ -13,8 +13,24 @@ if (!function_exists('storage_asset')) {
     {
         $path = ltrim($path, '/');
 
-        // Jika sudah berupa URL absolut, langsung kembalikan
+        // Jika sudah berupa URL absolut
         if (filter_var($path, FILTER_VALIDATE_URL)) {
+            // Jika ini URL lokal (localhost/127.0.0.1) dan file lokal tidak ada di disk,
+            // ekstrak path relatifnya agar bisa dialihkan ke master server
+            $appUrl = config('app.url');
+            $parsedUrl = parse_url($path);
+            $isLocalHost = in_array($parsedUrl['host'] ?? '', ['localhost', '127.0.0.1'])
+                || ($appUrl && str_contains($path, rtrim($appUrl, '/')));
+
+            if ($isLocalHost && isset($parsedUrl['path'])) {
+                $relPath = ltrim($parsedUrl['path'], '/');
+                if (!file_exists(public_path($relPath))) {
+                    $masterUrl = config('app.master_url');
+                    if ($masterUrl) {
+                        return rtrim($masterUrl, '/') . '/' . $relPath;
+                    }
+                }
+            }
             return $path;
         }
 

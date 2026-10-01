@@ -12,64 +12,10 @@
 <script src="{{ url('https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js') }}"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+@include('layouts.partials.swr-datatables')
 @livewireScripts
 @stack('js')
 <script>
-    // Set DataTables global defaults
-    if (typeof $.fn.dataTable !== 'undefined') {
-        $.extend(true, $.fn.dataTable.defaults, {
-            language: {
-                processing: `
-                    <div class="text-center">
-                        <div class="fs-4 fw-bolder text-dark mb-2">Mohon Tunggu</div>
-                        <div class="fs-6 text-muted mb-4">Sedang memuat data...</div>
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                `
-            }
-        });
-
-        // Add custom CSS to force processing indicator to top with modern solid UI
-        $("<style>")
-            .prop("type", "text/css")
-            .html("\
-                div.dataTables_wrapper div.dataTables_processing {\
-                    position: fixed !important;\
-                    top: 50% !important;\
-                    left: 50% !important;\
-                    transform: translate(-50%, -50%) !important;\
-                    margin-top: 0 !important;\
-                    z-index: 10000 !important;\
-                    background-color: #ffffff !important;\
-                    box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.15) !important;\
-                    border: none !important;\
-                    border-radius: 12px !important;\
-                    padding: 30px 40px !important;\
-                    width: 320px !important;\
-                    display: flex !important;\
-                    flex-direction: column !important;\
-                    align-items: center !important;\
-                    justify-content: center !important;\
-                }\
-                .dt-processing-active {\
-                    pointer-events: none;\
-                }\
-            ")
-            .appendTo("head");
-
-        // Listen to processing event globally to toggle active class
-        $(document).on('processing.dt', function(e, settings, processing) {
-            var wrapper = $(e.target).closest('.dataTables_wrapper');
-            if (processing) {
-                wrapper.addClass('dt-processing-active');
-            } else {
-                wrapper.removeClass('dt-processing-active');
-            }
-        });
-    }
-
     // Translate input title to title_en and description to description_en when input title and description
     const translate = (input, output) => {
         if ($(input).val() != '') {
@@ -83,7 +29,12 @@
         }
     }
     $(document).on('click', '.btn-delete', function(e) {
-        var form = $("#" + $(this).data("id"));
+        e.preventDefault();
+        // Use currentTarget to always read data-id from the anchor/button, not from child icon
+        var btn = $(e.currentTarget);
+        var formId = btn.data('id') || btn.closest('[data-id]').data('id');
+        var form = $('#' + formId);
+        if (!form.length) return false;
         Swal.fire({
             title: 'Hapus Data',
             text: 'Anda yakin akan menghapus data ini ?, data yang telah dihapus tidak dapat dikembalikan',
@@ -188,4 +139,71 @@
             this.value = this.value.replace(/[.,]/g, '');
         });
     });
+</script>
+
+<script type="speculationrules">
+{
+  "prefetch": [
+    {
+      "source": "document",
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": "*/logout" } },
+          { "not": { "href_matches": "*/export*" } },
+          { "not": { "href_matches": "*#*" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ]
+}
+</script>
+<script>
+    // 1. Instant Top Progress Bar on navigation click
+    $(document).on('click', 'a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript"]):not([download])', function(e) {
+        if (e.which === 1 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            var url = $(this).attr('href');
+            if (url && (url.startsWith('/') || url.startsWith(window.location.origin))) {
+                var $bar = $('#top-page-progress');
+                if (!$bar.length) {
+                    $bar = $('<div id="top-page-progress"></div>').appendTo('body');
+                }
+                $bar.css({ width: '0%', opacity: '1', display: 'block' });
+                setTimeout(function() { $bar.css('width', '45%'); }, 10);
+                setTimeout(function() { $bar.css('width', '85%'); }, 300);
+            }
+        }
+    });
+
+    window.addEventListener('pageshow', function() {
+        var $bar = $('#top-page-progress');
+        if ($bar.length) {
+            $bar.css('width', '100%');
+            setTimeout(function() {
+                $bar.fadeOut(200, function() { $bar.css('width', '0%'); });
+            }, 100);
+        }
+    });
+
+    // 2. Fallback Hover Prefetching for browsers without Speculation Rules
+    (function() {
+        const prefetchedUrls = new Set();
+        function prefetchUrl(url) {
+            if (!url || prefetchedUrls.has(url)) return;
+            if (url.startsWith('#') || url.startsWith('javascript:') || url.includes('/logout') || url.includes('export')) return;
+            if (url.startsWith('/') || url.startsWith(window.location.origin)) {
+                prefetchedUrls.add(url);
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                document.head.appendChild(link);
+            }
+        }
+
+        $(document).on('mouseenter touchstart', '.menu-link[href], .nav-link[href], .breadcrumb-item a[href]', function() {
+            var href = $(this).attr('href');
+            prefetchUrl(href);
+        });
+    })();
 </script>

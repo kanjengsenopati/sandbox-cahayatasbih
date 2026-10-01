@@ -18,7 +18,8 @@ class BiometricDeviceController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = BiometricDevice::latest()->get();
+            session()->save();
+            $data = BiometricDevice::latest();
             return DataTables::of($data)
                 ->addColumn('status', function ($row) {
                     return $row->is_active ? '<span class="badge badge-success">Aktif</span>'

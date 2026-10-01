@@ -67,37 +67,109 @@ class AuditController extends Controller
         $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
 
         $schools = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('schools')->whereNull('deleted_at')->get();
-        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->get();
+        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
+        
+        foreach ($classrooms as $cls) {
+            $name = strtoupper(trim($cls->name));
+            $group = 'Lainnya / Tambahan';
 
-        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms'));
+            if (preg_match('/^7/', $name)) $group = 'Kelas 7';
+            elseif (preg_match('/^8/', $name)) $group = 'Kelas 8';
+            elseif (preg_match('/^9/', $name)) $group = 'Kelas 9';
+            elseif (preg_match('/^10|^X\b|^X-/', $name)) $group = 'Kelas 10';
+            elseif (preg_match('/^11|^XI\b|^XI-/', $name)) $group = 'Kelas 11';
+            elseif (preg_match('/^12|^XII\b|^XII-/', $name)) $group = 'Kelas 12';
+            elseif (strpos($name, 'PONDOK') !== false || strpos($name, 'DEMO') !== false || strpos($name, 'CONTOH') !== false || strpos($name, 'USTADZ') !== false) {
+                $group = 'Pondok / Khusus';
+            }
+            
+            $cls->grade_group = $group;
+        }
+
+        $academicYears = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('academic_years')->whereNull('deleted_at')->orderBy('name', 'desc')->get();
+        // Resolve bill types and map them to their corresponding school_id via payment_rates -> payment_rate_classrooms -> classrooms
+        $billTypes = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bill_types')
+            ->leftJoin('payment_rates', 'payment_rates.bill_type_id', '=', 'bill_types.id')
+            ->leftJoin('payment_rate_classrooms', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+            ->leftJoin('classrooms', 'classrooms.id', '=', 'payment_rate_classrooms.classroom_id')
+            ->whereNull('bill_types.deleted_at')
+            ->select('bill_types.id', 'bill_types.name', 'bill_types.academic_year_id', 'classrooms.school_id')
+            ->groupBy('bill_types.id', 'bill_types.name', 'bill_types.academic_year_id', 'classrooms.school_id')
+            ->orderBy('bill_types.name', 'asc')
+            ->get();
+
+        $localClassroomIds = \Illuminate\Support\Facades\DB::connection('mysql')->table('classrooms')->pluck('id')->toArray();
+
+        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms', 'academicYears', 'billTypes', 'localClassroomIds'));
     }
 
     /**
-     * Show system diagnostics UI.
+     * Show system diagnostics UI (instant page load with skeleton loaders).
      */
-    public function diagnosticsIndex(Request $request, AuditComparisonService $comparisonService)
+    public function diagnosticsIndex(Request $request)
     {
         if (!Auth::user()->can('Manage Audit dan Sinkron')) {
             return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        // Cache diagnostic CLI script execution results for 5 minutes unless refresh parameter is requested
-        if ($request->has('refresh')) {
-            Cache::forget('audit_diagnostics_results');
+        return view('admins.admin.audit.diagnostics');
+    }
+
+    /**
+     * AJAX endpoint to fetch audit comparison data asynchronously.
+     */
+    public function ajaxComparison(Request $request, AuditComparisonService $comparisonService)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
         }
 
-        $results = Cache::remember('audit_diagnostics_results', 300, function () {
-            $service = new AuditService();
-            return $service->runAll();
-        });
+        session()->save();
+
+        if ($request->boolean('refresh')) {
+            Cache::forget('audit_diagnostics_raw_comparison');
+            Cache::forget('audit_ai_insight');
+        }
 
         $search = $request->input('search');
         $page = (int) $request->input('page', 1);
 
-        // Fast O(1) bulk comparison data (< 200ms) with search & pagination (default 10)
         $comparison = $comparisonService->getComparisonData($search, $page, 10);
 
-        return view('admins.admin.audit.diagnostics', compact('results', 'comparison'));
+        $html = view('admins.admin.audit.partials.comparison-table', compact('comparison'))->render();
+
+        return response()->json([
+            'summaries' => $comparison['summaries'],
+            'total_discrepancies' => $comparison['total_discrepancies'],
+            'html' => $html,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint to fetch diagnostic integrity scripts results asynchronously.
+     */
+    public function ajaxScripts(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
+        session()->save();
+
+        if ($request->boolean('refresh')) {
+            Cache::forget('audit_diagnostics_results');
+        }
+
+        $results = Cache::remember('audit_diagnostics_results', 3600, function () {
+            $service = new AuditService();
+            return $service->runAll();
+        });
+
+        $html = view('admins.admin.audit.partials.scripts-output', compact('results'))->render();
+
+        return response()->json([
+            'html' => $html,
+        ]);
     }
 
     /**
@@ -189,8 +261,19 @@ class AuditController extends Controller
         $limit = (int) $request->input('limit', 50);
         $schoolId = $request->input('school_id');
         $classroomId = $request->input('classroom_id');
+        $academicYearId = $request->input('academic_year_id');
+        $billTypeId = $request->input('bill_type_id');
 
-        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId);
+        // STRICT CONSTRAINT: Hardening data filter untuk billing_status
+        if ($module === 'billing_status') {
+            if (empty($academicYearId) || empty($billTypeId)) {
+                return response()->json([
+                    'error' => 'Validasi Gagal: Anda harus memilih Tahun Ajaran dan Jenis Tagihan untuk melihat Status Tagihan.',
+                ], 422);
+            }
+        }
+
+        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
 
         return response()->json($diffAnalysis);
     }
@@ -206,11 +289,13 @@ class AuditController extends Controller
 
         $module = $request->input('module', 'students');
         $selectedIds = $request->input('selected_ids', []);
+        $academicYearId = $request->input('academic_year_id');
+        $billTypeId = $request->input('bill_type_id');
 
-        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds);
+        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds, $academicYearId, $billTypeId);
 
         if ($result['status'] === 'success') {
-            return redirect()->back()->with('success', $result['message']);
+            return redirect()->back()->with('success', $result['message'])->with('synced_ids', $selectedIds);
         }
 
         return redirect()->back()->with('error', $result['message']);
@@ -225,9 +310,17 @@ class AuditController extends Controller
             return response()->json(['html' => 'Akses ditolak.'], 403);
         }
 
+        session()->save();
+
         $comparison = $comparisonService->getComparisonData();
+        $cacheKey = 'audit_ai_insight_' . count($comparison['discrepancies']);
+
+        if ($request->boolean('refresh')) {
+            Cache::forget($cacheKey);
+            Cache::forget('audit_ai_insight');
+        }
         
-        $aiInsight = Cache::remember('audit_ai_insight_' . count($comparison['discrepancies']), 1800, function () use ($comparisonService, $comparison) {
+        $aiInsight = Cache::remember($cacheKey, 1800, function () use ($comparisonService, $comparison) {
             return $comparisonService->generateAiInsight($comparison);
         });
 

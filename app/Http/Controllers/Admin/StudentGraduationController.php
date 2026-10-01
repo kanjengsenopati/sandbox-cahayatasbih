@@ -24,7 +24,14 @@ class StudentGraduationController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with(['user', 'classroom.school', 'bills.billType', 'bills.academicYear'])
+            session()->save();
+            $data = Student::with([
+                'user',
+                'classroom.school',
+                'bills' => function ($q) {
+                    $q->where('status', \App\Models\Bill::STATUS_UNPAID)->with(['billType', 'academicYear']);
+                }
+            ])
                 ->whereHas('classroom.school', function ($query) {
                     $query->whereIn('type', [School::TYPE_SMP, School::TYPE_MA]);
                 })
@@ -85,7 +92,7 @@ class StudentGraduationController extends Controller
                     }
                 })
                 ->addColumn('unpaid_bills', function ($data) {
-                    $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
+                    $unpaid = $data->bills;
                     if ($unpaid->isEmpty()) {
                         return '<span class="badge bg-light-success text-success fw-bolder px-3 py-1">Lunas / Bersih</span>';
                     }
@@ -116,14 +123,20 @@ class StudentGraduationController extends Controller
                         '</button>';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('student.edit', $data->id);
-                    $actionDelete = route('student.destroy', $data->id);
+                    $user = Auth::user();
+                    $buttons = '';
+                    if ($user && ($user->hasRole('Super Admin') || $user->can('Edit Santri'))) {
+                        $actionEdit = route('student.edit', $data->id);
+                        $buttons .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kelulusan Santri']);
+                    }
+                    if ($user && ($user->hasRole('Super Admin') || $user->can('Delete Santri'))) {
+                        $actionDelete = route('student.destroy', $data->id);
+                        $buttons .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kelulusan Santri']);
+                    }
                     $actionPrint = route('student.generate-student-card', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kenaikan Kelas']) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kenaikan Kelas']) .
-                        view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
-                        "</div>";
+                    $buttons .= view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']);
+
+                    return "<div class='d-flex justify-content-center'>{$buttons}</div>";
                 })
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'unpaid_bills'])
                 ->make(true);
@@ -165,6 +178,10 @@ class StudentGraduationController extends Controller
      */
     public function store(StudentGraduationRequest $request)
     {
+        $user = Auth::user();
+        if (!$user || (!$user->hasRole('Super Admin') && !$user->can('Manage Kelulusan Santri') && !$user->can('Create Kelulusan Santri'))) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk memproses kelulusan santri');
+        }
         $data = $request->validated();
         $studentIds = $data['student_ids'];
         $graduationOption = $request->input('graduation_option') ?? $request->input('next_action') ?? 'lanjut_studi';

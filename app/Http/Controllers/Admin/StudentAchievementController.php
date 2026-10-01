@@ -23,7 +23,8 @@ class StudentAchievementController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = StudentAchievement::with('student', 'academicYear', 'classroom')->latest()->get();
+            session()->save();
+            $data = StudentAchievement::with('student', 'academicYear', 'classroom')->latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student-achievement.edit', $data->id);

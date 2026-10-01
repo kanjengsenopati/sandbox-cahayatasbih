@@ -23,18 +23,16 @@ class ReportStudentCounselingScoreController extends Controller
         $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
+            session()->save();
             $data = StudentCounselingScore::with('academicYear', 'student', 'student.classroom', 'student.school')
                 ->when(request()->school_id, function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request()->school_id);
-                        });
-                    });
+                    $studentIds = \App\Models\Student::join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                        ->where('classrooms.school_id', request()->school_id)
+                        ->pluck('students.id');
+                    $query->whereIn('student_id', $studentIds);
                 })
                 ->when(request()->classroom_id, function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->where('classroom_id', request()->classroom_id);
-                    });
+                    $query->whereIn('student_id', \App\Models\Student::where('classroom_id', request()->classroom_id)->pluck('id'));
                 })
                 ->hasSchool()
                 ->latest();

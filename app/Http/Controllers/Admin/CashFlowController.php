@@ -43,7 +43,10 @@ class CashFlowController extends Controller
                 ->when(!auth()->user()->outlet_id && request()->filled('outlet_id'), function($q) {
                     $q->where('outlet_id', request()->outlet_id);
                 })
+                ->with(['cashflow_category', 'sender', 'receiver'])
                 ->latest();
+
+            session()->save();
 
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
@@ -654,15 +657,25 @@ class CashFlowController extends Controller
                 ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
                 ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
                 ->groupBy('admins.id', 'admins.name')
-                ->get()
-                ->map(function ($officer) use ($outletId) {
-                    $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
-                    $handedOver = CashFlow::where('sender_id', $officer->id)
-                        ->where('status', CashFlow::STATUS_APPROVED)
-                        ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
-                        ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
-                        ->sum('amount');
-                    
+                ->get();
+
+            // Pre-fetch category and batch-fetch handover sums to avoid N+1 per officer
+            $catPiketForMap = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
+            $officerIds = $piketOfficers->pluck('id')->toArray();
+            $handedOverMap = [];
+            if (!empty($officerIds) && $catPiketForMap) {
+                $handedOverMap = CashFlow::whereIn('sender_id', $officerIds)
+                    ->where('status', CashFlow::STATUS_APPROVED)
+                    ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+                    ->where('cash_flow_category_id', $catPiketForMap->id)
+                    ->groupBy('sender_id')
+                    ->selectRaw('sender_id, SUM(amount) as total_handed')
+                    ->pluck('total_handed', 'sender_id')
+                    ->toArray();
+            }
+
+            $piketOfficers = $piketOfficers->map(function ($officer) use ($handedOverMap) {
+                    $handedOver = (int)($handedOverMap[$officer->id] ?? 0);
                     $cashInHand = max($officer->total_cash - $handedOver, 0);
                     
                     return [
@@ -766,6 +779,9 @@ class CashFlowController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengajukan Arus Kas.');
+        }
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
         $outlets = \App\Models\Outlet::orderBy('name')->get();
@@ -777,6 +793,10 @@ class CashFlowController extends Controller
      */
     public function store(CashFlowRequest $request)
     {
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengajukan Arus Kas.');
+        }
+
         $data = $request->validated();
         $cashflowCount = CashFlow::whereDate('created_at', now())->count();
         $data['payment_code'] = 'CT-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
@@ -809,6 +829,10 @@ class CashFlowController extends Controller
      */
     public function edit(CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Edit Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengedit Arus Kas.');
+        }
+
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
         $outlets = \App\Models\Outlet::orderBy('name')->get();
@@ -820,6 +844,10 @@ class CashFlowController extends Controller
      */
     public function update(CashFlowRequest $request, CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Edit Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk mengubah Arus Kas.');
+        }
+
         $data = $request->validated();
         $data['amount'] = preg_replace('/\D/', '', $data['amount']);
         $data['sender_id'] = Auth::id();
@@ -842,6 +870,10 @@ class CashFlowController extends Controller
      */
     public function destroy(CashFlow $cashflow)
     {
+        if (!Auth::user()->can('Delete Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin untuk menghapus Arus Kas.');
+        }
+
         $cashflow->delete();
         return redirect()->route('cashflow.index')->with('success', 'Berhasil Menghapus Arus Kas');
     }
@@ -849,25 +881,37 @@ class CashFlowController extends Controller
     public function approve($id)
     {
         $cashflow = CashFlow::findOrFail($id);
-        // if (Auth::id() == $cashflow->receiver_id && $cashflow->status == CashFlow::STATUS_PENDING) {
+        
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Edit Arus Kas') && Auth::id() != $cashflow->receiver_id) {
+            return response()->json(['message' => 'Maaf, Anda tidak berhak menyetujui Arus Kas ini.'], 403);
+        }
+
+        if ($cashflow->status !== CashFlow::STATUS_PENDING) {
+            return response()->json(['message' => 'Arus Kas ini sudah diproses sebelumnya.'], 422);
+        }
+
         $cashflow->status = CashFlow::STATUS_APPROVED;
         $cashflow->save();
 
         return response()->json(['message' => 'Arus Kas telah disetujui.']);
-        // }
-        return response()->json(['message' => 'Tidak dapat menyetujui Arus Kas.'], 422);
     }
 
     public function reject(Request $request, $id)
     {
         $cashflow = CashFlow::findOrFail($id);
-        // if (Auth::id() == $cashflow->receiver_id && $cashflow->status == CashFlow::STATUS_PENDING) {
+
+        if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Edit Arus Kas') && Auth::id() != $cashflow->receiver_id) {
+            return response()->json(['message' => 'Maaf, Anda tidak berhak menolak Arus Kas ini.'], 403);
+        }
+
+        if ($cashflow->status !== CashFlow::STATUS_PENDING) {
+            return response()->json(['message' => 'Arus Kas ini sudah diproses sebelumnya.'], 422);
+        }
+
         $cashflow->status = CashFlow::STATUS_REJECTED;
         $cashflow->reason = $request->reason;
         $cashflow->save();
 
         return response()->json(['message' => 'Arus Kas telah ditolak.']);
-        // }
-        return response()->json(['message' => 'Tidak dapat menolak Arus Kas.'], 422);
     }
 }

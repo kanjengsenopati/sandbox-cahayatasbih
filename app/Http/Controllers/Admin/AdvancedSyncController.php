@@ -16,6 +16,13 @@ class AdvancedSyncController extends Controller
     public function __construct(AdvancedSyncService $syncService)
     {
         $this->syncService = $syncService;
+        $this->middleware(function ($request, $next) {
+            $user = Auth::user();
+            if (!$user || (!$user->hasRole('Super Admin') && !$user->can('Manage Audit dan Sinkron'))) {
+                abort(403, 'Akses terbatas untuk pengguna dengan izin Manage Audit dan Sinkron.');
+            }
+            return $next($request);
+        });
     }
 
     /**

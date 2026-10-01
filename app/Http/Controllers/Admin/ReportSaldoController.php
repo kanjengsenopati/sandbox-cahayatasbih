@@ -56,14 +56,16 @@ class ReportSaldoController extends Controller
                 $query->where('outlet_id', request()->outlet_id);
             })
             ->when(request()->filled('school_id'), function ($query) {
-                $query->whereHas('student.classroom', function ($q) {
-                    $q->where('school_id', request()->school_id);
-                });
+                // Use JOIN-based filtering instead of nested whereHas for better performance
+                $studentIds = Student::join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                    ->where('classrooms.school_id', request()->school_id)
+                    ->pluck('students.id');
+                $query->whereIn('student_id', $studentIds);
             })
             ->when(request()->filled('classroom_id'), function ($query) {
-                $query->whereHas('student', function ($q) {
-                    $q->where('classroom_id', request()->classroom_id);
-                });
+                $query->whereIn('student_id',
+                    Student::where('classroom_id', request()->classroom_id)->pluck('id')
+                );
             })
             ->when(request()->filled('start_date'), function ($query) {
                 $query->whereDate('created_at', '>=', request()->start_date);
@@ -107,6 +109,8 @@ class ReportSaldoController extends Controller
 
     protected function formatDataTable($data)
     {
+        session()->save();
+
         return DataTables::of($data)
             ->filterColumn('student.name', function ($query, $keyword) {
                 $query->whereHas('student', function ($q) use ($keyword) {

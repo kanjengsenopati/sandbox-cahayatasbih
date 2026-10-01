@@ -72,6 +72,9 @@
                                 enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
+                                @php
+                                    $canEdit = Auth::user()->hasRole('Super Admin') || Auth::user()->can('Edit Tagihan');
+                                @endphp
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="name">
@@ -82,7 +85,7 @@
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <select name="status" class="form-select form-select-solid" id="status"
-                                        data-control="select2" data-placeholder="Pilih Status" data-hide-search="true">
+                                        data-control="select2" data-placeholder="Pilih Status" data-hide-search="true" @if(!$canEdit) disabled @endif>
                                         <option value="">Pilih Status</option>
                                         <option value="PENDING_PAYMENT" {{ @$transaction->status == 'PENDING_PAYMENT' ?
                                             'selected' :
@@ -230,12 +233,14 @@
                                     </a>
                                     <!--end::Button-->
                                     <!--begin::Button-->
+                                    @if($canEdit)
                                     <button type="submit" data-kt-contacts-type="submit" class="btn btn-sm btn-primary">
                                         <span class="indicator-label">Simpan</span>
                                         <span class="indicator-progress">Please wait...
                                             <span
                                                 class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                                     </button>
+                                    @endif
                                     <!--end::Button-->
                                 </div>
                                 <!--end::Action buttons-->

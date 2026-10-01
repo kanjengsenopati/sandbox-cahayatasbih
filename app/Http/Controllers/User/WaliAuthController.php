@@ -21,7 +21,8 @@ class WaliAuthController extends Controller
 
     public function authenticate(AuthRequest $request)
     {
-        if (Auth::guard('wali')->attempt($request->validated(), $request->remember)) {
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
+        if (Auth::guard('wali')->attempt($request->validated(), $remember)) {
             if (Auth::guard('wali')->user()->is_active) {
                 return redirect()->route('wali.dashboard');
             } else {
