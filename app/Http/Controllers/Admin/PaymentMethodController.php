@@ -20,7 +20,8 @@ class PaymentMethodController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = PaymentMethod::latest()->get();
+            session()->save();
+            $data = PaymentMethod::latest();
             return DataTables::of($data)
                 ->editColumn('status', function ($data) {
                     return $data->is_active == PaymentMethod::STATUS_ACTIVE ?

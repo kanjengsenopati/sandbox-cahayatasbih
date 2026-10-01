@@ -95,8 +95,13 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 */
 // Admin audit route
 Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('audit/tagihan-pembayaran', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'index'])->name('audit.tagihan');
+    Route::get('audit/admin/audit/tagihan-pembayaran', fn() => redirect()->route('audit.tagihan'));
+    Route::match(['put', 'post', 'delete'], 'transaction/{id}/hide-archive', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'hideArchive'])->name('admin.transaction.hide-archive');
     Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
+    Route::get('audit/diagnostics/comparison', [App\Http\Controllers\Admin\AuditController::class, 'ajaxComparison'])->name('admin.audit.diagnostics.comparison');
+    Route::get('audit/diagnostics/scripts', [App\Http\Controllers\Admin\AuditController::class, 'ajaxScripts'])->name('admin.audit.diagnostics.scripts');
     Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
     Route::get('audit/duplicate-students', [App\Http\Controllers\Admin\AuditController::class, 'duplicatesIndex'])->name('admin.audit.duplicates');
     Route::get('audit/simulation', [App\Http\Controllers\Admin\AuditController::class, 'simulationIndex'])->name('admin.audit.simulation');
@@ -109,6 +114,12 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::post('audit/advanced-sync/execute', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'execute'])->name('admin.audit.advanced-sync.execute');
     Route::post('audit/advanced-sync/clean-reconcile', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'cleanReconcile'])->name('admin.audit.advanced-sync.clean-reconcile');
     Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
+
+    // Audit Saldo Minus
+    Route::get('audit/saldo-minus', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'index'])->name('admin.audit.saldo-minus');
+    Route::get('audit/saldo-minus/data', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'data'])->name('admin.audit.saldo-minus.data');
+    Route::get('audit/saldo-minus/{id}/logs', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'logs'])->name('admin.audit.saldo-minus.logs');
+    Route::get('audit/saldo-minus/export', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'export'])->name('admin.audit.saldo-minus.export');
 
     // Redirect old route for compatibility
     Route::get('audit', function() {
@@ -130,7 +141,7 @@ Route::any('wali/{any?}', function ($any = null) {
 
 Route::prefix('ct-mobile')->group(function () {
     Route::get('/', [WaliDashboardController::class, 'app'])->name('wali.index');
-    Route::get('login', [WaliDashboardController::class, 'app'])->name('wali.login');
+    Route::get('login', [WaliDashboardController::class, 'loginPage'])->name('wali.login');
     Route::post('login', [CtMobileAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [CtMobileAuthController::class, 'logout'])->name('wali.logout');
     Route::get('logout', [CtMobileAuthController::class, 'logout']);
@@ -325,7 +336,14 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bill/import-logs', [BillController::class, 'getImportLogs'])->name('bill.import-logs');
     Route::get('bill/import-logs/{id}/details', [BillController::class, 'getImportLogDetails'])->name('bill.import-logs.details');
     Route::post('bill/rollback-import/{id}', [BillController::class, 'rollbackImport'])->name('bill.rollback-import');
+    Route::get('bill/audit-consistency', [BillController::class, 'auditConsistency'])->name('bill.audit-consistency');
+    Route::post('bill/repair-consistency', [BillController::class, 'repairConsistency'])->name('bill.repair-consistency');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
+    Route::post('bill.change-status-bulk', [BillController::class, 'changeStatusBulk'])->name('bill.change-status-bulk');
+
+    Route::post('bill/{student_id}/generate', [BillController::class, 'generateStudentBills'])->name('bill.generate-student-bills');
+
+
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
     Route::resource('transaction', TransactionController::class);

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { postLogin, fetchAppSettings } from "@/lib/api";
+import { postLogin, fetchAppSettings, fetchProfile } from "@/lib/api";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/login")({
@@ -18,12 +18,13 @@ function LoginPage() {
   const [show, setShow] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("remember_me") === "true";
+      const saved = localStorage.getItem("remember_me");
+      return saved !== null ? saved === "true" : true;
     }
-    return false;
+    return true;
   });
   const [phone, setPhone] = useState(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("remember_me") === "true") {
+    if (typeof window !== "undefined") {
       return localStorage.getItem("remembered_phone") || "";
     }
     return "";
@@ -33,6 +34,31 @@ function LoginPage() {
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // If already logged in, automatically redirect to dashboard
+  const { data: profileRes, isLoading: isCheckingAuth } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const res = await fetchProfile();
+      return res.data;
+    },
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (profileRes) {
+      if (typeof window !== "undefined" && (window.location.pathname.endsWith("/login") || window.location.pathname.endsWith("/login/"))) {
+        const basePath = window.location.pathname.replace(/\/login\/?$/, '');
+        window.history.replaceState(null, '', (basePath || '/ct-mobile') + '/#/dashboard');
+      }
+      if (profileRes.role === "penanggung_jawab") {
+        navigate({ to: "/penanggung-jawab/dashboard" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
+    }
+  }, [profileRes, navigate]);
 
   const { data: settings } = useQuery({
     queryKey: ["app-settings"],
@@ -79,6 +105,11 @@ function LoginPage() {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+
+      if (typeof window !== "undefined" && (window.location.pathname.endsWith("/login") || window.location.pathname.endsWith("/login/"))) {
+        const basePath = window.location.pathname.replace(/\/login\/?$/, '');
+        window.history.replaceState(null, '', (basePath || '/ct-mobile') + '/#/dashboard');
+      }
 
       if (data.role === "penanggung_jawab") {
         navigate({ to: "/penanggung-jawab/dashboard" });

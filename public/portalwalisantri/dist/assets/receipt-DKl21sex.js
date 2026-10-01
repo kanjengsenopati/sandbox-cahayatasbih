@@ -1,1 +1,5 @@
+<<<<<<<< HEAD:public/portalwalisantri/dist/assets/receipt-DKl21sex.js
 import{k as e}from"./index-CsPvz6ai.js";const t=[["path",{d:"M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z",key:"q3az6g"}],["path",{d:"M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8",key:"1h4pet"}],["path",{d:"M12 17.5v-11",key:"1jc1ny"}]],c=e("receipt",t);export{c as R};
+========
+import{l as e}from"./index-CsYxyiX4.js";const t=[["path",{d:"M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z",key:"q3az6g"}],["path",{d:"M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8",key:"1h4pet"}],["path",{d:"M12 17.5v-11",key:"1jc1ny"}]],c=e("receipt",t);export{c as R};
+>>>>>>>> origin/staging:public/portalwalisantri/dist/assets/receipt-C1bg60OB.js

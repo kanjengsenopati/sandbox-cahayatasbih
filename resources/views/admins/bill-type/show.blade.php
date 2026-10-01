@@ -923,7 +923,21 @@
 
                     bills.forEach(function(b, idx) {
                         html += '<div class="col">';
-                        
+
+                        // Handling slot bulan tanpa tagihan
+                        if (b.is_no_bill || b.status === 'NO_BILL') {
+                            html += '<div class="card h-100 border shadow-sm rounded-4 position-relative p-3 d-flex flex-column text-center" style="min-height: 145px; background-color: #f8fafc; border: 1px dashed #cbd5e1 !important; opacity: 0.85;">';
+                            html += '<div class="badge badge-light-secondary text-muted fw-bolder text-uppercase fs-8 py-1.5 px-3 w-100 mb-1.5 text-center mt-2">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
+                            html += '<div class="badge fw-bold fs-8 py-1.5 px-3 w-100 mb-2 text-center" style="background-color: #f1f5f9 !important; color: #64748b !important; border: 1px solid #e2e8f0;">TANPA TAGIHAN</div>';
+                            html += '<div class="fs-6 fw-bold text-muted text-center mb-2">Rp. 0</div>';
+                            html += '<div class="mt-auto d-flex justify-content-center align-items-center text-muted py-1 fs-8">';
+                            html += '<i class="bi bi-dash-circle me-1 text-muted"></i>Tidak Ditagihkan';
+                            html += '</div>';
+                            html += '</div>'; // End Card
+                            html += '</div>'; // End Col
+                            return;
+                        }
+
                         var isPaid = b.status === 'PAID' || (b.paid_amount >= b.amount && b.amount > 0);
                         var isPartial = !isPaid && (b.status === 'PARTIAL' || (b.paid_amount > 0 && b.paid_amount < b.amount));
                         

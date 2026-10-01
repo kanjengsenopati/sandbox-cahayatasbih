@@ -19,7 +19,7 @@ class AcademicController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->with('adminSchool.admin')->orderBy('name', 'asc')->get();
         
         $schoolsGraduation = School::hasSchool()
             ->whereIn('type', [School::TYPE_SMP, School::TYPE_MA])

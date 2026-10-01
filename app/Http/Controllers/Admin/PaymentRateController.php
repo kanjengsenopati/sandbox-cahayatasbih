@@ -22,6 +22,52 @@ use App\Http\Requests\Admin\PaymentRateRequest;
 
 class PaymentRateController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            if ($user->hasRole('Super Admin')) {
+                return $next($request);
+            }
+
+            $action = $request->route() ? $request->route()->getActionMethod() : '';
+
+            // Read actions
+            if (in_array($action, ['index', 'show', 'getClassroom', 'getStudent', 'getBillDetails'])) {
+                if (!$user->can('Manage Tarif Pembayaran') && !$user->can('Manage Jenis Bayar') && !$user->can('Manage Item Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk melihat Tarif Pembayaran.');
+                }
+            }
+
+            // Create actions
+            if (in_array($action, ['create', 'store', 'generate', 'generateStudent'])) {
+                if (!$user->can('Create Tarif Pembayaran') && !$user->can('Create Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk menambah/men-generate Tarif Pembayaran.');
+                }
+            }
+
+            // Edit actions
+            if (in_array($action, ['edit', 'update', 'updateBill'])) {
+                if (!$user->can('Edit Tarif Pembayaran') && !$user->can('Edit Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk mengubah Tarif Pembayaran.');
+                }
+            }
+
+            // Delete actions
+            if (in_array($action, ['destroy', 'deleteBill', 'deleteBillsMass'])) {
+                if (!$user->can('Delete Tarif Pembayaran') && !$user->can('Delete Jenis Bayar')) {
+                    abort(403, 'Maaf, Anda tidak memiliki izin untuk menghapus Tarif Pembayaran.');
+                }
+            }
+
+            return $next($request);
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -627,6 +673,21 @@ class PaymentRateController extends Controller
                 ->keyBy('student_id');
         }
 
+        $transferRateStudentIds = [];
+        if ($paymentRate->type === PaymentRate::TYPE_REGULAR && !empty($studentIds)) {
+            $transferRateStudentIds = DB::table('payment_rate_students')
+                ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                ->whereIn('payment_rate_students.student_id', $studentIds)
+                ->whereNull('payment_rate_students.deleted_at')
+                ->whereNull('payment_rates.deleted_at')
+                ->pluck('payment_rate_students.student_id')
+                ->flip()
+                ->toArray();
+        }
+
+        session()->save();
+
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
             ->addColumn('total_unpaid', function ($student) use ($billAggregates) {
@@ -643,11 +704,11 @@ class PaymentRateController extends Controller
                 $agg = $billAggregates->get($student->id);
                 return $this->formatCurrency($agg?->total ?? 0);
             })
-            ->addColumn('status', function ($student) use ($paymentRate, $billAggregates) {
+            ->addColumn('status', function ($student) use ($paymentRate, $billAggregates, $transferRateStudentIds) {
                 $agg = $billAggregates->get($student->id);
                 $totalPaid = $agg?->total_paid ?? 0;
                 $total = $agg?->total ?? 0;
-                return $this->getPaymentStatus($totalPaid, $total, $student, $paymentRate);
+                return $this->getPaymentStatus($totalPaid, $total, $student, $paymentRate, $transferRateStudentIds);
             })
             ->addColumn('action', fn($student) => $this->renderActions($student, $paymentRate->bill_type_id))
             ->addColumn('id', fn($student) => $student->id)
@@ -701,17 +762,19 @@ class PaymentRateController extends Controller
         }
     }
 
-    private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null)
+    private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null, $transferRateStudentIds = [])
     {
         if ($total == 0 || $total === null) {
             if ($student && $paymentRate && $paymentRate->type === PaymentRate::TYPE_REGULAR) {
-                $hasTransferRate = DB::table('payment_rate_students')
-                    ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
-                    ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
-                    ->where('payment_rate_students.student_id', $student->id)
-                    ->whereNull('payment_rate_students.deleted_at')
-                    ->whereNull('payment_rates.deleted_at')
-                    ->exists();
+                $hasTransferRate = !empty($transferRateStudentIds)
+                    ? isset($transferRateStudentIds[$student->id])
+                    : DB::table('payment_rate_students')
+                        ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                        ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                        ->where('payment_rate_students.student_id', $student->id)
+                        ->whereNull('payment_rate_students.deleted_at')
+                        ->whereNull('payment_rates.deleted_at')
+                        ->exists();
 
                 if ($hasTransferRate) {
                     return '<span class="badge badge-light-warning text-dark fw-bolder px-2 py-1" title="Siswa ini terdaftar di Tarif Susulan / Pindahan (Lihat Tab Siswa Pindahan)"><i class="fas fa-user-tag text-warning me-1"></i>Tarif Susulan</span>';
@@ -818,6 +881,11 @@ class PaymentRateController extends Controller
 
     private function renderActions($data, $billTypeId)
     {
+        $user = auth()->user();
+        if (!$user || (!$user->hasRole('Super Admin') && !$user->can('Delete Tarif Pembayaran') && !$user->can('Delete Tagihan'))) {
+            return "<div class='d-flex justify-content-center'><span class='text-muted fs-7'>-</span></div>";
+        }
+
         $deleteForm = '<form action="' . route('delete-student-bill') . '" method="POST" style="display:inline;">
             ' . csrf_field() . '
             ' . method_field('DELETE') . '

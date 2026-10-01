@@ -1,1 +1,5 @@
+<<<<<<<< HEAD:public/portalwalisantri/dist/assets/wallet-B9yzGfpy.js
 import{k as a}from"./index-CsPvz6ai.js";const e=[["path",{d:"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1",key:"18etb6"}],["path",{d:"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4",key:"xoc0q4"}]],o=a("wallet",e);export{o as W};
+========
+import{l as a}from"./index-CsYxyiX4.js";const e=[["path",{d:"M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1",key:"18etb6"}],["path",{d:"M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4",key:"xoc0q4"}]],o=a("wallet",e);export{o as W};
+>>>>>>>> origin/staging:public/portalwalisantri/dist/assets/wallet-Cb4QanBp.js

@@ -223,12 +223,16 @@
                 </div>
                 <div class="card-body p-9">
                     <div class="symbol symbol-150px symbol-lg-200px mb-5">
-                        <!-- Adjust path accordingly, assume 'storage/' link -->
-                        <img src="{{ asset('storage/' . $registration->payment_proof) }}" alt="Bukti Pembayaran" class="img-fluid rounded" />
+                        <!-- Adjust path accordingly, uses storage_asset with master proxy and fallback -->
+                        @php
+                            $proofUrl = storage_asset($registration->payment_proof);
+                            $fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2394a3b8'%3EBukti Tidak Ditemukan%3C/text%3E%3C/svg%3E";
+                        @endphp
+                        <img src="{{ $proofUrl }}" onerror="this.onerror=null; this.src='{{ $fallbackSvg }}';" alt="Bukti Pembayaran" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;" />
                     </div>
                     
                     <div class="d-flex gap-2 mt-4">
-                        <a href="{{ asset('storage/' . $registration->payment_proof) }}" target="_blank" class="btn btn-sm btn-primary">Lihat Ukuran Penuh</a>
+                        <a href="{{ $proofUrl }}" target="_blank" class="btn btn-sm btn-primary">Lihat Ukuran Penuh</a>
                     </div>
                 </div>
             </div>

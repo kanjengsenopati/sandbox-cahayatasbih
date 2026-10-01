@@ -27,7 +27,7 @@ class CtMobileAuthController extends Controller
 
         $phone = $request->input('phone');
         $password = $request->input('password');
-        $remember = $request->has('remember');
+        $remember = $request->has('remember') ? $request->boolean('remember') : true;
 
         // 1. Attempt Wali Santri Auth (User model)
         if (Auth::guard('wali')->attempt(['phone' => $phone, 'password' => $password], $remember)) {

@@ -62,12 +62,23 @@
         border: none !important;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
         transition: all 0.2s ease-in-out;
-        cursor: pointer;
+        cursor: pointer !important;
         overflow: hidden;
+        user-select: none;
+    }
+    .product-card,
+    .product-card * {
+        cursor: pointer !important;
     }
     .product-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .product-card:active,
+    .product-card.card-active-pulse {
+        transform: scale(0.96) !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
     .product-image {
         width: 100%;
@@ -591,6 +602,7 @@
     var totalPrice = 0;
     var requestMode = "{{ request('mode') }}";
     var requestOutletId = "{{ request('outlet_id') }}";
+    var currentCartData = [];
 
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
@@ -708,24 +720,203 @@
         }
     }
 
-    // add product to cart use axios
-    function addProductToCart(product) {
-        axios.post("{{ route('order-item.add-to-cart') }}", {
-            code: product.code,
-            quantity: 1,
-            mode: requestMode,
-            outlet_id: requestOutletId
-        }).then(function (response) {
-            // response.data.data will contain 'carts' and 'total_price'
-            var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock decrement
-            changeVisualStock(product.id || product.item_id, -1);
-        }).catch(function (error) {
-            console.error(error);
+    // Debounced & Sequential Cart Sync Manager
+    var pendingCartOperations = {}; // itemId -> { timer, inFlight, needsSync, code }
+
+    function queueCartItemSync(itemId, itemCode) {
+        if (!itemId) return;
+        if (!pendingCartOperations[itemId]) {
+            pendingCartOperations[itemId] = { timer: null, inFlight: false, needsSync: false, code: itemCode };
+        }
+        var op = pendingCartOperations[itemId];
+        if (itemCode) op.code = itemCode;
+
+        if (op.timer) {
+            clearTimeout(op.timer);
+        }
+
+        op.timer = setTimeout(function() {
+            op.timer = null;
+            executeCartItemSync(itemId);
+        }, 200);
+    }
+
+    function executeCartItemSync(itemId) {
+        var op = pendingCartOperations[itemId];
+        if (!op) return;
+
+        if (op.inFlight) {
+            op.needsSync = true;
+            return;
+        }
+
+        var localItem = currentCartData.find(function(c) {
+            return c.item_id == itemId || (c.item && c.item.id == itemId) || c.id == itemId;
         });
+
+        if (!localItem) {
+            delete pendingCartOperations[itemId];
+            return;
+        }
+
+        var targetQuantity = Number(localItem.quantity || 1);
+        var isTemp = String(localItem.id || '').startsWith('temp_');
+        var itemCode = op.code || localItem.item?.code || localItem.code;
+
+        op.inFlight = true;
+        op.needsSync = false;
+
+        var requestPromise;
+        if (isTemp) {
+            requestPromise = axios.post("{{ route('order-item.add-to-cart') }}", {
+                code: itemCode,
+                quantity: targetQuantity,
+                mode: requestMode,
+                outlet_id: requestOutletId
+            });
+        } else {
+            requestPromise = axios.post("{{ route('order-item.update-cart-quantity') }}", {
+                id: localItem.id,
+                item_id: itemId,
+                quantity: targetQuantity,
+                mode: requestMode,
+                outlet_id: requestOutletId
+            });
+        }
+
+        requestPromise.then(function(response) {
+            op.inFlight = false;
+            var data = response.data.data;
+            if (data && data.carts) {
+                reconcileCartData(data.carts, data.total_price);
+            }
+
+            if (op.needsSync) {
+                op.needsSync = false;
+                executeCartItemSync(itemId);
+            } else {
+                delete pendingCartOperations[itemId];
+            }
+        }).catch(function(error) {
+            op.inFlight = false;
+            delete pendingCartOperations[itemId];
+            console.error(error);
+            var errMsg = error.response && error.response.data && error.response.data.message
+                ? error.response.data.message
+                : 'Terjadi kesalahan saat memperbarui keranjang';
+            showErrorAlert(errMsg);
+            refreshProductList();
+            loadProductCatalog();
+        });
+    }
+
+    function reconcileCartData(serverCarts, serverTotalPrice) {
+        if (!Array.isArray(serverCarts)) return;
+
+        serverCarts.forEach(function(sCart) {
+            var sItemId = sCart.item_id || (sCart.item && sCart.item.id);
+            var localItem = currentCartData.find(function(c) {
+                return (sItemId && (c.item_id == sItemId || (c.item && c.item.id == sItemId))) || c.id == sCart.id;
+            });
+
+            if (localItem) {
+                localItem.id = sCart.id; // Map real UUID from server
+                localItem.price = sCart.price;
+                if (sCart.item) localItem.item = sCart.item;
+
+                var op = pendingCartOperations[sItemId] || pendingCartOperations[localItem.id];
+                var hasActivePending = op && (op.timer || op.inFlight || op.needsSync);
+
+                if (!hasActivePending) {
+                    localItem.quantity = sCart.quantity;
+                    localItem.total = sCart.total;
+                } else {
+                    // Local user changes are still active/in-flight: PRESERVE local quantity!
+                    localItem.total = localItem.quantity * Number(localItem.price);
+                }
+            } else {
+                currentCartData.push(sCart);
+            }
+        });
+
+        // Filter out items that are not on server, unless they are pending temp items
+        currentCartData = currentCartData.filter(function(c) {
+            var isTemp = String(c.id || '').startsWith('temp_');
+            var cItemId = c.item_id || (c.item && c.item.id);
+            var op = pendingCartOperations[cItemId] || pendingCartOperations[c.id];
+            if (isTemp && op && (op.timer || op.inFlight || op.needsSync)) {
+                return true;
+            }
+            return serverCarts.some(function(s) {
+                var sItemId = s.item_id || (s.item && s.item.id);
+                return s.id == c.id || (sItemId && sItemId == cItemId);
+            });
+        });
+
+        renderCartTable(currentCartData);
+
+        var hasAnyPending = Object.values(pendingCartOperations).some(function(op) {
+            return op && (op.timer || op.inFlight || op.needsSync);
+        });
+
+        if (hasAnyPending) {
+            var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+            _renderTotalPrice(optTotal);
+        } else if (serverTotalPrice !== undefined) {
+            _renderTotalPrice(serverTotalPrice);
+        }
+    }
+
+    // add product to cart with true 0ms optimistic UI and debounced sync
+    function addProductToCart(product) {
+        if (!product) return;
+
+        var pId = product.id || product.item_id;
+        var pCode = product.code || (product.item ? product.item.code : '');
+
+        // Visual tactile pulse on the clicked card
+        var cardEl = document.getElementById('grid-stock-' + pId)?.closest('.product-card');
+        if (cardEl) {
+            cardEl.classList.add('card-active-pulse');
+            setTimeout(function() { cardEl.classList.remove('card-active-pulse'); }, 200);
+        }
+
+        // Instant visual stock reduction on catalog grid
+        changeVisualStock(pId, -1);
+
+        // Optimistic local cart update
+        var pPrice = Number(product.selling_price !== undefined ? product.selling_price : (product.price || 0));
+        var existingIndex = currentCartData.findIndex(function(c) {
+            return (c.item && c.item.id == pId) || (c.item_id == pId) || (pCode && (c.item && c.item.code == pCode || c.code == pCode));
+        });
+
+        if (existingIndex > -1) {
+            currentCartData[existingIndex].quantity = Number(currentCartData[existingIndex].quantity) + 1;
+            currentCartData[existingIndex].total = currentCartData[existingIndex].quantity * Number(currentCartData[existingIndex].price);
+        } else {
+            currentCartData.unshift({
+                id: 'temp_' + pId + '_' + Date.now(),
+                item_id: pId,
+                quantity: 1,
+                price: pPrice,
+                total: pPrice,
+                item: {
+                    id: pId,
+                    name: product.name || 'Produk',
+                    stock: product.stock !== undefined ? Math.max(0, product.stock - 1) : 0,
+                    image: product.image || defaultImageUrl,
+                    code: pCode
+                }
+            });
+        }
+
+        // Instant 0ms table & total price render
+        renderCartTable(currentCartData);
+        var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+        _renderTotalPrice(optTotal);
+
+        // Queue debounced background sync
+        queueCartItemSync(pId, pCode);
     }
 
     function changeVisualStock(productId, diff) {
@@ -789,7 +980,7 @@
                                     <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
                                         <span class="text-amount">${formattedPrice}</span>
                                         <button type="button" class="btn btn-icon btn-sm btn-light-primary rounded-circle">
-                                            <i class="fas fa-plus"></i>
+                                             <i class="fas fa-plus"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -818,7 +1009,8 @@
 
     function refreshProductList(productsParam) {
         if (productsParam !== undefined) {
-            renderCartTable(productsParam);
+            currentCartData = productsParam || [];
+            renderCartTable(currentCartData);
             return;
         }
 
@@ -832,8 +1024,14 @@
             }
         })
         .then(function (response) {
-            renderCartTable(response.data.data);
-            updateTotalPrice();
+            var resData = response.data.data;
+            if (resData && resData.carts !== undefined) {
+                reconcileCartData(resData.carts || [], resData.total_price);
+            } else {
+                currentCartData = resData || [];
+                renderCartTable(currentCartData);
+                updateTotalPrice();
+            }
             // Hide loader
             document.getElementById('product-loader').style.display = 'none';
         }).catch(function (error) {
@@ -844,12 +1042,13 @@
     }
 
     function renderCartTable(products) {
+        currentCartData = products || [];
         var listProduct = document.getElementById('list-product');
         // Clear existing rows
         listProduct.innerHTML = '';
         
-        if (products && products.length > 0) {
-            products.forEach(function (product, index) {
+        if (currentCartData && currentCartData.length > 0) {
+            currentCartData.forEach(function (product, index) {
                 var tr = createTableRow(product);
                 listProduct.appendChild(tr);
             });
@@ -862,81 +1061,125 @@
     }
 
     function createTableRow(product) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-    <td>
-        <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-            data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
-            <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
-            </a>
-            <div class="ms-5">
-                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
-                <div class="text-muted fs-7">Stok: ${product?.item?.stock ?? 'N/A'}</div>
+        var tr = document.createElement('tr');
+        var stock = product?.item?.stock ?? 'N/A';
+        var price = Number(product?.price || 0);
+        var total = Number(product?.total || 0);
+        var itemId = product?.item?.id || product?.item_id || product?.id || '';
+
+        tr.innerHTML = `
+        <td>
+            <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+                data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
+                <a class="symbol symbol-50px">
+                    <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
+                </a>
+                <div class="ms-5">
+                    <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
+                    <div class="text-muted fs-7">Stok: ${stock}</div>
+                </div>
             </div>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex justify-content-center align-items-center">
-            <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-                onclick="${product.quantity > 1 ? `updateCartQuantity('${product.id}', ${product.quantity - 1}, '${product.item.id}', 1)` : ''}">
-                <i class="fas fa-minus"></i>
+        </td>
+        <td>
+            <div class="d-flex justify-content-center align-items-center">
+                <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
+                    onclick="changeCartItemQuantity('${itemId}', -1)">
+                    <i class="fas fa-minus"></i>
+                </a>
+                <span class="quantity fw-bold fs-6 mx-1">${product.quantity}</span>
+                <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
+                    onclick="changeCartItemQuantity('${itemId}', 1)">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <input type="hidden" value="${product.id}">
+            </div>
+        </td>
+        <td>Rp. ${price.toLocaleString('id-ID')}</td>
+        <td>Rp. ${total.toLocaleString('id-ID')}</td>
+        <td>
+            <a class="btn btn-icon btn-light-danger btn-sm" 
+               onclick="deleteProductFromCart('${product.id}', '${itemId}', ${product.quantity})">
+                <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
             </a>
-            <span class="quantity">${product.quantity}</span>
-            <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
-                onclick="${product.quantity < product.item.stock ? `updateCartQuantity('${product.id}', ${product.quantity + 1}, '${product.item.id}', -1)` : ''}">
-                <i class="fas fa-plus"></i>
-            </a>
-            <input type="hidden" value="${product.id}">
-        </div>
-    </td>
-    <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
-    <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
-    <td>
-        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}', '${product.item.id}', ${product.quantity})">
-            <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
-        </a>
-    </td>`;
-    return tr;
+        </td>`;
+        return tr;
+    }
+
+    function changeCartItemQuantity(itemId, diff) {
+        var cartItem = currentCartData.find(function(c) {
+            return c.item_id == itemId || (c.item && c.item.id == itemId) || c.id == itemId;
+        });
+        if (!cartItem) return;
+
+        var currentQty = Number(cartItem.quantity || 1);
+        var newQty = currentQty + diff;
+
+        if (newQty <= 0) {
+            deleteProductFromCart(cartItem.id, itemId, currentQty);
+            return;
+        }
+
+        // Visual stock adjust on grid
+        changeVisualStock(itemId, -diff);
+
+        // Optimistic local update
+        cartItem.quantity = newQty;
+        cartItem.total = newQty * Number(cartItem.price);
+        renderCartTable(currentCartData);
+
+        var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+        _renderTotalPrice(optTotal);
+
+        // Queue debounced background sync
+        var pCode = cartItem.item?.code || cartItem.code;
+        queueCartItemSync(itemId, pCode);
     }
 
     function deleteProductFromCart(productId, itemId, quantity) {
+        // Cancel any pending sync timer for this item
+        if (pendingCartOperations[itemId]) {
+            if (pendingCartOperations[itemId].timer) {
+                clearTimeout(pendingCartOperations[itemId].timer);
+            }
+            delete pendingCartOperations[itemId];
+        }
+
+        // Optimistic local remove
+        currentCartData = currentCartData.filter(function(c) {
+            return c.id != productId && c.item_id != itemId && (c.item?.id != itemId);
+        });
+        renderCartTable(currentCartData);
+        var optTotal = currentCartData.reduce(function(acc, c) { return acc + Number(c.total || 0); }, 0);
+        _renderTotalPrice(optTotal);
+
+        // Visual stock increment
+        if (itemId && quantity) {
+            changeVisualStock(itemId, quantity);
+        }
+
         axios.post("{{ route('order-item.delete-from-cart') }}", {
             id: productId,
+            item_id: itemId,
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
             var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock increment
-            if (itemId && quantity) {
-                changeVisualStock(itemId, quantity);
+            if (data && data.carts) {
+                reconcileCartData(data.carts, data.total_price);
             }
         }).catch(function (error) {
             console.error(error);
+            refreshProductList();
         });
     }
 
     function updateCartQuantity(productId, quantity, itemId, stockDiff) {
-        axios.post("{{ route('order-item.update-cart-quantity') }}", {
-            id: productId,
-            quantity: quantity,
-            mode: requestMode,
-            outlet_id: requestOutletId
-        }).then(function (response) {
-            var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // Visual stock adjust
-            if (itemId && stockDiff) {
-                changeVisualStock(itemId, stockDiff);
-            }
-        }).catch(function (error) {
-            console.error(error);
+        var cartItem = currentCartData.find(function(c) {
+            return c.id == productId || c.item_id == itemId || (c.item && c.item.id == itemId);
         });
+        if (!cartItem) return;
+        var diff = quantity - Number(cartItem.quantity || 0);
+        changeCartItemQuantity(itemId || cartItem.item_id || productId, diff);
     }
 
     function showErrorAlert(message) {
@@ -1056,19 +1299,19 @@
                         title: '<h2 class="fw-bolder text-warning mb-0">LIMIT TERLAMPAUI</h2>',
                         html: `
                         <div class="text-start mt-4 bg-light-warning p-5 rounded-3">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
-                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentLimit.toLocaleString('id-ID')}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-gray-600 fw-bold">Telah Terpakai:</span>
-                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentTotalThisDay.toLocaleString('id-ID')}</span>
-                            </div>
-                            <div class="separator border-warning opacity-25 my-3"></div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bolder text-gray-800">Sisa Kuota Belanja:</span>
-                                <span class="fw-bolder text-danger fs-3">Rp. ${window.currentStudentRemainingLimit.toLocaleString('id-ID')}</span>
-                            </div>
+                              <div class="d-flex justify-content-between mb-2">
+                                  <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
+                                  <span class="fw-bolder text-gray-800">Rp. ${Number(window.currentStudentLimit).toLocaleString('id-ID')}</span>
+                              </div>
+                              <div class="d-flex justify-content-between mb-2">
+                                  <span class="text-gray-600 fw-bold">Telah Terpakai:</span>
+                                  <span class="fw-bolder text-gray-800">Rp. ${Number(window.currentStudentTotalThisDay).toLocaleString('id-ID')}</span>
+                              </div>
+                              <div class="separator border-warning opacity-25 my-3"></div>
+                              <div class="d-flex justify-content-between align-items-center">
+                                  <span class="text-gray-600 fw-bold">Sisa Kuota Belanja:</span>
+                                  <span class="fw-bolder text-danger fs-3">Rp. ${Number(window.currentStudentRemainingLimit).toLocaleString('id-ID')}</span>
+                              </div>
                         </div>
                         <div class="mt-5 text-gray-600 fs-7 text-center">
                             Silakan kurangi jumlah barang di keranjang.
@@ -1113,22 +1356,42 @@
         }).then((result) => {
         // Jika pengguna menekan tombol "Ya"
         if (result.isConfirmed) {
-        // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
-        axios.post("{{ route('order-item.delete-all-cart') }}", {
-            mode: requestMode,
-            outlet_id: requestOutletId
-        })
-        .then(function (response) {
-            var data = response.data.data;
-            refreshProductList(data.carts);
-            updateTotalPrice(data.total_price);
-            
-            // For clear cart, reloading catalog is fine
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
-        }).catch(function (error) {
-        console.error(error);
-        });
+            // 0. Cancel all pending sync operations and timers
+            Object.keys(pendingCartOperations).forEach(function(k) {
+                if (pendingCartOperations[k]?.timer) clearTimeout(pendingCartOperations[k].timer);
+            });
+            pendingCartOperations = {};
+
+            // 1. Optimistic instant visual stock restoration (0ms)
+            currentCartData.forEach(function(c) {
+                var itemId = c.item?.id || c.item_id;
+                if (itemId && c.quantity) {
+                    changeVisualStock(itemId, c.quantity);
+                }
+            });
+
+            // 2. Optimistic instant cart clear & price reset (0ms)
+            currentCartData = [];
+            renderCartTable(currentCartData);
+            _renderTotalPrice(0);
+
+            // 3. Send delete-all request in background
+            axios.post("{{ route('order-item.delete-all-cart') }}", {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            })
+            .then(function (response) {
+                var data = response.data.data;
+                if (data) {
+                    currentCartData = data.carts || [];
+                    renderCartTable(currentCartData);
+                    updateTotalPrice(data.total_price);
+                }
+            }).catch(function (error) {
+                console.error(error);
+                refreshProductList();
+                loadProductCatalog();
+            });
         }
         });
     }
@@ -1136,6 +1399,43 @@
     function handleError(error) {
         console.error(error);
     }
+
+    // Flush any pending cart sync before payment submission
+    document.addEventListener('DOMContentLoaded', function () {
+        var formPayment = document.getElementById('form-payment');
+        if (formPayment) {
+            formPayment.addEventListener('submit', function (e) {
+                var hasActivePending = Object.values(pendingCartOperations).some(function (op) {
+                    return op && (op.timer || op.inFlight || op.needsSync);
+                });
+                if (hasActivePending) {
+                    e.preventDefault();
+                    Object.keys(pendingCartOperations).forEach(function (itemId) {
+                        var op = pendingCartOperations[itemId];
+                        if (op && op.timer) {
+                            clearTimeout(op.timer);
+                            op.timer = null;
+                            executeCartItemSync(itemId);
+                        }
+                    });
+                    var btnBayar = document.getElementById('btn-bayar');
+                    if (btnBayar) {
+                        btnBayar.disabled = true;
+                        btnBayar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyinkronkan...';
+                    }
+                    var pollInterval = setInterval(function () {
+                        var stillPending = Object.values(pendingCartOperations).some(function (op) {
+                            return op && (op.inFlight || op.needsSync);
+                        });
+                        if (!stillPending) {
+                            clearInterval(pollInterval);
+                            formPayment.submit();
+                        }
+                    }, 50);
+                }
+            });
+        }
+    });
 
 </script>
 <script>
@@ -1274,7 +1574,7 @@
 
                     // Replace name, saldo, and update total price
                     document.getElementById('student-name').value = student.name;
-                    document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+                    document.getElementById('saldo').value = 'Rp. ' + Number(student.saldo).toLocaleString('id-ID');
                     // Add student id to form-payment
                     document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
                         value="${student.barcode}">`);
@@ -1285,7 +1585,8 @@
                     window.currentStudentTotalThisDay = student.total_this_day || 0;
                     window.isLimitAlertShown = false;
 
-                    updateTotalPrice();
+                    var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+                    _renderTotalPrice(curTotal);
                     // Clear input
                     e.target.value = '';
                 } else {
@@ -1316,7 +1617,8 @@
         window.currentStudentRemainingLimit = 0;
         window.currentStudentTotalThisDay = 0;
         window.isLimitAlertShown = false;
-        updateTotalPrice();
+        var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
     });
 
     document.getElementById('umum-tab').addEventListener('click', function () {
@@ -1331,7 +1633,8 @@
         window.currentStudentRemainingLimit = 0;
         window.currentStudentTotalThisDay = 0;
         window.isLimitAlertShown = false;
-        updateTotalPrice();
+        var curTotal = parseInt((document.getElementById('total-price').value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
     });
 </script>
 <script>

@@ -9,15 +9,10 @@ class AuditService
      * Order matters if some scripts depend on previous ones.
      */
     protected $scripts = [
-        'audit_ghost_timestamps.php',
-        'cleanup_ghost_bills.php',
         'find_ghost_bills.php',
         'find_duplicate_bill_types.php',
         'find_duplicate_students.php',
-        'check_image.php',
-        'check_avatars.php',
-        'check_bills.php',
-        // add other audit scripts as needed
+        'audit_ghost_timestamps.php',
     ];
 
     /**

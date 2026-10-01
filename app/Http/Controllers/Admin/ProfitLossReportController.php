@@ -37,13 +37,16 @@ class ProfitLossReportController extends Controller
      */
     private function ensureExpenseCategoriesExist()
     {
-        $categories = ['Listrik', 'Honor Kasir', 'Server Aplikasi', 'IT Support', 'Lainnya'];
-        foreach ($categories as $catName) {
-            CashFlowCategory::firstOrCreate(
-                ['name' => $catName],
-                ['description' => "Kategori pengeluaran operasional: $catName"]
-            );
-        }
+        \Illuminate\Support\Facades\Cache::rememberForever('profit_loss_categories_seeded', function () {
+            $categories = ['Listrik', 'Honor Kasir', 'Server Aplikasi', 'IT Support', 'Lainnya'];
+            foreach ($categories as $catName) {
+                CashFlowCategory::firstOrCreate(
+                    ['name' => $catName],
+                    ['description' => "Kategori pengeluaran operasional: $catName"]
+                );
+            }
+            return true;
+        });
     }
 
     public function index(Request $request)
@@ -147,7 +150,10 @@ class ProfitLossReportController extends Controller
         
         // Custom breakdown grouping to separate custom "Lainnya" subcategories
         $cashExpensesBreakdown = [];
-        $rawExpenses = (clone $cashExpensesQuery)->with('cashflow_category')->get();
+        $rawExpenses = (clone $cashExpensesQuery)
+            ->select('id', 'cash_flow_category_id', 'description', 'amount')
+            ->with('cashflow_category:id,name')
+            ->get();
         
         foreach ($rawExpenses as $exp) {
             $catName = $exp->cashflow_category?->name ?? 'Lainnya';
@@ -261,8 +267,8 @@ class ProfitLossReportController extends Controller
      */
     public function storeExpense(Request $request)
     {
-        if (!Auth::user()->can('Manage Arus Kas') && !Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Rugi Laba')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat pengeluaran');
+        if (!Auth::user()->can('Create Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat pengeluaran operasional');
         }
 
         $request->validate([
@@ -322,8 +328,8 @@ class ProfitLossReportController extends Controller
      */
     public function destroyExpense($id)
     {
-        if (!Auth::user()->can('Manage Arus Kas') && !Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Rugi Laba')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus pengeluaran');
+        if (!Auth::user()->can('Delete Arus Kas') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus pengeluaran operasional');
         }
 
         try {

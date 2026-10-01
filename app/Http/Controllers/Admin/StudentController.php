@@ -37,11 +37,11 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with('user', 'classroom.school')->hasSchool()
+            session()->save();
+            $data = Student::with('user', 'classroom.school', 'studentSubStatus')->hasSchool()
                 ->when(request('school_id'), function ($query) {
-                    $query->whereHas('classroom', function ($query) {
-                        $query->where('school_id', request('school_id'));
-                    });
+                    $classroomIds = \App\Models\Classroom::where('school_id', request('school_id'))->pluck('id');
+                    $query->whereIn('classroom_id', $classroomIds);
                 })
                 ->when(request('classroom_id'), function ($query) {
                     $query->where('classroom_id', request('classroom_id'));
@@ -57,8 +57,11 @@ class StudentController extends Controller
                           ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
                     });
                 })
-                ->latest();
-            $activeAy = \App\Models\AcademicYear::where('is_active', true)->first();
+                ->orderBy('students.id', 'desc');
+
+            $canEdit = Auth::user()->can('Edit Santri');
+            $canDelete = Auth::user()->can('Delete Santri');
+            $csrfToken = csrf_token();
 
             return DataTables::of($data)
                 ->filterColumn('student', function($query, $keyword) {
@@ -102,7 +105,7 @@ class StudentController extends Controller
                     }
 
                     if ($data->student_sub_status_id) {
-                        $subStatus = \App\Models\StudentSubStatus::find($data->student_sub_status_id);
+                        $subStatus = $data->studentSubStatus;
                         if ($subStatus) {
                             $html .= '<div class="mt-1"><span class="badge badge-light-info fw-bolder px-2 py-1">' . $subStatus->name . '</span></div>';
                         }
@@ -110,10 +113,9 @@ class StudentController extends Controller
 
                     return $html;
                 })
-                ->addColumn('student', function ($data) use ($activeAy) {
+                ->addColumn('student', function ($data) {
                     $studentName = $data?->name ? $data->name : '-';
-                    $resolvedClass = $data->classroom ?? ($activeAy ? $data->getClassroomForAcademicYear($activeAy->id) : null);
-                    $className = $resolvedClass?->name ?? '-';
+                    $className = $data->classroom?->name ?? '-';
 
                     // Use avatar_url accessor for proper absolute URL
                     $avatarUrl = $data->avatar_url ?? asset('assets/media/avatars/default.png');
@@ -160,36 +162,45 @@ class StudentController extends Controller
                             <div><strong>' . $userName . '</strong></div>
                             <div>' .
                         ($whatsappLink
-                            ? '<a href="' . $whatsappLink . '" target="_blank" style="text-decoration: none; color: inherit;">' . $userPhone . '</a>'
+                            ? '<a href="' . $whatsappLink . '" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #25D366; font-weight: 500;" title="Chat via WhatsApp"><i class="fab fa-whatsapp me-1" style="pointer-events:none;"></i>' . $userPhone . '</a>'
                             : $userPhone
                         ) .
                         '</div>' . $badgeHtml . '
                         </div>
                     </div>';
                 })
-                ->addColumn('action', function ($data) {
+                ->addColumn('action', function ($data) use ($canEdit, $canDelete, $csrfToken) {
                     $actionShow = route('student.show', $data->id);
                     $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
                     $actionPrint = route('student.generate-student-card', $data->id);
 
-                    $editBtnHtml = '';
-                    if (Auth::user()->can('Edit Santri')) {
-                        $editBtnHtml = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit'></i></button>";
+                    $html = "<div class='d-flex justify-content-center align-items-center'>" .
+                        "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-3'></i></button>";
+
+                    if ($canEdit) {
+                        $html .= "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit'></i></button>";
                     }
 
-                    return "<div class='d-flex justify-content-center align-items-center'>" .
-                        "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-3'></i></button>" .
-                        $editBtnHtml .
-                        view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
-                        "</div>";
+                    $html .= "<div><a href='{$actionPrint}' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3' title='Cetak Kartu'><i class='fas fa-id-card'></i></a></div>";
+
+                    if ($canDelete) {
+                        $html .= "<div><a data-id='form{$data->id}' type='button' id='btnDelete{$data->id}' class='btn-delete btn btn-icon btn-active-light-primary w-30px h-30px me-3' title='Hapus Santri'><i class='fas fa-trash-alt' style='pointer-events: none;'></i></a><form id='form{$data->id}' action='{$actionDelete}' method='post'><input type='hidden' name='_token' value='{$csrfToken}'><input type='hidden' name='_method' value='delete'></form></div>";
+                    }
+
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent', 'student'])
                 ->make(true);
         }
-        $schools = School::hasSchool()->orderBy('name')->get();
-        $studentSubStatuses = \App\Models\StudentSubStatus::where('is_active', true)->get();
+        $adminId = Auth::id() ?? 'all';
+        $schools = \Illuminate\Support\Facades\Cache::remember('student_filter_schools_' . $adminId, 3600, function() {
+            return School::hasSchool()->select('id', 'name')->orderBy('name')->get();
+        });
+        $studentSubStatuses = \Illuminate\Support\Facades\Cache::remember('student_sub_statuses', 3600, function() {
+            return \App\Models\StudentSubStatus::where('is_active', true)->select('id', 'name')->get();
+        });
         return view('admins.student.index', compact('schools', 'studentSubStatuses'));
     }
 
@@ -228,7 +239,14 @@ class StudentController extends Controller
         if (empty($data['nickname']) && !empty($data['name'])) {
             $data['nickname'] = explode(' ', trim($data['name']))[0];
         }
-        Student::create($data);
+        $student = Student::create($data);
+        if ($student && $student->status === Student::STATUS_ACTIVE && $student->classroom_id) {
+            try {
+                \App\Jobs\SyncStudentBillsJob::dispatch($student->id);
+            } catch (\Throwable $th) {
+                \Illuminate\Support\Facades\Log::warning("Auto-sync bills for new student {$student->id}: " . $th->getMessage());
+            }
+        }
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan']);
         }
@@ -315,7 +333,7 @@ class StudentController extends Controller
                         'billItem', 
                         'academicYear', 
                         'bills' => function ($query) use ($id) {
-                            $query->where('student_id', $id);
+                            $query->where('student_id', $id)->with('classroom');
                         }
                     ])
                     ->whereHas('bills', fn($query) => $query->where('student_id', $id))
@@ -323,6 +341,10 @@ class StudentController extends Controller
                     ->get();
 
                     return DataTables::of($data)
+                        ->addColumn('classroom', function ($data) use ($id) {
+                            $firstBill = $data->bills->where('student_id', $id)->first();
+                            return $firstBill && $firstBill->classroom ? $firstBill->classroom->name : '-';
+                        })
                         ->addColumn('total_unpaid', function ($data) use ($id) {
                             $totalUnpaid = $data->bills->where('student_id', $id)->sum('remaining_amount');
                             return 'Rp. ' . number_format($totalUnpaid, 0, ',', '.');
@@ -909,6 +931,10 @@ class StudentController extends Controller
 
     public function bulkUpdateSubStatus(\Illuminate\Http\Request $request)
     {
+        if (!Auth::user()->can('Edit Santri') && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki izin untuk memperbarui status santri'], 403);
+        }
+
         $ids = $request->ids;
         $subStatusId = $request->sub_status_id;
 

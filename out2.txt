@@ -1,0 +1,43 @@
+
+> function renderMonthlyCards(info, isSynced = false) {
+      var order = ['7','8','9','10','11','12','1','2','3','4','5','6'];
+      var html = '<div class="d-flex flex-column gap-2">';
+      
+      // Master Row
+      html += '<div class="d-flex align-items-center gap-1">';
+      html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lama</span>';
+      order.forEach(function(m) {
+          var isPaid = info.master.paid_months.indexOf(m) !== -1 || info.master.paid_months.indexOf(parseInt(m)) !== -1;
+          var isUnpaid = info.master.unpaid_months.indexOf(m) !== -1 || info.master.unpaid_months.indexOf(parseInt(m)) !== -1;
+          var bg = 'bg-light text-muted';
+          if (isPaid) bg = 'bg-success text-white';
+          else if (isUnpaid) bg = 'bg-light-danger text-danger';
+          html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px;">' + getMonthAbbr(m) + '</div>';
+      });
+      html += '</div>';
+  
+      // Local Row
+      html += '<div class="d-flex align-items-center gap-1">';
+      html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lokal</span>';
+      if (info.local.is_empty) {
+          html += '<span class="badge bg-light-danger text-danger px-2 py-1 fs-9 fw-bolder w-100 text-start">Belum Ada Record</span>';
+      } else {
+          order.forEach(function(m) {
+              var isPaid = info.local.paid_months.indexOf(m) !== -1 || info.local.paid_months.indexOf(parseInt(m)) !== -1;
+              var isUnpaid = info.local.unpaid_months.indexOf(m) !== -1 || info.local.unpaid_months.indexOf(parseInt(m)) !== -1;
+              var bg = 'bg-light text-muted';
+              if (isPaid) bg = isSynced ? 'text-white' : 'bg-success text-white';
+              else if (isUnpaid) bg = 'bg-light-danger text-danger';
+              var extraStyle = (isPaid && isSynced) ? 'background-color: #8b5cf6;' : '';
+              html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px; ' + extraStyle + '">' + getMonthAbbr(m) + '</div>';
+          });
+      }
+      html += '</div>';
+  
+      html += '</div>';
+      return html;
+  }
+  
+  window.currentSortDirection = 'asc';
+          function sortSyncItemsByStatus() {
+

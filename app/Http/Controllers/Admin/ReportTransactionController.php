@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Carbon\Carbon;
 use App\Models\Admin;
 use App\Models\School;
+use App\Models\Classroom;
 use App\Models\BillType;
 use App\Models\BillItem;
 use App\Models\Transaction;
@@ -32,6 +33,7 @@ class ReportTransactionController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = Transaction::where('status', Transaction::STATUS_PAID)
                 ->with(['student.user', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
                 ->when(request()->filled('start_date'), function ($query) {
@@ -45,10 +47,13 @@ class ReportTransactionController extends Controller
                 })
                 ->when(request()->filled('student_name'), function ($query) {
                     $searchName = strtolower(trim(request()->student_name));
-                    $query->whereHas('student', function ($sQ) use ($searchName) {
-                        $sQ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchName . '%'])
-                           ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchName . '%'])
-                           ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $searchName . '%']);
+                    $query->where(function ($q) use ($searchName) {
+                        $q->whereRaw('LOWER(payment_code) LIKE ?', ['%' . $searchName . '%'])
+                          ->orWhereHas('student', function ($sQ) use ($searchName) {
+                              $sQ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchName . '%'])
+                                 ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchName . '%'])
+                                 ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $searchName . '%']);
+                          });
                     });
                 })
                 ->schoolFilter('school_id', request()->school_id)
@@ -259,17 +264,6 @@ class ReportTransactionController extends Controller
                     ->make(true);
             }
         }
-        // ambil list admin dari transaction 
-        $admin_ids = Transaction::where('status', Transaction::STATUS_PAID)->pluck('admin_id')->unique();
-        // ambil list admin nama dari admin_ids
-        $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
-        $schools = School::orderBy('name')->get();
-        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
-            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
-            '615a34af-be2d-45f2-9830-720fea341a0c',
-            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
-            'ce389861-40ab-4523-9364-3458e9dfda1d'
-        ]);
 
         $schoolId = request()->school_id;
         if (!$schoolId) {
@@ -279,6 +273,16 @@ class ReportTransactionController extends Controller
                 $schoolId = $schoolIds[0] ?? null;
             }
         }
+
+        // Ambil list petugas yang berhak akses Entri Data Pembayaran atau memiliki riwayat transaksi
+        $admins = $this->getPaymentOfficers($schoolId);
+        $schools = School::select('id', 'name', 'type')->orderBy('name')->get();
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
+            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
+            '615a34af-be2d-45f2-9830-720fea341a0c',
+            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
+            'ce389861-40ab-4523-9364-3458e9dfda1d'
+        ]);
 
         if ($schoolId) {
             $school = \App\Models\School::find($schoolId);
@@ -299,7 +303,12 @@ class ReportTransactionController extends Controller
                 'name' => $canonicalName,
             ];
         })->unique('name')->sortBy('name')->values();
-        return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
+        $classroomsQuery = Classroom::select('id', 'name', 'school_id');
+        if (!empty($schoolId)) {
+            $classroomsQuery->where('school_id', $schoolId);
+        }
+        $classrooms = $classroomsQuery->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
+        return view('admins.report-transaction.index', compact('schools', 'classrooms', 'admins', 'billTypes'));
     }
 
     /**
@@ -371,14 +380,28 @@ class ReportTransactionController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $export = new ReportTransactionExport();
-        $result = $export->generateTsv();
+        session()->save();
+        @set_time_limit(300);
+        @ini_set('memory_limit', '512M');
 
-        return response()->json([
-            'success' => true,
-            'tsv' => $result['tsv'],
-            'count' => $result['count'],
-        ]);
+        try {
+            $export = new ReportTransactionExport();
+            $result = $export->generateTsv();
+
+            return response()->json([
+                'success' => true,
+                'tsv' => $result['tsv'],
+                'count' => $result['count'],
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Export sheets error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses data export: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -417,40 +440,113 @@ class ReportTransactionController extends Controller
             ];
         })->unique('name')->sortBy('name')->values();
 
-        // 2. Dapatkan Petugas yang valid untuk Lembaga ini
-        $adminsQuery = Admin::select('id', 'name');
-        
-        if ($schoolId) {
-            // Hanya petugas yang memiliki transaksi di lembaga ini, atau yang di-assign ke lembaga ini
-            $adminsQuery->where(function($q) use ($schoolId) {
-                $q->where('school_id', $schoolId)
-                  ->orWhereHas('adminSchool', function($sq) use ($schoolId) {
-                      $sq->where('school_id', $schoolId);
-                  })
-                  ->orWhereExists(function ($eq) use ($schoolId) {
-                      $eq->select(DB::raw(1))
-                          ->from('transactions')
-                          ->join('students', 'transactions.student_id', '=', 'students.id')
-                          ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
-                          ->whereColumn('transactions.admin_id', 'admins.id')
-                          ->where('classrooms.school_id', $schoolId);
-                  });
-            });
-        } else {
-            // Default: Petugas yang pernah melakukan transaksi
-            $adminsQuery->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('transactions')
-                    ->whereColumn('transactions.admin_id', 'admins.id');
-            });
-        }
-
-        $admins = $adminsQuery->orderBy('name')->get();
+        // 2. Dapatkan Petugas yang valid untuk Lembaga ini (hanya yang berhak akses Entri Data Pembayaran / memiliki riwayat transaksi)
+        $admins = $this->getPaymentOfficers($schoolId);
 
         return response()->json([
             'bill_types' => $billTypes,
             'admins' => $admins,
         ]);
+    }
+
+    /**
+     * Dapatkan daftar petugas yang berhak mengakses Entri Data Pembayaran
+     * atau yang memiliki riwayat transaksi pembayaran.
+     *
+     * @param string|null $schoolId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getPaymentOfficers(?string $schoolId = null)
+    {
+        $adminsQuery = Admin::select('admins.id', 'admins.name');
+
+        $paymentPermissions = [
+            'Manage Tagihan',
+            'Create Tagihan',
+            'Edit Tagihan',
+            'Manage Transaksi',
+            'Create Transaksi',
+        ];
+
+        $paymentRoleNames = [
+            'Super Admin',
+            'superadmin',
+            'Admin',
+            'admin',
+            'Bendahara',
+            'Petugas Keuangan',
+            'Admin Tagihan',
+            'Keuangan',
+        ];
+
+        $adminsQuery->where(function ($q) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+            // 1. Pernah mencatat transaksi (riwayat transaksi nyata)
+            $q->whereExists(function ($tq) use ($schoolId) {
+                $tq->select(DB::raw(1))
+                    ->from('transactions')
+                    ->whereColumn('transactions.admin_id', 'admins.id');
+                if ($schoolId) {
+                    $tq->join('students', 'transactions.student_id', '=', 'students.id')
+                       ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                       ->where('classrooms.school_id', $schoolId);
+                }
+            });
+
+            // 2. Memiliki hak akses ke Entri Data Pembayaran
+            $q->orWhere(function ($accessQ) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+                // Pastikan user masih aktif jika belum ada riwayat transaksi
+                $accessQ->where('admins.is_active', true);
+
+                // Cek permission / role pembayaran
+                $accessQ->where(function ($permQ) use ($paymentPermissions, $paymentRoleNames) {
+                    $permQ->whereHas('permissions', function ($pq) use ($paymentPermissions) {
+                        $pq->whereIn('name', $paymentPermissions);
+                    })
+                    ->orWhereHas('roles', function ($rq) use ($paymentPermissions, $paymentRoleNames) {
+                        $rq->whereIn('name', $paymentRoleNames)
+                           ->orWhere('name', 'like', '%Bendahara%')
+                           ->orWhere('name', 'like', '%Keuangan%')
+                           ->orWhere('name', 'like', '%Tagihan%')
+                           ->orWhereHas('permissions', function ($rpq) use ($paymentPermissions) {
+                               $rpq->whereIn('name', $paymentPermissions);
+                           });
+                    })
+                    ->orWhereExists(function ($subRole) use ($paymentRoleNames) {
+                        $subRole->select(DB::raw(1))
+                            ->from('roles')
+                            ->whereColumn('roles.id', 'admins.role_id')
+                            ->where(function ($rrq) use ($paymentRoleNames) {
+                                $rrq->whereIn('roles.name', $paymentRoleNames)
+                                    ->orWhere('roles.name', 'like', '%Bendahara%')
+                                    ->orWhere('roles.name', 'like', '%Keuangan%')
+                                    ->orWhere('roles.name', 'like', '%Tagihan%');
+                            });
+                    });
+                });
+
+                // Jika filter lembaga aktif, batasi petugas pembayaran sesuai lembaganya
+                if ($schoolId) {
+                    $accessQ->where(function ($sq) use ($schoolId) {
+                        $sq->where('admins.school_id', $schoolId)
+                           ->orWhereHas('adminSchool', function ($asq) use ($schoolId) {
+                               $asq->where('school_id', $schoolId);
+                           })
+                           ->orWhere('admins.access_scope', 'all')
+                           ->orWhereHas('roles', function ($rq) {
+                               $rq->whereIn('name', ['Super Admin', 'superadmin']);
+                           })
+                           ->orWhereExists(function ($srq) {
+                               $srq->select(DB::raw(1))
+                                   ->from('roles')
+                                   ->whereColumn('roles.id', 'admins.role_id')
+                                   ->whereIn('roles.name', ['Super Admin', 'superadmin']);
+                           });
+                    });
+                }
+            });
+        });
+
+        return $adminsQuery->orderBy('admins.name')->get();
     }
 
     /**

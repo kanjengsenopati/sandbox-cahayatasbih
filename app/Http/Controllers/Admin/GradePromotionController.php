@@ -71,14 +71,20 @@ class GradePromotionController extends Controller
                     }
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('student.edit', $data->id);
-                    $actionDelete = route('student.destroy', $data->id);
+                    $user = Auth::user();
+                    $buttons = '';
+                    if ($user && ($user->hasRole('Super Admin') || $user->can('Edit Santri'))) {
+                        $actionEdit = route('student.edit', $data->id);
+                        $buttons .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kenaikan Kelas']);
+                    }
+                    if ($user && ($user->hasRole('Super Admin') || $user->can('Delete Santri'))) {
+                        $actionDelete = route('student.destroy', $data->id);
+                        $buttons .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kenaikan Kelas']);
+                    }
                     $actionPrint = route('student.generate-student-card', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kenaikan Kelas']) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kenaikan Kelas']) .
-                        view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
-                        "</div>";
+                    $buttons .= view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']);
+
+                    return "<div class='d-flex justify-content-center'>{$buttons}</div>";
                 })
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
                 ->make(true);

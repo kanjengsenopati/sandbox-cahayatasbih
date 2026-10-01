@@ -20,7 +20,8 @@ class BankController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Bank::latest()->get();
+            session()->save();
+            $data = Bank::latest();
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
                     return $data->is_active ? '<span class="badge badge-success">Aktif</span>'

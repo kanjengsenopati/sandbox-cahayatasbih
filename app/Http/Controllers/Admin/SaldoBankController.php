@@ -24,8 +24,9 @@ class SaldoBankController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            session()->save();
             $data = School::with(['topupBank' => function ($query) {
-                $query->where('type', TopupBank::TYPE_SALDO);
+                $query->where('type', TopupBank::TYPE_SALDO)->with('bank');
             }])->orderBy('name', 'asc');
             return DataTables::of($data)
                 ->addColumn('banks', function ($query) {
@@ -40,6 +41,9 @@ class SaldoBankController extends Controller
                     }
                 })
                 ->addColumn('action', function ($data) {
+                    if (!Auth::user()->can('Edit Saldo Santri') && !Auth::user()->hasRole('Super Admin')) {
+                        return '-';
+                    }
                     $actionEdit = route('saldo-bank.edit', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Saldo Santri']) .
@@ -80,6 +84,9 @@ class SaldoBankController extends Controller
      */
     public function edit(string $id)
     {
+        if (!Auth::user()->can('Edit Saldo Santri') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengubah konfigurasi bank');
+        }
         $school = School::findOrFail($id);
         $banks = Bank::orderBy('name', 'asc')->get();
         $selectedBanks = $school->topupBank->where('type', TopupBank::TYPE_SALDO)->pluck('bank_id')->toArray();
@@ -91,6 +98,9 @@ class SaldoBankController extends Controller
      */
     public function update(SaldoBankRequest $request, string $id)
     {
+        if (!Auth::user()->can('Edit Saldo Santri') && !Auth::user()->hasRole('Super Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengubah konfigurasi bank');
+        }
         try {
             DB::beginTransaction(); // Begin transaction
 

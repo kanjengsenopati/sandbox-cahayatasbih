@@ -325,6 +325,7 @@ class StudentCardSettingController extends Controller
      */
     public function getStudents(Request $request)
     {
+        session()->save();
         try {
             $hasCardPrintsTable = \Illuminate\Support\Facades\Schema::hasTable('student_card_prints');
             
@@ -403,6 +404,17 @@ class StudentCardSettingController extends Controller
 
             $students = $query->paginate($limit);
 
+            $studentIds = $students->getCollection()->pluck('id')->toArray();
+            $unpaidGrouped = collect();
+            if (!empty($requiredBillTypeIds) && !empty($studentIds)) {
+                $unpaidGrouped = Bill::whereIn('student_id', $studentIds)
+                    ->whereIn('bill_type_id', $requiredBillTypeIds)
+                    ->where('status', Bill::STATUS_UNPAID)
+                    ->with(['billType.billItem', 'billType.academicYear'])
+                    ->get()
+                    ->groupBy('student_id');
+            }
+
             return response()->json([
                 'current_page' => $students->currentPage(),
                 'last_page' => $students->lastPage(),
@@ -410,7 +422,7 @@ class StudentCardSettingController extends Controller
                 'total' => $students->total(),
                 'from' => $students->firstItem(),
                 'to' => $students->lastItem(),
-                'data' => $students->getCollection()->map(function ($s) use ($hasCardPrintsTable, $requiredBillTypeIds) {
+                'data' => $students->getCollection()->map(function ($s) use ($hasCardPrintsTable, $requiredBillTypeIds, $unpaidGrouped) {
                     $printCount = 0;
                     $lastPrintedAt = null;
                     $lastPrintedBy = null;
@@ -426,11 +438,7 @@ class StudentCardSettingController extends Controller
                     $isEligible = true;
                     $unpaidBills = [];
                     if (!empty($requiredBillTypeIds)) {
-                        $unpaid = Bill::where('student_id', $s->id)
-                            ->whereIn('bill_type_id', $requiredBillTypeIds)
-                            ->where('status', Bill::STATUS_UNPAID)
-                            ->with(['billType.billItem', 'billType.academicYear'])
-                            ->get();
+                        $unpaid = $unpaidGrouped->get($s->id, collect());
 
                         if ($unpaid->count() > 0) {
                             $isEligible = false;

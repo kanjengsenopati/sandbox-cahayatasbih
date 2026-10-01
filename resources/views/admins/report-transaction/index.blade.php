@@ -57,12 +57,12 @@
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
-                                        <label class="form-label">Filter Tanggal</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Filter Tanggal</label>
                                         <div class="d-flex gap-4 align-items-end">
                                             <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                                <span></span> <b class="caret"></b>
+                                                style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #e4e6ef; border-radius: 0.475rem; height: 38px; display: flex; align-items: center;">
+                                                <i class="glyphicon glyphicon-calendar fa fa-calendar text-gray-500"></i>&nbsp;
+                                                <span class="fs-7 fw-bold text-gray-700"></span>&nbsp;<b class="caret"></b>
                                             </div>
                                             <input type="text" id="start_date" name="start_date" hidden>
                                             <input type="text" id="end_date" name="end_date" hidden>
@@ -71,7 +71,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label">Lembaga</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Lembaga</label>
                                         <select name="school_id" class="form-select form-select-sm"
                                             id="filter_school_id">
                                             <option value="">Semua Lembaga</option>
@@ -81,14 +81,20 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select form-select-sm"
-                                            id="filter_classroom_id">
-                                            <option value="">Semua Kelas</option>
-                                        </select>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Kelas</label>
+                                        <div class="dropdown" id="report_tx_classroom_dropdown_container" style="position: relative !important;">
+                                            <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                            <button class="btn btn-light border bg-white fs-7 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 38px; cursor: pointer;">
+                                                <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                            </button>
+                                            <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                                <!-- Dikelompokkan 3 atau 4 kolom via JS -->
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="form-label">Tipe</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Tipe</label>
                                         <select name="type_data" class="form-select form-select-sm" id="filter_status">
                                             <option value="">Semua</option>
                                             <option value="BILL">Tagihan</option>
@@ -97,7 +103,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Petugas</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Petugas</label>
                                         <select name="admin_id" class="form-select form-select-sm" id="filter_admin">
                                             <option value="">Semua</option>
                                             @foreach($admins as $admin)
@@ -106,7 +112,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Jenis Tagihan</label>
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Jenis Tagihan</label>
                                         <select name="bill_type_id" id="filter_tipe_tagihan"
                                             class="form-select form-select-sm">
                                             <option value="">Semua Tagihan</option>
@@ -116,9 +122,9 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="form-label">Nama Santri / Siswa</label>
-                                        <div class="d-flex align-items-center position-relative">
-                                            <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                        <label class="form-label fs-7 fw-bolder text-gray-700 mb-1">Nama Santri / Siswa</label>
+                                        <div class="d-flex align-items-center position-relative filter-search-container" style="cursor: text;">
+                                            <span class="svg-icon svg-icon-1 position-absolute ms-3" style="pointer-events: none;">
                                                 <i class="fas fa-search text-gray-400"></i>
                                             </span>
                                             <input type="text" id="filter_student_name" name="student_name" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Nama Santri / Siswa..." style="width: 220px;" />
@@ -273,6 +279,62 @@
         border: 1px solid #edf2f7;
         background-color: #ffffff;
     }
+    #filter_school_id,
+    #filter_classroom_id,
+    #filter_status,
+    #filter_admin {
+        cursor: pointer !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        font-size: 0.9rem !important;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out !important;
+    }
+    #filter_school_id:hover,
+    #filter_classroom_id:hover,
+    #filter_status:hover,
+    #filter_admin:hover {
+        border-color: #b5b5c3 !important;
+    }
+    #filter_school_id:focus,
+    #filter_classroom_id:focus,
+    #filter_status:focus,
+    #filter_admin:focus {
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        outline: none !important;
+    }
+    #filter_student_name {
+        cursor: text !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        font-size: 0.9rem !important;
+        border: 1px solid #e4e6ef !important;
+        background-color: #f5f8fa !important;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out !important;
+    }
+    #filter_student_name:hover {
+        background-color: #eef3f7 !important;
+        border-color: #b5b5c3 !important;
+    }
+    #filter_student_name:focus,
+    #filter_student_name:active {
+        background-color: #ffffff !important;
+        border-color: #009ef7 !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 158, 247, 0.15) !important;
+        color: #181c32 !important;
+        outline: none !important;
+    }
+    .select2-container--bootstrap5 .select2-selection {
+        height: 38px !important;
+        min-height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+    }
+    #btn-tampilkan {
+        height: 38px !important;
+        min-height: 38px !important;
+    }
 </style>
 
 @endsection
@@ -385,7 +447,107 @@
         }
     }
 
+    let initialTxClasses = @json($classrooms ?? []);
+
+    function renderTxClassroomMegaMenu(classes) {
+        const container = $('#classroom_mega_menu');
+        container.empty();
+
+        if (!classes || classes.length === 0) {
+            container.html('<div class="text-muted fs-7 p-3 text-center">Tidak ada kelas ditemukan</div>');
+            return;
+        }
+
+        const groups = {};
+        classes.forEach(c => {
+            let match = (c.name || '').match(/^(\d+)/);
+            let key = match ? match[1] : 'Lainnya';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(c);
+        });
+
+        const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+        container.append(resetBtn);
+
+        const sortedKeys = Object.keys(groups).sort((a,b) => {
+            let numA = parseInt(a);
+            let numB = parseInt(b);
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            return numA - numB;
+        });
+
+        const colCount = sortedKeys.length;
+        let colClass = 'col-12';
+        let menuWidth = '260px';
+        if (colCount === 2) {
+            colClass = 'col-6';
+            menuWidth = '380px';
+        } else if (colCount === 3) {
+            colClass = 'col-4';
+            menuWidth = '500px';
+        } else if (colCount >= 4) {
+            colClass = 'col-3';
+            menuWidth = '620px';
+        }
+        container.css({ 'width': menuWidth });
+
+        const row = $('<div class="row g-2"></div>');
+        sortedKeys.forEach(key => {
+            const col = $(`<div class="${colClass}"></div>`);
+            const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+            col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+            const list = $('<div class="d-flex flex-column gap-1"></div>');
+            groups[key].forEach(c => {
+                list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 30px;">
+                    <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                    <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                </button>`);
+            });
+            col.append(list);
+            row.append(col);
+        });
+        container.append(row);
+    }
+
     $(document).ready(function() {
+        // Render Initial Mega Menu
+        renderTxClassroomMegaMenu(initialTxClasses);
+
+        // Click handler for classroom mega menu item
+        $(document).on('click', '#classroom_mega_menu .classroom-item', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id') || '';
+            const name = $(this).data('name') || 'Semua Kelas';
+
+            $('#filter_classroom_id').val(id);
+            $('#filter_classroom_btn_text').text(name);
+
+            $('#classroom_mega_menu .class-check-icon').addClass('d-none');
+            $(this).find('.class-check-icon').removeClass('d-none');
+
+            // Hide bootstrap dropdown
+            const dropEl = document.getElementById('filter_classroom_btn');
+            if (dropEl && bootstrap.Dropdown.getInstance(dropEl)) {
+                bootstrap.Dropdown.getInstance(dropEl).hide();
+            }
+
+            reloadTable();
+        });
+
+        $('#report_tx_classroom_dropdown_container').on('show.bs.dropdown', function () {
+            const $btn = $('#filter_classroom_btn');
+            const $menu = $('#classroom_mega_menu');
+            const btnOffset = $btn.offset();
+            const menuWidth = $menu.outerWidth() || 500;
+            const winWidth = $(window).width();
+            if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                $menu.css({ 'left': 'auto', 'right': '0' });
+            } else {
+                $menu.css({ 'left': '0', 'right': 'auto' });
+            }
+        });
+
         // Fetch classroom data on school_id change
         $('#filter_school_id').on('change', function() {
             let school_id = $(this).val();
@@ -398,15 +560,9 @@
                 type: "GET",
                 data: { school_id: school_id },
                 success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
+                    $('#filter_classroom_id').val('');
+                    $('#filter_classroom_btn_text').text('Semua Kelas');
+                    renderTxClassroomMegaMenu(response.data || []);
                 }
             });
 
@@ -454,6 +610,10 @@
                 e.preventDefault();
                 reloadTable();
             }
+        });
+
+        $('.filter-search-container').on('click', function(e) {
+            $('#filter_student_name').focus();
         });
 
         $('#form-filter').on('submit', function(e) {
@@ -643,21 +803,47 @@
     // Helper function to safely copy text to clipboard
     function copyTextToClipboard(text) {
         if (navigator.clipboard && window.isSecureContext) {
-            return navigator.clipboard.writeText(text);
-        } else {
-            let textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            textArea.style.top = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            return new Promise((resolve, reject) => {
-                document.execCommand('copy') ? resolve() : reject();
-                textArea.remove();
+            return navigator.clipboard.writeText(text).catch(function(err) {
+                console.warn('navigator.clipboard.writeText gagal, beralih ke fallback execCommand:', err);
+                return copyTextWithFallback(text);
             });
         }
+        return copyTextWithFallback(text);
+    }
+
+    function copyTextWithFallback(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        textArea.setAttribute('readonly', '');
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return new Promise(function(resolve, reject) {
+            try {
+                var successful = document.execCommand('copy');
+                textArea.remove();
+                successful ? resolve() : reject(new Error('execCommand returned false'));
+            } catch (err) {
+                textArea.remove();
+                reject(err);
+            }
+        });
+    }
+
+    // Helper to download TSV/CSV for Google Sheets import
+    function downloadSheetsData(content, fileName) {
+        var blob = new Blob(["\uFEFF" + content], { type: 'text/tab-separated-values;charset=utf-8;' });
+        var link = document.createElement("a");
+        var url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     // onclick export to google sheets
@@ -666,8 +852,8 @@
 
         // 1. Show SweetAlert loading state
         Swal.fire({
-            title: 'Menyiapkan Google Sheets...',
-            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2"></i>Sedang memformat data transaksi untuk Google Sheets...</div>',
+            title: 'Menyiapkan Data Google Sheets...',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2"></i>Sedang memproses dan memformat data transaksi...</div>',
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false,
@@ -692,61 +878,85 @@
             },
             success: function(response) {
                 if (response.success && response.tsv) {
-                    // 3. Copy to clipboard
-                    copyTextToClipboard(response.tsv).then(function() {
-                        // 4. Open Google Sheets in new tab
-                        window.open('https://sheets.new', '_blank');
+                    var tsvData = response.tsv;
+                    var rowCount = response.count;
 
-                        // 5. Show user guidance modal
+                    // Copy to clipboard
+                    copyTextToClipboard(tsvData).then(function() {
+                        showSuccessModal(true);
+                    }).catch(function() {
+                        showSuccessModal(false);
+                    });
+
+                    function showSuccessModal(copiedSuccessfully) {
+                        var copyBadge = copiedSuccessfully
+                            ? '<span class="badge badge-light-success fs-7 fw-bold py-2 px-3"><i class="fas fa-check-circle text-success me-1"></i> Data Transaksi Berhasil Disalin ke Clipboard!</span>'
+                            : '<span class="badge badge-light-warning fs-7 fw-bold py-2 px-3"><i class="fas fa-info-circle text-warning me-1"></i> Klik "Buka Google Sheets" di bawah untuk menyalin otomatis</span>';
+
                         Swal.fire({
                             icon: 'success',
-                            title: '<span class="text-success fs-3 fw-bolder">Google Sheets Terbuka!</span>',
+                            title: '<span class="text-success fs-3 fw-bolder">Data Siap Ditempel ke Google Sheets!</span>',
                             html: `
                                 <div class="text-start fs-7 text-gray-700 mt-2">
-                                    <p class="mb-3">Sebanyak <span class="badge badge-light-success fs-7 fw-bold">${response.count} baris data</span> telah <strong>otomatis disalin ke Clipboard</strong>.</p>
+                                    <p class="mb-2">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
+                                    <div class="mb-3 text-center">${copyBadge}</div>
                                     <div class="p-3 bg-light-primary rounded-3 border border-primary border-dashed mb-3">
-                                        <div class="d-flex align-items-center mb-1">
-                                            <i class="fas fa-paste text-primary fs-3 me-2"></i>
-                                            <span class="fw-bolder text-gray-800 fs-7">Langkah Selanjutnya:</span>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-info-circle text-primary fs-4 me-2"></i>
+                                            <span class="fw-bolder text-gray-900 fs-7">Cara Menampilkan Data di Google Sheets:</span>
                                         </div>
-                                        <div class="ms-7 fs-8 text-gray-600">
-                                            Buka tab baru Google Sheets, klik sel <strong>A1</strong>, lalu tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">⌘ + V</kbd> di Mac).
+                                        <div class="ms-6 fs-7 text-gray-700">
+                                            <div class="mb-2"><strong>1.</strong> Klik tombol hijau <strong>Buka Google Sheets</strong> di bawah.</div>
+                                            <div class="mb-2"><strong>2.</strong> Pada halaman Google Sheets yang terbuka, klik kotak <strong>A1</strong> (pojok kiri atas).</div>
+                                            <div class="mb-1"><strong>3.</strong> Tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">⌘ + V</kbd> di Mac) untuk <strong>Paste / Tempel</strong> data.</div>
                                         </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
+                                        <a href="https://sheets.new" target="_blank" class="btn btn-sm btn-success fw-bold" id="btn-open-sheets-link">
+                                            <i class="fas fa-external-link-alt me-1"></i> Buka Google Sheets
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-light-primary fw-bold" id="btn-manual-copy-tsv">
+                                            <i class="fas fa-copy me-1"></i> Salin Ulang
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light-info fw-bold" id="btn-manual-download-tsv">
+                                            <i class="fas fa-file-download me-1"></i> Unduh File (.tsv)
+                                        </button>
                                     </div>
                                 </div>
                             `,
+                            showConfirmButton: false,
                             showCancelButton: true,
-                            confirmButtonText: '<i class="fas fa-copy me-1"></i> Salin Ulang Data',
                             cancelButtonText: 'Tutup',
                             customClass: {
-                                confirmButton: 'btn btn-sm btn-primary',
                                 cancelButton: 'btn btn-sm btn-light'
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                copyTextToClipboard(response.tsv).then(function() {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Data Disalin!',
-                                        text: 'Data telah disalin kembali ke Clipboard.',
-                                        timer: 1500,
-                                        showConfirmButton: false
+                            },
+                            didOpen: () => {
+                                $('#btn-open-sheets-link').on('click', function() {
+                                    copyTextToClipboard(tsvData);
+                                });
+
+                                $('#btn-manual-copy-tsv').on('click', function() {
+                                    copyTextToClipboard(tsvData).then(function() {
+                                        Swal.showValidationMessage('✓ Berhasil menyalin data ke Clipboard! Silakan paste (Ctrl+V) di Google Sheets.');
+                                        setTimeout(() => Swal.resetValidationMessage(), 3000);
                                     });
+                                });
+
+                                $('#btn-manual-download-tsv').on('click', function() {
+                                    var fname = 'Laporan_Transaksi_' + ($('#start_date').val() || 'all') + '_' + ($('#end_date').val() || '') + '.tsv';
+                                    downloadSheetsData(tsvData, fname);
                                 });
                             }
                         });
-                    }).catch(function(err) {
-                        console.error('Clipboard copy error:', err);
-                        window.open('https://sheets.new', '_blank');
-                        Swal.fire('Gagal Menyalin', 'Gagal menyalin data ke Clipboard otomatis. Silakan periksa izin browser.', 'warning');
-                    });
+                    }
                 } else {
                     Swal.fire('Gagal', response.message || 'Gagal memproses data laporan.', 'error');
                 }
             },
             error: function(xhr) {
                 console.error('Export sheets error:', xhr);
-                Swal.fire('Terjadi Kesalahan', 'Gagal mengambil data untuk Google Sheets.', 'error');
+                var errDetail = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal mengambil data untuk Google Sheets.';
+                Swal.fire('Terjadi Kesalahan', errDetail, 'error');
             }
         });
     });

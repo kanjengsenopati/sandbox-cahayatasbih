@@ -244,6 +244,10 @@
     }
 
     /* Custom Dropdown Grid for Classes */
+    .custom-kelas-dropdown {
+        min-width: 520px !important;
+        max-width: 95vw !important;
+    }
     .custom-kelas-dropdown .select2-results > .select2-results__options {
         display: flex;
         flex-wrap: wrap;
@@ -279,6 +283,8 @@
     }
     .custom-kelas-dropdown .select2-results__option {
         padding: 6px 12px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
     }
 </style>
 <script>

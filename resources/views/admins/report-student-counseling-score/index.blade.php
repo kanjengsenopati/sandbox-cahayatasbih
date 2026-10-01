@@ -80,9 +80,16 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                            <option value="">Pilih Kelas</option>
-                                        </select>
+                                        <div class="dropdown" id="report_counseling_classroom_dropdown_container" style="position: relative !important;">
+                                            <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                            <button class="btn btn-light border bg-white fs-7 d-flex justify-content-between align-items-center" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 38px; cursor: pointer;">
+                                                <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                            </button>
+                                            <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; right: 0 !important; left: auto !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                                <div class="text-muted fs-7 p-3 text-center">Pilih Pendidikan terlebih dahulu</div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <!--begin::Export dropdown-->
                                     <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
@@ -183,30 +190,133 @@
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
-    // onchange school_id get data classrom on school
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: {
-                    school_id: school_id
-                },
-                success: function(response) {
-                    console.log(response);
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name +
-                                '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
-                }
-            });
+    function renderCounselingClassroomMegaMenu(classrooms) {
+        const container = $('#classroom_mega_menu');
+        container.empty();
+
+        if (!classrooms || classrooms.length === 0) {
+            container.html('<div class="text-muted fs-7 p-3 text-center">Tidak ada kelas tersedia</div>');
+            return;
+        }
+
+        const groups = {};
+        classrooms.forEach(c => {
+            let match = (c.name || '').match(/^(\d+)/);
+            let key = match ? match[1] : 'Lainnya';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(c);
         });
+
+        const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+        container.append(resetBtn);
+
+        const sortedKeys = Object.keys(groups).sort((a,b) => {
+            let numA = parseInt(a);
+            let numB = parseInt(b);
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            return numA - numB;
+        });
+
+        const colCount = sortedKeys.length;
+        let colClass = 'col-12';
+        let menuWidth = '260px';
+        if (colCount === 2) {
+            colClass = 'col-6';
+            menuWidth = '380px';
+        } else if (colCount === 3) {
+            colClass = 'col-4';
+            menuWidth = '500px';
+        } else if (colCount >= 4) {
+            colClass = 'col-3';
+            menuWidth = '620px';
+        }
+        container.css({ 'width': menuWidth });
+
+        const row = $('<div class="row g-2"></div>');
+        sortedKeys.forEach(key => {
+            const col = $(`<div class="${colClass}"></div>`);
+            const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+            col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+            const list = $('<div class="d-flex flex-column gap-1"></div>');
+            groups[key].forEach(c => {
+                list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 30px;">
+                    <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                    <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                </button>`);
+            });
+            col.append(list);
+            row.append(col);
+        });
+        container.append(row);
+    }
+
+    $(document).on('click', '#classroom_mega_menu .classroom-item', function(e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+
+        $('#filter_classroom_id').val(id);
+        if (id) {
+            $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+        } else {
+            $('#filter_classroom_btn_text').text('Semua Kelas');
+        }
+
+        $('#classroom_mega_menu .class-check-icon').addClass('d-none');
+        $('#classroom_mega_menu .classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+        if (id) {
+            $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+            $(this).find('.class-check-icon').removeClass('d-none');
+        }
+
+        const dropdownEl = document.getElementById('classroom_mega_menu');
+        if (dropdownEl) {
+            const bsDropdown = bootstrap.Dropdown.getInstance(document.getElementById('filter_classroom_btn'));
+            if (bsDropdown) bsDropdown.hide();
+        }
+
+        searchData();
+    });
+
+    $('#report_counseling_classroom_dropdown_container').on('show.bs.dropdown', function () {
+        const $btn = $('#filter_classroom_btn');
+        const $menu = $('#classroom_mega_menu');
+        const btnOffset = $btn.offset();
+        const menuWidth = $menu.outerWidth() || 500;
+        const winWidth = $(window).width();
+        if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+            $menu.css({ 'left': 'auto', 'right': '0' });
+        } else {
+            $menu.css({ 'left': '0', 'right': 'auto' });
+        }
+    });
+
+    // onchange school_id get data classrom on school
+    $('#filter_school_id').on('change', function() {
+        var school_id = $(this).val();
+        $('#filter_classroom_id').val('');
+        $('#filter_classroom_btn_text').text('Semua Kelas');
+
+        if (!school_id) {
+            $('#classroom_mega_menu').html('<div class="text-muted fs-7 p-3 text-center">Pilih Pendidikan terlebih dahulu</div>');
+            searchData();
+            return;
+        }
+
+        $.ajax({
+            url: "{{ route('report-bill.get-classroom') }}",
+            type: "GET",
+            data: {
+                school_id: school_id
+            },
+            success: function(response) {
+                renderCounselingClassroomMegaMenu(response.data || []);
+            }
+        });
+
+        searchData();
+    });
 
        $(document).ready(function() {
     // Inisialisasi DataTables
@@ -230,55 +340,63 @@
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
-   {
+    {
         data: 'academic_year.name',
         name: 'academic_year.name',
         orderable: true,
         searchable: true,
         responsivePriority: -1,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'student.classroom.name',
         name: 'student.classroom.name',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'semester',
         name: 'semester',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'student.name',
         name: 'student.name',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'score',
         name: 'score',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'violation',
         name: 'violation',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'action',
         name: 'action',
         orderable: true,
         searchable: true,
-        },
-        {
+        defaultContent: '-'
+    },
+    {
         data: 'note',
         name: 'note',
         orderable: true,
         searchable: true,
-        },
+        defaultContent: '-'
+    },
     ]
     });
     

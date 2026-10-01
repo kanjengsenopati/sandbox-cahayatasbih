@@ -43,9 +43,17 @@
             <div class="menu menu-column menu-title-gray-800 menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary menu-arrow-gray-500"
                 id="#kt_aside_menu" data-kt-menu="true">
 @php
-    $dbMenus = \App\Models\MenuNavigation::with(['subMenuNavigation' => function($q) {
-        $q->where('is_active', true)->orderBy('order');
-    }])->where('is_active', true)->orderBy('order')->get();
+    $dbMenus = \Illuminate\Support\Facades\Cache::remember('global_db_menus', 3600, function() {
+        return \App\Models\MenuNavigation::with(['subMenuNavigation' => function($q) {
+            $q->where('is_active', true)->orderBy('order');
+        }])->where('is_active', true)->orderBy('order')->get();
+    });
+
+    $currentUser = auth()->user();
+    $userRolesList = $currentUser && method_exists($currentUser, 'getRoleNamesLower') 
+        ? $currentUser->getRoleNamesLower() 
+        : ($currentUser && $currentUser->roles ? $currentUser->roles->pluck('name')->map(fn($r) => strtolower(trim($r)))->all() : []);
+    $userRoles = collect($userRolesList);
     
     $isUrlActive = function($url) {
         $parsed = parse_url($url);
@@ -81,18 +89,17 @@
         @php
             $permissions = array_filter(explode(',', $menu->permission ?? ''));
             $hasAccess = false;
-            $userRoles = auth()->user()->roles->pluck('name')->map('strtolower');
             
             if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
-                $hasAccess = $userRoles->contains('super admin') || $userRoles->contains('superadmin');
-            } elseif (auth()->user()->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
+                $hasAccess = in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList);
+            } elseif ($currentUser->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
                 $hasAccess = false;
             } else {
                 if (empty($permissions)) {
                     $hasAccess = true;
                 } else {
                     foreach ($permissions as $perm) {
-                        if (auth()->user()->can(trim($perm))) {
+                        if ($currentUser->can(trim($perm))) {
                             $hasAccess = true;
                             break;
                         }
@@ -100,12 +107,9 @@
                 }
             }
 
-            $isOutletStaffOrKasir = auth()->user()->isKasir() || 
-                                    auth()->user()->isKasirOutlet() || 
-                                    auth()->user()->isKasirKoperasi() || 
-                                    auth()->user()->hasRole('Karyawan Outlet ( Non Kasir )') || 
-                                    auth()->user()->hasRole('Kasir Karyawan Outlet') || 
-                                    auth()->user()->hasRole('Kasir');
+            $isOutletStaffOrKasir = method_exists(auth()->user(), 'isKasirOnly')
+                ? auth()->user()->isKasirOnly()
+                : (auth()->user()->isKasir() && !auth()->user()->isSuperAdmin());
 
             if ($isOutletStaffOrKasir) {
                 if ($menu->name === 'Dashboard' || str_contains(strtolower($menu->name), 'entri data') || str_contains(strtolower($menu->name), 'entry data')) {
@@ -118,7 +122,10 @@
             @if($menu->url)
                 @php
                     $menuUrl = $menu->url;
-                    if ($menu->name === 'Dashboard' && auth()->user()->isKasir()) {
+                    if ($menuUrl && !str_starts_with($menuUrl, '/') && !str_starts_with($menuUrl, 'http') && !str_starts_with($menuUrl, '#')) {
+                        $menuUrl = '/' . $menuUrl;
+                    }
+                    if ($menu->name === 'Dashboard' && method_exists(auth()->user(), 'isKasirOnly') && auth()->user()->isKasirOnly()) {
                         $mode = auth()->user()->isKasirKoperasi() ? 'kantin' : 'outlet';
                         $effectiveOutletId = auth()->user()->getEffectiveOutletId($mode);
                         $menuUrl = '/order-item?mode=' . $mode . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
@@ -135,15 +142,16 @@
                 </div>
             @else
                 @php
-                    $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) {
+                    $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) use ($currentUser, $userRolesList) {
                         if ($sub->url === route('menu-navigation.index') || str_contains($sub->url, 'menu-navigation')) {
-                            $roles = auth()->user()->roles->pluck('name')->map('strtolower');
-                            return $roles->contains('super admin') || $roles->contains('superadmin') || auth()->user()->can('Manage Menu Aplikasi');
+                            return in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList) || $currentUser->can('Manage Menu Aplikasi');
                         }
 
-                        $user = auth()->user();
+                        if ($currentUser->isSuperAdmin()) {
+                            return true;
+                        }
 
-                        if ($user->isKoordinatorCahayaMart() || $user->isKasirKoperasi()) {
+                        if ($currentUser->isKoordinatorCahayaMart() || $currentUser->isKasirKoperasi()) {
                             if (str_contains($sub->url, '/karyawan') || str_contains(strtolower($sub->name), 'karyawan') || str_contains(strtolower($sub->name), 'payroll')) {
                                 return false;
                             }
@@ -152,7 +160,7 @@
                             }
                         }
 
-                        if ($user->isKoordinatorCahayaMart()) {
+                        if ($currentUser->isKoordinatorCahayaMart()) {
                             $isKoperasiModule = str_contains($sub->url, '/item') || 
                                                 str_contains($sub->url, '/order-item') || 
                                                 str_contains($sub->url, '/pos-transaction');
@@ -175,10 +183,10 @@
                         }
 
                         if (str_contains($sub->url, 'pos-transaction')) {
-                            if ($user->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
+                            if ($currentUser->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
-                            if ($user->isKasirKoperasi() && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis'))) {
+                            if ($currentUser->isKasirKoperasi() && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
                         }
@@ -260,6 +268,10 @@
                                         } elseif (str_contains($subUrl, 'mode=bisnis')) {
                                             $subName = 'Laporan POS Bisnis';
                                         }
+                                    }
+
+                                    if ($subUrl && !str_starts_with($subUrl, '/') && !str_starts_with($subUrl, 'http') && !str_starts_with($subUrl, '#')) {
+                                        $subUrl = '/' . $subUrl;
                                     }
                                 @endphp
                                 <div class="menu-item">

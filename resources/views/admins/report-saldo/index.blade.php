@@ -1,4 +1,39 @@
 @extends('layouts.master', ['title' => 'Laporan Transaksi Saldo'])
+
+@push('css')
+<style>
+    #filter_classroom_btn {
+        min-width: 180px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        background-color: #f5f8fa !important;
+        border: 1px solid #f5f8fa !important;
+        border-radius: 0.475rem !important;
+        color: #5e6278 !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    #filter_classroom_btn:hover {
+        background-color: #eef3f7 !important;
+        border-color: #eef3f7 !important;
+        color: #181c32 !important;
+    }
+    #classroom_mega_menu:not(.show) {
+        display: none !important;
+    }
+    #classroom_mega_menu.show {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -85,12 +120,13 @@
                                       </div>
                                       <div>
                                           <label class="form-label">Kelas</label>
-                                          <div class="dropdown">
-                                              <button class="btn btn-light dropdown-toggle" style="background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                                  Semua Kelas
-                                              </button>
+                                          <div class="dropdown" id="report_saldo_classroom_dropdown_container" style="position: relative !important;">
                                               <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
-                                              <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                              <button class="btn btn-light fs-7" type="button" id="filter_classroom_btn" aria-expanded="false">
+                                                  <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                  <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                              </button>
+                                              <div class="dropdown-menu p-4 shadow border-0" style="min-width: 280px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; right: 0 !important; left: auto !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
                                                   <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
                                               </div>
                                           </div>
@@ -221,8 +257,8 @@
 </div>
 @endsection
 @push('js')
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latenet/momentjs/latest/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
 <script>
     $(document).ready(function() {
         let table = initializeTable();
@@ -422,29 +458,118 @@
                 groups[key].push(c);
             });
 
+            const sortedKeys = Object.keys(groups).sort((a,b) => {
+                let numA = parseInt(a);
+                let numB = parseInt(b);
+                if (isNaN(numA)) return 1;
+                if (isNaN(numB)) return -1;
+                return numA - numB;
+            });
+
+            const colCount = sortedKeys.length;
+            let colClass = 'col-12';
+            let menuWidth = '260px';
+            if (colCount === 2) {
+                colClass = 'col-6';
+                menuWidth = '380px';
+            } else if (colCount === 3) {
+                colClass = 'col-4';
+                menuWidth = '500px';
+            } else if (colCount >= 4) {
+                colClass = 'col-3';
+                menuWidth = '620px';
+            }
+            container.css({ 'width': menuWidth });
+
             const row = $('<div class="row g-2"></div>');
             
-            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 classroom-item" data-id="" data-name="Semua Kelas">Semua Kelas</a>'));
+            container.append($('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>'));
 
-            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
-                const col = $('<div class="col-4"></div>');
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
+            sortedKeys.forEach(key => {
+                const col = $(`<div class="${colClass}"></div>`);
+                const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">${headerTitle}</h6>`);
+                const list = $('<div class="d-flex flex-column gap-1"></div>');
                 groups[key].forEach(c => {
-                    col.append(`<a class="dropdown-item classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
+                    list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">
+                        <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                        <i class="fas fa-check text-white fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                    </button>`);
                 });
+                col.append(list);
                 row.append(col);
             });
 
             container.append(row);
         }
 
+        // Full hitbox toggle handler for classroom dropdown button
+        $(document).on('click', '#filter_classroom_btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var $menu = $('#classroom_mega_menu');
+            var isShown = $menu.hasClass('show');
+
+            if (isShown) {
+                $menu.removeClass('show');
+                $btn.removeClass('show').attr('aria-expanded', 'false');
+                $btn.find('.filter-classroom-arrow').css('transform', 'rotate(0deg)');
+            } else {
+                $('.dropdown-menu.show').not($menu).removeClass('show');
+                $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
+
+                // Smart positioning: check if opening right overflows window
+                const btnOffset = $btn.offset();
+                const menuWidth = $menu.outerWidth() || 500;
+                const winWidth = $(window).width();
+                if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                    $menu.css({ 'left': 'auto', 'right': '0' });
+                } else {
+                    $menu.css({ 'left': '0', 'right': 'auto' });
+                }
+
+                $menu.addClass('show');
+                $btn.addClass('show').attr('aria-expanded', 'true');
+                $btn.find('.filter-classroom-arrow').css('transform', 'rotate(180deg)');
+            }
+        });
+
+        // Prevent clicks inside dropdown menu from closing it prematurely
+        $(document).on('click', '#classroom_mega_menu', function(e) {
+            e.stopPropagation();
+        });
+
+        // Close when clicking anywhere outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('#report_saldo_classroom_dropdown_container').length) {
+                $('#classroom_mega_menu').removeClass('show');
+                $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#filter_classroom_btn .filter-classroom-arrow').css('transform', 'rotate(0deg)');
+            }
+        });
+
         $(document).on('click', '.classroom-item', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             const id = $(this).data('id');
             const name = $(this).data('name');
             $('#filter_classroom_id').val(id);
-            $('#filter_classroom_btn').text(name);
-            $('#filter_classroom_btn').dropdown('toggle'); // close dropdown manually
+            if (id) {
+                $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#filter_classroom_btn_text').text(name);
+            }
+
+            $('.classroom-item').removeClass('active bg-primary text-white').addClass('btn-light text-slate-700');
+            $('.classroom-item .class-check-icon').addClass('d-none');
+            $(this).addClass('active bg-primary text-white').removeClass('btn-light text-slate-700');
+            $(this).find('.class-check-icon').removeClass('d-none');
+
+            $('#classroom_mega_menu').removeClass('show');
+            $('#filter_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+            $('#filter_classroom_btn .filter-classroom-arrow').css('transform', 'rotate(0deg)');
+
             reloadTable();
         });
 

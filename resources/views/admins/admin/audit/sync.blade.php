@@ -106,7 +106,7 @@
                                         <i class="fas fa-search-plus text-primary fs-2"></i> Preview & Verifikasi Diff Data Aplikasi Lama
                                     </h3>
                                     <span class="text-muted mt-1 fw-bold fs-7">
-                                        Menampilkan perbandingan presisi data Aplikasi Lama (<code>cahayatasbihdb</code>) vs Lokal (<code>aplikasidb</code>) tanpa menimpa data otomatis.
+                                        Menampilkan perbandingan presisi data Aplikasi Lama (<code>{{ \Illuminate\Support\Facades\DB::connection('mysql_master')->getDatabaseName() }}</code>) vs Lokal (<code>{{ \Illuminate\Support\Facades\DB::connection()->getDatabaseName() }}</code>) tanpa menimpa data otomatis.
                                     </span>
                                 </div>
                                 <div class="card-toolbar d-flex align-items-center gap-3">
@@ -133,7 +133,7 @@
                             <div class="card-body py-4">
                                 <!-- Filter Container per Sekolah & Kelas (Hanya Tampil saat Modul Status Tagihan Aktif) -->
                                 <div class="row g-3 mb-4 d-none p-3 bg-light-danger rounded-3 border border-danger border-opacity-25" id="billing-filter-container">
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-school text-danger me-1"></i> Filter Sekolah:</label>
                                         <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-school" onchange="onSchoolFilterChange()">
                                             <option value="">Semua Sekolah</option>
@@ -142,12 +142,60 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher text-danger me-1"></i> Filter Kelas:</label>
-                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-classroom" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
-                                            <option value="">Semua Kelas</option>
-                                            @foreach($classrooms ?? [] as $cls)
-                                                <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                        <div class="dropdown w-100">
+                                            <button class="btn btn-sm btn-outline btn-outline-danger w-100 text-start fw-bold d-flex justify-content-between align-items-center bg-white" type="button" id="dropdownMenuClassroom" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                                <span id="btn-classroom-text">Semua Kelas</span>
+                                                <i class="fas fa-chevron-down fs-8"></i>
+                                            </button>
+                                            <input type="hidden" id="select-filter-classroom" value="">
+                                            <div class="dropdown-menu p-3 shadow" aria-labelledby="dropdownMenuClassroom" style="min-width: 480px; max-width: 95vw; max-height: 420px; overflow-y: auto;">
+                                                <a class="dropdown-item fw-bold text-danger mb-3 p-2 rounded-2 bg-light-danger" href="#" onclick="selectClassroom('', 'Semua Kelas'); return false;" style="cursor: pointer;">
+                                                    <i class="fas fa-times-circle me-2" style="pointer-events: none;"></i> Reset Filter Kelas
+                                                </a>
+                                                @foreach($schools ?? [] as $sch)
+                                                    <div class="school-group-header mb-3" data-school="{{ $sch->id }}">
+                                                        <h6 class="dropdown-header px-0 text-primary fw-bolder border-bottom pb-1 mb-2">{{ $sch->name }}</h6>
+                                                        @php
+                                                            $schClasses = collect($classrooms ?? [])->where('school_id', $sch->id);
+                                                            $groupedClasses = $schClasses->groupBy('grade_group')->sortKeys();
+                                                        @endphp
+                                                        <div class="row g-3">
+                                                            @foreach($groupedClasses as $groupName => $classesInGroup)
+                                                                <div class="col-md-4 classroom-col" data-school="{{ $sch->id }}">
+                                                                    <div class="fw-bolder text-muted fs-8 mb-2 border-bottom pb-1 text-uppercase" style="letter-spacing: 0.5px;">{{ $groupName }}</div>
+                                                                    <div class="d-flex flex-column gap-2">
+                                                                        @foreach($classesInGroup as $cls)
+                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item py-1.5 px-2 rounded-2 d-flex align-items-center justify-content-between" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;" title="Pilih kelas {{ $cls->name }}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">
+                                                                                <span class="text-truncate" style="pointer-events: none;"><i class="fas fa-door-open text-primary me-1" style="pointer-events: none;"></i> {{ $cls->name }}</span>
+                                                                                <i class="fas fa-check text-white fs-9 d-none sync-class-check" style="pointer-events: none;"></i>
+                                                                            </button>
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-calendar-alt text-danger me-1"></i> Tahun Ajaran:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-academic-year" onchange="onAcademicYearChange()">
+                                            <option value="">Semua Tahun Ajaran</option>
+                                            @foreach($academicYears ?? [] as $year)
+                                                <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Jenis Tagihan:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-bill-type" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                            <option value="">Semua Jenis Tagihan</option>
+                                            @foreach($billTypes ?? [] as $bt)
+                                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id ?? '' }}" data-school-id="{{ $bt->school_id ?? '' }}">{{ $bt->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -166,10 +214,12 @@
                                 <form action="{{ route('admin.audit.confirm-merge-master') }}" method="POST" id="form-confirm-merge">
                                     @csrf
                                     <input type="hidden" name="module" id="current-merge-module" value="students">
+                                    <input type="hidden" name="academic_year_id" id="hidden_academic_year_id" value="">
+                                    <input type="hidden" name="bill_type_id" id="hidden_bill_type_id" value="">
 
-                                    <div class="table-responsive style-slim-scroll" style="max-height: 380px;">
+                                    <div class="table-responsive style-slim-scroll" id="table-scroll-container" style="max-height: 380px;">
                                         <table class="table table-hover table-striped align-middle table-row-dashed fs-7 gy-3" id="tbl-diff-preview">
-                                            <thead class="bg-light sticky-top">
+                                            <thead class="bg-light sticky-top" id="thead-diff-preview">
                                                 <tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">
                                                     <th class="w-40px px-3">
                                                         <input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)">
@@ -188,6 +238,25 @@
                                                 </tr>
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    <!-- Pagination Container (Khusus Status Tagihan) -->
+                                    <div id="pagination-container" class="d-none align-items-center justify-content-between pt-4 mt-2">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted fs-7 me-2">Tampilkan</span>
+                                            <select id="select-page-size" class="form-select form-select-sm form-select-solid w-75px" onchange="window.itemsPerPage = parseInt(this.value); window.currentPage = 1; renderCurrentPage();">
+                                                <option value="15" selected>15</option>
+                                                <option value="30">30</option>
+                                                <option value="50">50</option>
+                                            </select>
+                                            <span class="text-muted fs-7 ms-2">baris</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted fs-7 me-4" id="pagination-info">Menampilkan 0-0 dari 0</span>
+                                            <ul class="pagination pagination-sm m-0" id="pagination-links">
+                                                <!-- Links di-generate via JS -->
+                                            </ul>
+                                        </div>
                                     </div>
 
                                     <div class="d-flex align-items-center justify-content-between pt-4 mt-3 border-top">
@@ -212,7 +281,7 @@
                                         <h3 class="card-label fw-bolder text-dark">Sinkronisasi Database Aplikasi Lama (Full Sync)</h3>
                                         <span class="text-muted mt-1 fw-bold fs-7">
                                             Menyinkronkan data transaksi harian (30 hari terakhir) secara inkremental dari
-                                            <code>cahayatasbihdb</code> ke <code>aplikasidb</code>.
+                                            <code>{{ \Illuminate\Support\Facades\DB::connection('mysql_master')->getDatabaseName() }}</code> ke <code>{{ \Illuminate\Support\Facades\DB::connection()->getDatabaseName() }}</code>.
                                         </span>
                                     </div>
                                     <div class="card-toolbar">
@@ -527,28 +596,37 @@
                                                     <td class="ps-4">
                                                         <span class="text-dark fw-bolder fs-6">{{ $table }}</span>
                                                     </td>
-                                                    <td class="text-center">
-                                                        @if ($info['status'] === 'success')
-                                                            <span class="badge badge-light-success fw-bolder fs-8">SUCCESS</span>
-                                                        @elseif ($info['status'] === 'skipped')
-                                                            <span class="badge badge-light-warning fw-bolder fs-8">SKIPPED</span>
-                                                        @else
-                                                            <span class="badge badge-light-danger fw-bolder fs-8">FAILED</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-end pe-4">
-                                                         <span class="text-dark fw-bold fs-6">
-                                                             {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
-                                                         </span>
-                                                         @if (isset($info['min_date']) && $info['min_date'])
-                                                             <div class="text-muted fs-8 mt-1">
-                                                                 <i class="far fa-calendar-alt me-1 fs-9 text-slate-400"></i>
-                                                                 {{ \Carbon\Carbon::parse($info['min_date'])->format('d M Y') }} 
-                                                                 s/d 
-                                                                 {{ \Carbon\Carbon::parse($info['max_date'])->format('d M Y') }}
-                                                             </div>
-                                                         @endif
-                                                    </td>
+                                                    @if (is_array($info))
+                                                        <td class="text-center">
+                                                            @if (isset($info['status']) && $info['status'] === 'success')
+                                                                <span class="badge badge-light-success fw-bolder fs-8">SUCCESS</span>
+                                                            @elseif (isset($info['status']) && $info['status'] === 'skipped')
+                                                                <span class="badge badge-light-warning fw-bolder fs-8">SKIPPED</span>
+                                                            @else
+                                                                <span class="badge badge-light-danger fw-bolder fs-8">FAILED</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-end pe-4">
+                                                             <span class="text-dark fw-bold fs-6">
+                                                                 {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
+                                                             </span>
+                                                             @if (isset($info['min_date']) && $info['min_date'])
+                                                                 <div class="text-muted fs-8 mt-1">
+                                                                     <i class="far fa-calendar-alt me-1 fs-9 text-slate-400"></i>
+                                                                     {{ \Carbon\Carbon::parse($info['min_date'])->format('d M Y') }} 
+                                                                     s/d 
+                                                                     {{ \Carbon\Carbon::parse($info['max_date'])->format('d M Y') }}
+                                                                 </div>
+                                                             @endif
+                                                        </td>
+                                                    @else
+                                                        <td class="text-center">
+                                                            <span class="badge badge-light-danger fw-bolder fs-8" title="Data corrupted">INVALID</span>
+                                                        </td>
+                                                        <td class="text-end pe-4">
+                                                            <span class="text-muted fs-7">Format data log tidak valid</span>
+                                                        </td>
+                                                    @endif
                                                 </tr>
                                             @endforeach
                                         </tbody>
@@ -641,13 +719,110 @@
     </div>
 
     <script>
+
+        window.recentlySyncedIds = @json(session('synced_ids', []));
+
+    window.currentSyncStatusDirection = 'asc';
+    function sortSyncItemsBySyncStatus() {
+        if (!window.currentSyncItems || window.currentSyncItems.length === 0) return;
+        window.currentSyncStatusDirection = window.currentSyncStatusDirection === 'asc' ? 'desc' : 'asc';
+        
+        window.currentSyncItems.sort(function(a, b) {
+            var aSynced = (typeof window.recentlySyncedIds !== 'undefined') && window.recentlySyncedIds.includes(a.id) ? 1 : 0;
+            var bSynced = (typeof window.recentlySyncedIds !== 'undefined') && window.recentlySyncedIds.includes(b.id) ? 1 : 0;
+            
+            if (aSynced !== bSynced) {
+                return window.currentSyncStatusDirection === 'asc' ? (bSynced - aSynced) : (aSynced - bSynced);
+            }
+            
+            var valA = a.status || '';
+            var valB = b.status || '';
+            if (valA < valB) return window.currentSyncStatusDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return window.currentSyncStatusDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        window.currentPage = 1;
+        renderCurrentPage();
+        
+        setTimeout(function() {
+            var icon = document.getElementById('sort-icon-sync-status');
+            if (icon) {
+                icon.className = window.currentSyncStatusDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+            }
+        }, 50);
+    }
+
+    window.recentlySyncedIds = @json(session('synced_ids', []));
+
         document.addEventListener('DOMContentLoaded', function () {
-            // Auto fetch students diff on Tab 1 initial load
-            if (typeof fetchMasterDiff === 'function') {
-                fetchMasterDiff('students');
+
+            var savedState = sessionStorage.getItem('syncUIState');
+            if (savedState) {
+                var state = JSON.parse(savedState);
+                
+                if (document.getElementById('select-filter-school')) {
+                    document.getElementById('select-filter-school').value = state.school || '';
+                    if (typeof onSchoolFilterChange === 'function') onSchoolFilterChange();
+                }
+                if (document.getElementById('select-filter-classroom')) {
+                    document.getElementById('select-filter-classroom').value = state.classroom || '';
+                }
+                if (document.getElementById('select-filter-academic-year')) {
+                    document.getElementById('select-filter-academic-year').value = state.academic_year || '';
+
+                    if (typeof onAcademicYearChange === 'function') onAcademicYearChange();
+
+                }
+                
+                if (typeof filterBillTypesDropdown === 'function') {
+                    filterBillTypesDropdown();
+                }
+                
+                if (document.getElementById('select-filter-bill-type')) {
+                    document.getElementById('select-filter-bill-type').value = state.bill_type || '';
+                }
+                
+                sessionStorage.removeItem('syncUIState');
+                
+                if (typeof fetchMasterDiff === 'function') {
+                    var btns = document.querySelectorAll('.btn-mod-tab');
+                    var activeBtn = null;
+                    btns.forEach(function(b) {
+                        if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(state.module)) {
+                            activeBtn = b;
+                        }
+                    });
+                    fetchMasterDiff(state.module, activeBtn);
+                }
+            } else {
+
+                if (typeof fetchMasterDiff === 'function') {
+                    fetchMasterDiff('students');
+                }
             }
 
-            // Loading state saat form sync disubmit
+            var mergeForm = document.getElementById('form-confirm-merge');
+
+            if (mergeForm) {
+                mergeForm.addEventListener('submit', function() {
+                    var btnMerge = document.getElementById('btn-submit-merge');
+                    if (btnMerge) {
+                        btnMerge.disabled = true;
+                        btnMerge.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
+                    }
+
+                    var state = {
+                        module: document.getElementById('current-merge-module') ? document.getElementById('current-merge-module').value : 'students',
+                        school: document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '',
+                        classroom: document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '',
+                        academic_year: document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '',
+                        bill_type: document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : ''
+                    };
+                    sessionStorage.setItem('syncUIState', JSON.stringify(state));
+                });
+            }
+
             var form = document.getElementById('sync-db-form');
             if (form) {
                 form.addEventListener('submit', function () {
@@ -659,7 +834,6 @@
                 });
             }
 
-            // Check All Table logic
             var checkAll = document.getElementById('sync-check-all-tables');
             var tableCheckboxes = document.querySelectorAll('.table-checkbox');
             var groupCheckboxes = document.querySelectorAll('.group-checkbox');
@@ -676,7 +850,6 @@
                 });
             }
 
-            // Group Checkbox logic
             groupCheckboxes.forEach(function (gCb) {
                 gCb.addEventListener('change', function () {
                     var group = this.getAttribute('data-group');
@@ -688,7 +861,6 @@
                 });
             });
 
-            // Table Checkbox logic
             tableCheckboxes.forEach(function (tCb) {
                 tCb.addEventListener('change', function () {
                     var group = this.getAttribute('data-group');
@@ -785,126 +957,450 @@
             updateMergeButtonState();
         }
 
-        function onSchoolFilterChange() {
-            var schoolId = document.getElementById('select-filter-school').value;
-            var classSelect = document.getElementById('select-filter-classroom');
-            var options = classSelect.querySelectorAll('option');
+        function filterBillTypesDropdown() {
+            var yearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
+            var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
+            var billSelect = document.getElementById('select-filter-bill-type');
+            if(!billSelect) return;
+            var options = billSelect.querySelectorAll('option');
 
-            classSelect.value = '';
+            var currentSelectedValid = false;
+
             options.forEach(function(opt) {
                 if (!opt.value) {
-                    opt.style.display = '';
+                    opt.style.display = ''; opt.hidden = false; opt.disabled = false; // "Semua Jenis Tagihan" always visible
+                    if (billSelect.value === opt.value) currentSelectedValid = true;
                     return;
                 }
-                var optSchool = opt.getAttribute('data-school');
-                if (!schoolId || optSchool === schoolId) {
+                
+                var optYearId = opt.getAttribute('data-academic-year-id');
+                var optSchoolId = opt.getAttribute('data-school-id');
+                
+                var matchYear = !yearId || optYearId === yearId;
+                var matchSchool = !schoolId || !optSchoolId || optSchoolId === schoolId;
+
+                if (matchYear && matchSchool) {
                     opt.style.display = '';
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    if (billSelect.value === opt.value) currentSelectedValid = true;
                 } else {
                     opt.style.display = 'none';
+                    opt.hidden = true;
+                    opt.disabled = true;
                 }
             });
+
+            if (!currentSelectedValid) {
+                billSelect.value = '';
+            }
+        }
+
+        function onAcademicYearChange() {
+            filterBillTypesDropdown();
+            fetchMasterDiff(document.getElementById('current-merge-module').value);
+        }
+
+        function selectClassroom(id, name) {
+            document.getElementById('select-filter-classroom').value = id;
+            document.getElementById('btn-classroom-text').innerText = name;
+
+            // Update active states on classroom buttons
+            document.querySelectorAll('.classroom-item').forEach(function(btn) {
+                btn.classList.remove('active', 'bg-primary', 'text-white');
+                btn.classList.add('btn-outline-primary');
+                var check = btn.querySelector('.sync-class-check');
+                if (check) check.classList.add('d-none');
+            });
+
+            if (id) {
+                var activeBtn = document.querySelector(`.classroom-item[onclick*="'${id}'"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('active', 'bg-primary', 'text-white');
+                    activeBtn.classList.remove('btn-outline-primary');
+                    var check = activeBtn.querySelector('.sync-class-check');
+                    if (check) check.classList.remove('d-none');
+                }
+            }
+
+            // Close dropdown cleanly
+            var dropBtn = document.getElementById('dropdownMenuClassroom');
+            try {
+                if (dropBtn && typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    var inst = (bootstrap.Dropdown.getOrCreateInstance ? bootstrap.Dropdown.getOrCreateInstance(dropBtn) : bootstrap.Dropdown.getInstance(dropBtn));
+                    if (inst) inst.hide();
+                } else if (typeof $ !== 'undefined' && $.fn.dropdown) {
+                    $('#dropdownMenuClassroom').dropdown('hide');
+                }
+            } catch (err) {
+                if (dropBtn) {
+                    var menu = dropBtn.closest('.dropdown').querySelector('.dropdown-menu');
+                    if (menu) menu.classList.remove('show');
+                    dropBtn.classList.remove('show');
+                    dropBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
 
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
-        function fetchMasterDiff(module, btnEl) {
-            if (btnEl) {
-                document.querySelectorAll('.btn-mod-tab').forEach(function(b) { b.classList.remove('active'); });
-                btnEl.classList.add('active');
-            }
-            document.getElementById('current-merge-module').value = module;
+        function onSchoolFilterChange() {
+            var schoolId = document.getElementById('select-filter-school').value;
 
-            // Toggle filter container visibility
-            var filterBox = document.getElementById('billing-filter-container');
-            if (filterBox) {
-                if (module === 'billing_status') {
-                    filterBox.classList.remove('d-none');
+            document.getElementById('select-filter-classroom').value = '';
+            document.getElementById('btn-classroom-text').innerText = 'Semua Kelas';
+
+            document.querySelectorAll('.school-group-header').forEach(function(hdr) {
+                if (!schoolId || hdr.getAttribute('data-school') === schoolId) {
+                    hdr.style.display = '';
                 } else {
-                    filterBox.classList.add('d-none');
+                    hdr.style.display = 'none';
                 }
-            }
-
-            // Reset active filter
-            filterDiffTable('ALL', null);
-
-            var limitSelect = document.getElementById('select-diff-limit');
-            var limitVal = limitSelect ? parseInt(limitSelect.value) : 50;
-
-            var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
-            var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
-
-            var tbody = document.getElementById('tbody-diff-preview');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
-
-            axios.post('{{ route("admin.audit.preview-pull-master") }}', {
-                module: module,
-                limit: limitVal,
-                school_id: schoolId,
-                classroom_id: classroomId
-            }).then(function(res) {
-                var data = res.data;
-                var summary = data.status_summary || {};
-
-                document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: ' + (summary.new_count || 0);
-                document.getElementById('cnt-update').innerText = '🟡 Butuh Update: ' + (summary.update_count || 0);
-                document.getElementById('cnt-match').innerText = '🔵 100% Identik: ' + (summary.match_count || 0);
-                document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: ' + (summary.conflict_count || 0);
-
-                var items = data.items || [];
-                if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Tidak ada data ditemukan untuk module ini.</td></tr>';
-                    return;
-                }
-
-                var html = '';
-                items.forEach(function(item) {
-                    var badgeClass = 'bg-light-info text-info';
-                    var badgeLabel = '🔵 100% IDENTIK';
-
-                    if (item.status === 'NEW_RECORD') {
-                        badgeClass = 'bg-light-success text-success';
-                        badgeLabel = '🟢 APLIKASI LAMA BARU';
-                    } else if (item.status === 'UPDATE_REQUIRED') {
-                        badgeClass = 'bg-light-warning text-warning';
-                        badgeLabel = '🟡 BUTUH UPDATE';
-                    } else if (item.status === 'CONFLICT') {
-                        badgeClass = 'bg-light-danger text-danger';
-                        badgeLabel = '🔴 KONFLIK';
-                    }
-
-                    var diffHtml = '';
-                    if (item.diffs && Object.keys(item.diffs).length > 0) {
-                        diffHtml = '<ul class="mb-0 ps-3 fs-8" style="color: #374151; font-weight: 500;">';
-                        for (var k in item.diffs) {
-                            if (typeof item.diffs[k] === 'object') {
-                                diffHtml += '<li class="my-1"><code class="text-primary fw-bolder px-1 py-0.5 bg-light-primary rounded" style="font-size: 11px;">' + k + '</code>: Aplikasi Lama (<span class="fw-bolder text-dark bg-light-warning text-warning px-1.5 py-0.5 rounded border border-warning border-opacity-25">"' + (item.diffs[k].master||'-') + '"</span>) vs Lokal (<span class="fw-bolder text-gray-800 bg-light px-1.5 py-0.5 rounded border border-gray-300">"' + (item.diffs[k].local||'-') + '"</span>)</li>';
-                            } else {
-                                diffHtml += '<li class="my-1"><span class="text-danger fw-bold">' + item.diffs[k] + '</span></li>';
-                            }
-                        }
-                        diffHtml += '</ul>';
-                    } else {
-                        diffHtml = '<span class="fw-semibold fs-8" style="color: #4b5563;">Data aplikasi lama dan lokal presisi identik</span>';
-                    }
-
-                    var isCheckable = (item.status !== 'EXACT_MATCH');
-                    var checkAttr = isCheckable ? 'checked' : 'disabled';
-
-                    html += '<tr data-status="' + item.status + '">';
-                    html += '<td class="px-3"><input class="form-check-input chk-diff-item" type="checkbox" name="selected_ids[]" value="' + item.id + '" ' + checkAttr + ' onchange="updateMergeButtonState()"></td>';
-                    html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
-                    html += '<td class="fw-bolder text-dark">' + item.name + '</td>';
-                    html += '<td><span class="badge ' + badgeClass + ' fw-bolder fs-8 px-2 py-1">' + badgeLabel + '</span></td>';
-                    html += '<td>' + diffHtml + '</td>';
-                    html += '</tr>';
-                });
-
-                tbody.innerHTML = html;
-                updateMergeButtonState();
-            }).catch(function(err) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Gagal memuat data diff: ' + (err.message || 'Error Server') + '</td></tr>';
             });
+
+            filterBillTypesDropdown();
+            fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
+
+        window.currentSyncItems = [];
+window.currentSyncModule = '';
+window.currentPage = 1;
+window.itemsPerPage = 15;
+
+function getMonthAbbr(m) {
+    var map = { '7':'JUL', '8':'AGU', '9':'SEP', '10':'OKT', '11':'NOV', '12':'DES', '1':'JAN', '2':'FEB', '3':'MAR', '4':'APR', '5':'MEI', '6':'JUN' };
+    return map[m] || m;
+}
+
+function renderMonthlyCards(info, isSynced = false) {
+    var order = ['7','8','9','10','11','12','1','2','3','4','5','6'];
+    var html = '<div class="d-flex flex-column gap-2">';
+
+    html += '<div class="d-flex align-items-center gap-1">';
+    html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lama</span>';
+    order.forEach(function(m) {
+        var isPaid = info.master.paid_months.indexOf(m) !== -1 || info.master.paid_months.indexOf(parseInt(m)) !== -1;
+        var isUnpaid = info.master.unpaid_months.indexOf(m) !== -1 || info.master.unpaid_months.indexOf(parseInt(m)) !== -1;
+        var bg = 'bg-light text-muted';
+        if (isPaid) bg = 'bg-success text-white';
+        else if (isUnpaid) bg = 'bg-light-danger text-danger';
+        html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px;">' + getMonthAbbr(m) + '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="d-flex align-items-center gap-1">';
+    html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lokal</span>';
+    if (info.local.is_empty) {
+        html += '<span class="badge bg-light-danger text-danger px-2 py-1 fs-9 fw-bolder w-100 text-start">Belum Ada Record</span>';
+    } else {
+        order.forEach(function(m) {
+            var isPaid = info.local.paid_months.indexOf(m) !== -1 || info.local.paid_months.indexOf(parseInt(m)) !== -1;
+            var isUnpaid = info.local.unpaid_months.indexOf(m) !== -1 || info.local.unpaid_months.indexOf(parseInt(m)) !== -1;
+            var bg = 'bg-light text-muted';
+            if (isPaid) bg = isSynced ? 'text-white' : 'bg-success text-white';
+            else if (isUnpaid) bg = 'bg-light-danger text-danger';
+            var extraStyle = (isPaid && isSynced) ? 'background-color: #8b5cf6;' : '';
+            html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px; ' + extraStyle + '">' + getMonthAbbr(m) + '</div>';
+        });
+    }
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+}
+
+window.currentSortDirection = 'asc';
+        function sortSyncItemsByStatus() {
+            if (!window.currentSyncItems || window.currentSyncItems.length === 0) return;
+            window.currentSortDirection = window.currentSortDirection === 'asc' ? 'desc' : 'asc';
+            
+            window.currentSyncItems.sort(function(a, b) {
+                var valA = a.status || '';
+                var valB = b.status || '';
+                if (valA < valB) return window.currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return window.currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            window.currentPage = 1;
+            renderCurrentPage();
+            
+            setTimeout(function() {
+                var icon = document.getElementById('sort-icon-status');
+                if (icon) {
+                    icon.className = window.currentSortDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                }
+            }, 50);
+        }
+
+        function renderCurrentPage() {
+            var tbody = document.getElementById('tbody-diff-preview');
+    var thead = document.getElementById('thead-diff-preview');
+    var scrollContainer = document.getElementById('table-scroll-container');
+    var pagContainer = document.getElementById('pagination-container');
+    
+    if (window.currentSyncModule === 'billing_status') {
+        scrollContainer.style.maxHeight = 'none';
+        pagContainer.classList.remove('d-none');
+        pagContainer.classList.add('d-flex');
+        
+        thead.innerHTML = '<tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">' +
+            '<th class="w-40px px-3"><input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)"></th>' +
+            '<th class="w-50px">No.</th>' +
+            '<th>ID / Code</th>' +
+            '<th>Nama Record</th>' +
+            '<th class="cursor-pointer text-primary text-center" onclick="sortSyncItemsBySyncStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan berdasarkan Status Sinkronisasi">Status <i class="fas fa-sort ms-1" id="sort-icon-sync-status"></i></th>' +
+            '<th class="cursor-pointer text-primary" onclick="sortSyncItemsByStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan Identik / Butuh Sync">Perbandingan Tagihan (Lama &rarr; Lokal) <i class="fas fa-sort ms-1" id="sort-icon-status"></i></th>' +
+            '</tr>';
+    } else {
+        scrollContainer.style.maxHeight = '380px';
+        pagContainer.classList.remove('d-flex');
+        pagContainer.classList.add('d-none');
+        
+        thead.innerHTML = '<tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">' +
+            '<th class="w-40px px-3"><input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)"></th>' +
+            '<th>ID / Code</th>' +
+            '<th>Nama Record</th>' +
+            '<th>Status Mapping</th>' +
+            '<th>Perbandingan Kolom (Aplikasi Lama &rarr; Lokal)</th>' +
+            '</tr>';
+    }
+
+    var items = window.currentSyncItems;
+    if (items.length === 0) {
+        var colSpan = window.currentSyncModule === 'billing_status' ? 5 : 5;
+        tbody.innerHTML = '<tr><td colspan="'+colSpan+'" class="text-center py-5 text-muted">Tidak ada data ditemukan untuk filter ini.</td></tr>';
+        renderPaginationLinks(0);
+        return;
+    }
+
+    var startIndex = 0;
+    var endIndex = items.length;
+    
+    if (window.currentSyncModule === 'billing_status') {
+        startIndex = (window.currentPage - 1) * window.itemsPerPage;
+        endIndex = startIndex + window.itemsPerPage;
+    }
+    
+    var paginatedItems = items.slice(startIndex, endIndex);
+    var html = '';
+    
+    paginatedItems.forEach(function(item, idx) {
+        var badgeClass = 'bg-light-info text-info';
+        var badgeLabel = '🔵 100% IDENTIK';
+
+        if (item.status === 'NEW_RECORD') {
+            badgeClass = 'bg-light-success text-success';
+            badgeLabel = '🟢 APLIKASI LAMA BARU';
+        } else if (item.status === 'UPDATE_REQUIRED') {
+            badgeClass = 'bg-light-warning text-warning';
+            badgeLabel = '🟡 BUTUH UPDATE';
+        } else if (item.status === 'CONFLICT') {
+            badgeClass = 'bg-light-danger text-danger';
+            badgeLabel = '🔴 KONFLIK';
+        }
+
+                var isSynced = (typeof window.recentlySyncedIds !== 'undefined') && window.recentlySyncedIds.includes(item.id);
+        var cleanName = (item.name || '').replace(/\s*\[.*?\]\s*$/, '');
+        
+        var diffHtml = '';
+        if (item.diffs && Object.keys(item.diffs).length > 0) {
+            if (item.diffs['Status Tagihan Siswa'] && item.diffs['Status Tagihan Siswa'].type === 'monthly_cards') {
+                diffHtml = renderMonthlyCards(item.diffs['Status Tagihan Siswa'], isSynced);
+            } else {
+                diffHtml = '<ul class="mb-0 ps-3 fs-8" style="color: #374151; font-weight: 500;">';
+                for (var k in item.diffs) {
+                    if (typeof item.diffs[k] === 'object') {
+                        diffHtml += '<li class="my-1"><code class="text-primary fw-bolder px-1 py-0.5 bg-light-primary rounded" style="font-size: 11px;">' + k + '</code>: Aplikasi Lama (<span class="fw-bolder text-dark bg-light-warning text-warning px-1.5 py-0.5 rounded border border-warning border-opacity-25">"' + (item.diffs[k].master||'-') + '"</span>) vs Lokal (<span class="fw-bolder text-gray-800 bg-light px-1.5 py-0.5 rounded border border-gray-300">"' + (item.diffs[k].local||'-') + '"</span>)</li>';
+                    } else {
+                        diffHtml += '<li class="my-1"><span class="text-danger fw-bold">' + item.diffs[k] + '</span></li>';
+                    }
+                }
+                diffHtml += '</ul>';
+            }
+        } else if (item.status === 'EXACT_MATCH') {
+            diffHtml = '<span class="fw-semibold fs-8" style="color: #4b5563;">Data aplikasi lama dan lokal presisi identik</span>';
+        }
+
+        var statusBadge = '';
+        var isCheckable = (item.status !== 'EXACT_MATCH');
+        
+        if (window.currentSyncModule === 'billing_status') {
+            if (isSynced) {
+                // FALLBACK STATUS: If recently synced, FORCE success status regardless of counts
+                statusBadge = '<span class="badge" style="background-color: #8b5cf6; color: white;"><i class="fas fa-check-circle text-white me-1"></i> Sukses Sinkronisasi</span>';
+                isCheckable = false; // Disable checkbox
+            } else if (item.status === 'EXACT_MATCH') {
+                statusBadge = '<span class="badge bg-light text-muted fw-bold border border-gray-300"><i class="fas fa-check text-muted me-1"></i> Tidak Perlu Sinkronisasi</span>';
+            } else if (item.status === 'NEW_RECORD') {
+                statusBadge = '<span class="badge bg-light-primary text-primary fw-bolder px-2 py-1"><i class="fas fa-plus-circle text-primary me-1"></i> Belum Ada di Lokal</span>';
+            } else if (item.status === 'UPDATE_REQUIRED') {
+                statusBadge = '<span class="badge bg-light-warning text-warning fw-bolder px-2 py-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i> Butuh Sync</span>';
+            } else {
+                statusBadge = '<span class="badge bg-light-danger text-danger fw-bolder px-2 py-1"><i class="fas fa-times-circle text-danger me-1"></i> Konflik</span>';
+            }
+        } else {
+            isCheckable = (item.status !== 'EXACT_MATCH' && !isSynced);
+        }
+
+        var checkAttr = isCheckable ? 'checked' : 'disabled';
+
+        html += '<tr data-status="' + item.status + '">';
+        html += '<td class="px-3"><input class="form-check-input chk-diff-item" type="checkbox" name="selected_ids[]" value="' + item.id + '" ' + checkAttr + ' onchange="updateMergeButtonState()"></td>';
+        
+        if (window.currentSyncModule === 'billing_status') {
+            html += '<td class="fw-bold fs-7 text-muted">' + (startIndex + idx + 1) + '</td>';
+            html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
+            
+            var classBadge = '';
+            if (item.classroom_name && item.classroom_name !== '-') {
+                classBadge = '<span class="badge bg-light-primary text-primary fw-bolder px-2 py-1 fs-9 ms-2">' + item.classroom_name + '</span>';
+            }
+            html += '<td class="fw-bolder text-dark">' + cleanName + classBadge + '</td>';
+            
+            html += '<td class="text-center">' + statusBadge + '</td>';
+        } else {
+            html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
+            html += '<td class="fw-bolder text-dark">' + item.name + '</td>';
+            html += '<td><span class="badge ' + badgeClass + ' fw-bolder fs-8 px-2 py-1">' + badgeLabel + '</span></td>';
+        }
+        
+        html += '<td>' + diffHtml + '</td>';
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+    updateMergeButtonState();
+    
+    if (window.currentSyncModule === 'billing_status') {
+        renderPaginationLinks(items.length);
+    }
+}
+
+function renderPaginationLinks(totalItems) {
+    var info = document.getElementById('pagination-info');
+    var ul = document.getElementById('pagination-links');
+    
+    if (totalItems === 0) {
+        info.innerText = 'Menampilkan 0-0 dari 0';
+        ul.innerHTML = '';
+        return;
+    }
+    
+    var totalPages = Math.ceil(totalItems / window.itemsPerPage);
+    var startIdx = (window.currentPage - 1) * window.itemsPerPage + 1;
+    var endIdx = Math.min(startIdx + window.itemsPerPage - 1, totalItems);
+    
+    info.innerText = 'Menampilkan ' + startIdx + '-' + endIdx + ' dari ' + totalItems;
+    
+    var html = '';
+
+    html += '<li class="page-item ' + (window.currentPage === 1 ? 'disabled' : '') + '">';
+    html += '<a class="page-link" href="#" onclick="if(window.currentPage > 1) { window.currentPage--; renderCurrentPage(); } return false;"><i class="fas fa-chevron-left"></i></a>';
+    html += '</li>';
+
+    var startPage = Math.max(1, window.currentPage - 2);
+    var endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    for (var i = startPage; i <= endPage; i++) {
+        html += '<li class="page-item ' + (window.currentPage === i ? 'active' : '') + '">';
+        html += '<a class="page-link" href="#" onclick="window.currentPage = ' + i + '; renderCurrentPage(); return false;">' + i + '</a>';
+        html += '</li>';
+    }
+
+    html += '<li class="page-item ' + (window.currentPage === totalPages ? 'disabled' : '') + '">';
+    html += '<a class="page-link" href="#" onclick="if(window.currentPage < ' + totalPages + ') { window.currentPage++; renderCurrentPage(); } return false;"><i class="fas fa-chevron-right"></i></a>';
+    html += '</li>';
+    
+    ul.innerHTML = html;
+}
+
+function fetchMasterDiff(module, btnEl) {
+    if (btnEl) {
+        document.querySelectorAll('.btn-mod-tab').forEach(function(b) { b.classList.remove('active'); });
+        btnEl.classList.add('active');
+    }
+    document.getElementById('current-merge-module').value = module;
+    window.currentSyncModule = module;
+    window.currentPage = 1;
+
+    var filterBox = document.getElementById('billing-filter-container');
+    if (filterBox) {
+        if (module === 'billing_status') {
+            filterBox.classList.remove('d-none');
+        } else {
+            filterBox.classList.add('d-none');
+        }
+    }
+
+    filterDiffTable('ALL', null);
+
+    var limitSelect = document.getElementById('select-diff-limit');
+    var limitVal = limitSelect ? parseInt(limitSelect.value) : 50;
+
+    var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
+    var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
+    var academicYearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
+    var billTypeId = document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : '';
+
+    if (document.getElementById('hidden_academic_year_id')) document.getElementById('hidden_academic_year_id').value = academicYearId;
+    if (document.getElementById('hidden_bill_type_id')) document.getElementById('hidden_bill_type_id').value = billTypeId;
+
+    var tbody = document.getElementById('tbody-diff-preview');
+
+    if (module === 'billing_status') {
+        document.getElementById('table-scroll-container').style.maxHeight = 'none';
+        document.getElementById('pagination-container').classList.remove('d-none');
+        document.getElementById('pagination-container').classList.add('d-flex');
+    } else {
+        document.getElementById('table-scroll-container').style.maxHeight = '380px';
+        document.getElementById('pagination-container').classList.remove('d-flex');
+        document.getElementById('pagination-container').classList.add('d-none');
+    }
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
+
+    axios.post('{{ route("admin.audit.preview-pull-master") }}', {
+        module: module,
+        limit: limitVal,
+        school_id: schoolId,
+        classroom_id: classroomId,
+        academic_year_id: academicYearId,
+        bill_type_id: billTypeId
+    }).then(function(res) {
+        var data = res.data;
+        var summary = data.status_summary || {};
+
+        document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: ' + (summary.new_count || 0);
+        document.getElementById('cnt-update').innerText = '🟡 Butuh Update: ' + (summary.update_count || 0);
+        document.getElementById('cnt-match').innerText = '🔵 100% Identik: ' + (summary.match_count || 0);
+        document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: ' + (summary.conflict_count || 0);
+
+        window.currentSyncItems = data.items || [];
+        
+        if (module === 'billing_status' && window.recentlySyncedIds && window.recentlySyncedIds.length > 0) {
+            window.currentSyncStatusDirection = 'desc'; 
+            sortSyncItemsBySyncStatus();
+        } else {
+            renderCurrentPage();
+        }
+    }).catch(function(err) {
+        var errorMsg = err.message || 'Error Server';
+        if (err.response && err.response.data && err.response.data.error) {
+            errorMsg = err.response.data.error;
+        }
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger fw-bolder bg-light-danger border border-danger border-opacity-25 rounded-3"><i class="fas fa-exclamation-triangle fs-2x mb-3 d-block text-danger"></i> ' + errorMsg + '</td></tr>';
+
+        document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: 0';
+        document.getElementById('cnt-update').innerText = '🟡 Butuh Update: 0';
+        document.getElementById('cnt-match').innerText = '🔵 100% Identik: 0';
+        document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: 0';
+    });
+}
+
 
         function toggleAllDiffCheckboxes(masterCb) {
             var items = document.querySelectorAll('.chk-diff-item:not(:disabled)');

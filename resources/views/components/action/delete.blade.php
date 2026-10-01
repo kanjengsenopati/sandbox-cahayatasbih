@@ -2,7 +2,7 @@
 <div>
     <a data-id="form{{$id}}" type="button" id="btnDelete{{$id}}"
         class="btn-delete btn btn-icon btn-active-light-primary w-30px h-30px me-3">
-        <i class="fas fa-trash-alt" data-id="form{{$id}}"></i>
+        <i class="fas fa-trash-alt" style="pointer-events: none;"></i>
     </a>
     <form id="form{{$id}}" action="{{$action}}" method="post">
         @csrf

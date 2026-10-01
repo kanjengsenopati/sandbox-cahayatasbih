@@ -66,21 +66,45 @@ class LaporPakAdminController extends Controller
 
             $reports = $query->paginate(25)->withQueryString();
 
-            // Total Statistik 4 Milestone
-            $allReports = Schema::hasTable('lapor_pak_reports') ? LaporPakReport::all() : collect([]);
-            $stats = [
-                'total' => $allReports->count(),
-                'masukCount' => $allReports->whereIn('status', ['Laporan Masuk', 'Kendala'])->count(),
-                'diterimaCount' => $allReports->where('status', 'Diterima')->count(),
-                'ditanganiCount' => $allReports->where('status', 'Sedang Ditangani')->count(),
-                'selesaiCount' => $allReports->whereIn('status', ['Selesai', 'Teratasi'])->count(),
-                'catBreakdown' => collect(self::KENDALA_OPTIONS)->map(function ($cat) use ($allReports) {
-                    return [
-                        'category' => $cat,
-                        'count' => $allReports->where('kendala', $cat)->count(),
-                    ];
-                }),
-            ];
+            // Total Statistik 4 Milestone via SQL aggregation
+            if (Schema::hasTable('lapor_pak_reports')) {
+                $rawStats = LaporPakReport::selectRaw("
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN status IN ('Laporan Masuk', 'Kendala') THEN 1 END) as masuk_count,
+                    COUNT(CASE WHEN status = 'Diterima' THEN 1 END) as diterima_count,
+                    COUNT(CASE WHEN status = 'Sedang Ditangani' THEN 1 END) as ditangani_count,
+                    COUNT(CASE WHEN status IN ('Selesai', 'Teratasi') THEN 1 END) as selesai_count
+                ")->first();
+
+                $categoryCounts = LaporPakReport::selectRaw('kendala, COUNT(*) as count')
+                    ->whereNotNull('kendala')
+                    ->groupBy('kendala')
+                    ->pluck('count', 'kendala')
+                    ->toArray();
+
+                $stats = [
+                    'total' => (int)($rawStats->total ?? 0),
+                    'masukCount' => (int)($rawStats->masuk_count ?? 0),
+                    'diterimaCount' => (int)($rawStats->diterima_count ?? 0),
+                    'ditanganiCount' => (int)($rawStats->ditangani_count ?? 0),
+                    'selesaiCount' => (int)($rawStats->selesai_count ?? 0),
+                    'catBreakdown' => collect(self::KENDALA_OPTIONS)->map(function ($cat) use ($categoryCounts) {
+                        return [
+                            'category' => $cat,
+                            'count' => (int)($categoryCounts[$cat] ?? 0),
+                        ];
+                    }),
+                ];
+            } else {
+                $stats = [
+                    'total' => 0,
+                    'masukCount' => 0,
+                    'diterimaCount' => 0,
+                    'ditanganiCount' => 0,
+                    'selesaiCount' => 0,
+                    'catBreakdown' => collect([]),
+                ];
+            }
 
             $milestones = self::MILESTONE_STATUSES;
 

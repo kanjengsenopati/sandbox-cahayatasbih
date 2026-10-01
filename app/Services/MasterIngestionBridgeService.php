@@ -16,7 +16,7 @@ class MasterIngestionBridgeService
      * @param int $limit
      * @return array
      */
-    public function analyzeModuleDiff(string $module = 'students', int $limit = 50, ?string $schoolId = null, ?string $classroomId = null): array
+    public function analyzeModuleDiff(string $module = 'students', int $limit = 50, ?string $schoolId = null, ?string $classroomId = null, ?string $academicYearId = null, ?string $billTypeId = null): array
     {
         $localConn = DB::connection();
         $masterConn = DB::connection('mysql_master');
@@ -51,7 +51,7 @@ class MasterIngestionBridgeService
                     $this->analyzeSaldo($masterConn, $localConn, $result, $limit);
                     break;
                 case 'billing_status':
-                    $this->analyzeBillingStatus($masterConn, $localConn, $result, $limit, $schoolId, $classroomId);
+                    $this->analyzeBillingStatus($masterConn, $localConn, $result, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
                     break;
                 case 'students':
                 default:
@@ -77,6 +77,8 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         $localStudentIds = $localConn->table('students')->pluck('id')->keyBy(fn($id) => (string)$id);
         $localClassroomIds = $localConn->table('classrooms')->pluck('id')->keyBy(fn($id) => (string)$id);
@@ -87,7 +89,7 @@ class MasterIngestionBridgeService
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
             $idStr = (string)$mRec->id;
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -151,10 +153,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("classrooms")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('classrooms')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -191,10 +195,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("schools")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('schools')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -231,10 +237,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at')
             ->limit($limit)
             ->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("academic_years")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('academic_years')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -275,6 +283,8 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("bill_types")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         $masterItems = $masterConn->table('bill_items')->pluck('name', 'id')->toArray();
         $localItems = $localConn->table('bill_items')->pluck('name', 'id')->toArray();
@@ -284,7 +294,7 @@ class MasterIngestionBridgeService
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('bill_types')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $posName = $masterItems[$mRec->bill_item_id] ?? ($localItems[$mRec->bill_item_id] ?? '');
             $posPrefix = $posName ? "[{$posName}] " : "";
@@ -350,10 +360,12 @@ class MasterIngestionBridgeService
         }
 
         $masterRecords = $query->get();
+        $masterIds = $masterRecords->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
 
         foreach ($masterRecords as $mRec) {
             $result['status_summary']['total_analyzed']++;
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $status = 'EXACT_MATCH';
             $diffs = [];
@@ -409,7 +421,7 @@ class MasterIngestionBridgeService
         }
     }
 
-    private function analyzeBillingStatus($masterConn, $localConn, array &$result, int $limit, ?string $schoolId = null, ?string $classroomId = null)
+    private function analyzeBillingStatus($masterConn, $localConn, array &$result, int $limit, ?string $schoolId = null, ?string $classroomId = null, ?string $academicYearId = null, ?string $billTypeId = null)
     {
         $masterClassrooms = $masterConn->table('classrooms')->pluck('name', 'id')->toArray();
         $masterSchools = $masterConn->table('schools')->pluck('name', 'id')->toArray();
@@ -422,13 +434,19 @@ class MasterIngestionBridgeService
         $targetClassroomIds = $classroomsQuery->pluck('id')->map(fn($id) => (string)$id)->toArray();
 
         $query = $masterConn->table('students')
-            ->select('id', 'name', 'nis', 'classroom_id')
-            ->whereNull('deleted_at');
+            ->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+            ->select('students.id', 'students.name', 'students.nis', 'students.classroom_id', 'classrooms.name as classroom_name')
+            ->whereNull('students.deleted_at');
 
         if (!empty($classroomId)) {
-            $query->where('classroom_id', $classroomId);
+            // STRICT CONSTRAINT: Relational cross-check
+            if (!empty($schoolId) && !in_array($classroomId, $targetClassroomIds)) {
+                $query->where('students.id', 'STRICT_CONSTRAINT_VIOLATION_FORCE_EMPTY');
+            } else {
+                $query->where('students.classroom_id', $classroomId);
+            }
         } elseif (!empty($schoolId)) {
-            $query->whereIn('classroom_id', $targetClassroomIds);
+            $query->whereIn('students.classroom_id', $targetClassroomIds);
         }
 
         if ($limit > 0) {
@@ -436,27 +454,58 @@ class MasterIngestionBridgeService
         }
 
         $masterStudents = $query->get();
+        $masterIds = $masterStudents->pluck("id")->toArray();
+        $localRecords = !empty($masterIds) ? $localConn->table("students")->whereIn("id", $masterIds)->get()->keyBy(function($item) { return (string)$item->id; }) : collect();
         $studentIds = $masterStudents->pluck('id')->toArray();
 
         // 1. Bulk query for Master DB bills summary
         $masterBillsGroup = [];
         if (!empty($studentIds)) {
-            $mRows = $masterConn->table('bills')
+            $mQuery = $masterConn->table('bills')
                 ->whereIn('student_id', $studentIds)
-                ->whereNull('deleted_at')
-                ->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+                ->whereNull('deleted_at');
+            
+            if (!empty($academicYearId)) {
+                $mQuery->where('academic_year_id', $academicYearId);
+            }
+            if (!empty($billTypeId)) {
+                $mQuery->where('bill_type_id', $billTypeId);
+            }
+
+            $mRows = $mQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'), DB::raw('GROUP_CONCAT(month) as months'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
             foreach ($mRows as $r) {
                 $sid = (string) $r->student_id;
                 if (!isset($masterBillsGroup[$sid])) {
-                    $masterBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
+                    $masterBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0, 'paid_months' => [], 'unpaid_months' => []];
                 }
                 $masterBillsGroup[$sid]['total_cnt'] += (int) $r->total_cnt;
+                
+                $monthsArr = array_filter(explode(',', (string)$r->months));
                 if ($r->status === 'PAID') {
                     $masterBillsGroup[$sid]['paid_cnt'] += (int) $r->total_cnt;
                     $masterBillsGroup[$sid]['paid_amt'] += (int) $r->total_amt;
+                    $masterBillsGroup[$sid]['paid_months'] = array_merge($masterBillsGroup[$sid]['paid_months'], $monthsArr);
+                } else {
+                    $masterBillsGroup[$sid]['unpaid_months'] = array_merge($masterBillsGroup[$sid]['unpaid_months'], $monthsArr);
+                }
+            }
+        }
+
+        // Smart UUID Mapping for Local Query
+        $localBillTypeId = $billTypeId;
+        if (!empty($billTypeId)) {
+            $masterBillTypeForAnalyze = $masterConn->table('bill_types')->where('id', $billTypeId)->first();
+            if ($masterBillTypeForAnalyze) {
+                $masterCleanName = str_replace(' ', '', $masterBillTypeForAnalyze->name);
+                $localBillTypeForAnalyze = $localConn->table('bill_types')
+                    ->whereRaw("REPLACE(name, ' ', '') = ?", [$masterCleanName])
+                    ->where('academic_year_id', $masterBillTypeForAnalyze->academic_year_id)
+                    ->first();
+                if ($localBillTypeForAnalyze) {
+                    $localBillTypeId = $localBillTypeForAnalyze->id;
                 }
             }
         }
@@ -464,22 +513,35 @@ class MasterIngestionBridgeService
         // 2. Bulk query for Local DB bills summary
         $localBillsGroup = [];
         if (!empty($studentIds)) {
-            $lRows = $localConn->table('bills')
+            $lQuery = $localConn->table('bills')
                 ->whereIn('student_id', $studentIds)
-                ->whereNull('deleted_at')
-                ->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+                ->whereNull('deleted_at');
+
+            if (!empty($academicYearId)) {
+                $lQuery->where('academic_year_id', $academicYearId);
+            }
+            if (!empty($localBillTypeId)) {
+                $lQuery->where('bill_type_id', $localBillTypeId);
+            }
+
+            $lRows = $lQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'), DB::raw('GROUP_CONCAT(month) as months'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
             foreach ($lRows as $r) {
                 $sid = (string) $r->student_id;
                 if (!isset($localBillsGroup[$sid])) {
-                    $localBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
+                    $localBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0, 'paid_months' => [], 'unpaid_months' => []];
                 }
                 $localBillsGroup[$sid]['total_cnt'] += (int) $r->total_cnt;
+                
+                $monthsArr = array_filter(explode(',', (string)$r->months));
                 if ($r->status === 'PAID') {
                     $localBillsGroup[$sid]['paid_cnt'] += (int) $r->total_cnt;
                     $localBillsGroup[$sid]['paid_amt'] += (int) $r->total_amt;
+                    $localBillsGroup[$sid]['paid_months'] = array_merge($localBillsGroup[$sid]['paid_months'], $monthsArr);
+                } else {
+                    $localBillsGroup[$sid]['unpaid_months'] = array_merge($localBillsGroup[$sid]['unpaid_months'], $monthsArr);
                 }
             }
         }
@@ -492,7 +554,7 @@ class MasterIngestionBridgeService
             $className = $masterClassrooms[$cId] ?? 'Non-Kelas';
             $schoolName = $masterSchools[$sId] ?? 'Non-Sekolah';
 
-            $localRec = $localConn->table('students')->where('id', $mRec->id)->first();
+            $localRec = $localRecords->get((string)$mRec->id);
 
             $sidStr = (string) $mRec->id;
             $mSum = $masterBillsGroup[$sidStr] ?? ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
@@ -506,33 +568,70 @@ class MasterIngestionBridgeService
             $lPaidCount = $lSum['paid_cnt'];
             $lPaidAmount = $lSum['paid_amt'];
 
+            // STRICT CONSTRAINT: No Zero-Bill Leakage
+            // Jangan tampilkan siswa yang sama sekali tidak memiliki tagihan terkait filter ini
+            if ($mBillsCount === 0 && $lBillsCount === 0) {
+                // Adjust analyzed count since we skip it from being rendered
+                $result['status_summary']['total_analyzed']--;
+                continue;
+            }
+
             $status = 'EXACT_MATCH';
             $diffs = [];
+
+            $diffInfo = [
+                'type' => 'monthly_cards',
+                'master' => [
+                    'paid_cnt' => $mPaidCount,
+                    'total_cnt' => $mBillsCount,
+                    'paid_amt' => $mPaidAmount,
+                    'paid_months' => array_values(array_unique($mSum['paid_months'] ?? [])),
+                    'unpaid_months' => array_values(array_unique($mSum['unpaid_months'] ?? []))
+                ],
+                'local' => [
+                    'paid_cnt' => $lPaidCount,
+                    'total_cnt' => $lBillsCount,
+                    'paid_amt' => $lPaidAmount,
+                    'paid_months' => array_values(array_unique($lSum['paid_months'] ?? [])),
+                    'unpaid_months' => array_values(array_unique($lSum['unpaid_months'] ?? []))
+                ]
+            ];
 
             if (!$localRec) {
                 $status = 'NEW_RECORD';
                 $result['status_summary']['new_count']++;
-                $diffs['Status Tagihan Siswa'] = [
-                    'master' => "{$mPaidCount}/{$mBillsCount} Tagihan Lunas (Rp " . number_format($mPaidAmount, 0, ',', '.') . ")",
-                    'local' => "Belum Ada Student Record"
-                ];
+                $diffInfo['local']['is_empty'] = true;
             } else {
-                if ($mPaidCount !== $lPaidCount || $mBillsCount !== $lBillsCount || $mPaidAmount !== $lPaidAmount) {
+                // One-Way Positive Sync Rule
+                $mPaid = $diffInfo['master']['paid_months'];
+                $mUnpaid = $diffInfo['master']['unpaid_months'];
+                $lPaid = $diffInfo['local']['paid_months'];
+                $lUnpaid = $diffInfo['local']['unpaid_months'];
+                
+                // Local must have all PAID months from Master
+                $missingPaidInLocal = array_diff($mPaid, $lPaid);
+                // Local must at least have all bills from Master (can be PAID or UNPAID)
+                $allLocal = array_merge($lPaid, $lUnpaid);
+                $missingUnpaidInLocal = array_diff($mUnpaid, $allLocal);
+                
+                // If Local already covers all Master's bills and honors Master's paid bills, we do NOT sync.
+                // We ignore if Local has more PAID bills than Master.
+                if (!empty($missingPaidInLocal) || !empty($missingUnpaidInLocal)) {
                     $status = 'UPDATE_REQUIRED';
                     $result['status_summary']['update_count']++;
-                    $diffs['Status Tagihan Siswa'] = [
-                        'master' => "{$mPaidCount}/{$mBillsCount} Tagihan Lunas (Rp " . number_format($mPaidAmount, 0, ',', '.') . ")",
-                        'local' => "{$lPaidCount}/{$lBillsCount} Tagihan Lunas (Rp " . number_format($lPaidAmount, 0, ',', '.') . ")"
-                    ];
                 } else {
                     $result['status_summary']['match_count']++;
                 }
             }
+            
+            // ALWAYS assign diffInfo for billing_status so the UI can render the monthly cards even if EXACT_MATCH
+            $diffs['Status Tagihan Siswa'] = $diffInfo;
 
             $result['items'][] = [
                 'id' => $mRec->id,
                 'code_or_nis' => $mRec->nis ?: Str::limit($mRec->id, 8, ''),
-                'name' => "{$mRec->name} [{$schoolName} - {$className}]",
+                'name' => $mRec->name,
+                'classroom_name' => $mRec->classroom_name ?? '-',
                 'status' => $status,
                 'diffs' => $diffs,
                 'raw_master' => (array) $mRec,
@@ -547,7 +646,7 @@ class MasterIngestionBridgeService
      * @param array $selectedIds
      * @return array
      */
-    public function executeVerifiedMerge(string $module, array $selectedIds): array
+    public function executeVerifiedMerge(string $module, array $selectedIds, ?string $academicYearId = null, ?string $billTypeId = null): array
     {
         if (empty($selectedIds)) {
             return ['status' => 'error', 'message' => 'Tidak ada record yang dipilih untuk digabungkan.'];
@@ -560,6 +659,7 @@ class MasterIngestionBridgeService
         $driver = $localConn->getDriverName();
 
         try {
+            $localConn->beginTransaction();
             if ($driver === 'sqlite') {
                 $localConn->statement('PRAGMA foreign_keys = OFF;');
             } else {
@@ -568,30 +668,245 @@ class MasterIngestionBridgeService
 
             $targetTable = ($module === 'saldo' || $module === 'billing_status') ? 'students' : $module;
 
+            // BULK FETCH FOR BILLING_STATUS TO AVOID N+1
+            $mb_bills_by_student = [];
+            $lb_bills_by_student = [];
+            $mb_bill_types_by_id = [];
+            $lb_bill_types_by_match = [];
+            $mb_tx_details_by_bill = [];
+            $mb_txs_by_id = [];
+            $mb_saldo_histories_by_student = [];
+            
+            if ($module === 'billing_status' && !empty($selectedIds)) {
+                $chunks = array_chunk($selectedIds, 500);
+                
+                // Fetch Master Bills
+                $mBillsColl = collect();
+                foreach ($chunks as $chunk) {
+                    $q = $masterConn->table('bills')
+                        ->whereIn('student_id', $chunk)
+                        ->whereNull('deleted_at');
+                    if (!empty($academicYearId)) $q->where('academic_year_id', $academicYearId);
+                    if (!empty($billTypeId)) $q->where('bill_type_id', $billTypeId);
+                    $mBillsColl = $mBillsColl->merge($q->get());
+                }
+                $mb_bills_by_student = $mBillsColl->groupBy('student_id')->toArray();
+                
+                // Fetch Local Bills
+                $lBillsColl = collect();
+                foreach ($chunks as $chunk) {
+                    $q = $localConn->table('bills')
+                        ->whereIn('student_id', $chunk)
+                        ->whereNull('deleted_at');
+                    if (!empty($academicYearId)) $q->where('academic_year_id', $academicYearId);
+                    if (!empty($billTypeId)) $q->where('bill_type_id', $billTypeId);
+                    $lBillsColl = $lBillsColl->merge($q->get());
+                }
+                $lb_bills_by_student = $lBillsColl->groupBy('student_id')->toArray();
+
+                // Fetch Bill Types
+                $mBtIds = $mBillsColl->pluck('bill_type_id')->filter()->unique()->values()->toArray();
+                if (!empty($mBtIds)) {
+                    $mb_bill_types = $masterConn->table('bill_types')->whereIn('id', $mBtIds)->get();
+                    $mb_bill_types_by_id = $mb_bill_types->keyBy('id')->toArray();
+                    
+                    $ayIds = $mb_bill_types->pluck('academic_year_id')->filter()->unique()->values()->toArray();
+                    if (!empty($ayIds)) {
+                        $lb_bill_types = $localConn->table('bill_types')->whereIn('academic_year_id', $ayIds)->get();
+                        foreach ($lb_bill_types as $lbt) {
+                            $cleanName = str_replace(' ', '', $lbt->name);
+                            $key = $cleanName . '_' . $lbt->academic_year_id;
+                            $lb_bill_types_by_match[$key] = $lbt;
+                        }
+                    }
+                }
+                
+                // Fetch Transaction Details for PAID bills
+                $paidBillIds = $mBillsColl->where('status', 'PAID')->pluck('id')->filter()->unique()->values()->toArray();
+                if (!empty($paidBillIds)) {
+                    $tdChunks = array_chunk($paidBillIds, 500);
+                    $mTxDetailsColl = collect();
+                    foreach ($tdChunks as $tdChunk) {
+                        $mTxDetailsColl = $mTxDetailsColl->merge($masterConn->table('transaction_details')->whereIn('bill_id', $tdChunk)->get());
+                    }
+                    $mb_tx_details_by_bill = $mTxDetailsColl->groupBy('bill_id')->toArray();
+                    
+                    // Fetch Transactions
+                    $txIds = $mTxDetailsColl->pluck('transaction_id')->filter()->unique()->values()->toArray();
+                    if (!empty($txIds)) {
+                        $txChunks = array_chunk($txIds, 500);
+                        $mTxColl = collect();
+                        foreach ($txChunks as $txChunk) {
+                            $mTxColl = $mTxColl->merge($masterConn->table('transactions')->whereIn('id', $txChunk)->get());
+                        }
+                        $mb_txs_by_id = $mTxColl->keyBy('id')->toArray();
+                    }
+                }
+                
+                // Fetch Saldo Histories
+                $shColl = collect();
+                foreach ($chunks as $chunk) {
+                    $shColl = $shColl->merge($masterConn->table('saldo_histories')->whereIn('student_id', $chunk)->get());
+                }
+                $mb_saldo_histories_by_student = $shColl->groupBy('student_id')->toArray();
+            }
+
             $masterRecords = $masterConn->table($targetTable)
                 ->whereIn('id', $selectedIds)
                 ->get();
 
             foreach ($masterRecords as $mRec) {
                 if ($module === 'billing_status') {
-                    // Ingest / upsert all bills for selected student IDs
-                    $masterBills = $masterConn->table('bills')
-                        ->where('student_id', $mRec->id)
-                        ->get();
-
-                    if ($masterBills->isNotEmpty()) {
-                        foreach ($masterBills as $mBill) {
-                            $row = (array) $mBill;
-                            $rId = $row['id'];
-                            $exists = $localConn->table('bills')->where('id', $rId)->exists();
-                            if ($exists) {
-                                unset($row['id']);
-                                $localConn->table('bills')->where('id', $rId)->update($row);
-                            } else {
-                                $localConn->table('bills')->insert($row);
+                    $rawMasterBills = $mb_bills_by_student[$mRec->id] ?? [];
+                    $masterBills = [];
+                    foreach ($rawMasterBills as $b) {
+                        if (!isset($masterBills[$b->month])) {
+                            $masterBills[$b->month] = $b;
+                        } else {
+                            if ($b->status === 'PAID') {
+                                $masterBills[$b->month] = $b;
                             }
                         }
                     }
+
+                    if (!empty($masterBills)) {
+                        $syncedLocalBillIds = []; // Track bills synced to local
+
+                        foreach ($masterBills as $mBill) {
+                            $row = (array) $mBill;
+                            $targetBillTypeId = $mBill->bill_type_id;
+
+                            // Smart UUID Mapping
+                            $masterBillType = $mb_bill_types_by_id[$mBill->bill_type_id] ?? null;
+                            if ($masterBillType) {
+                                $masterCleanName = str_replace(' ', '', $masterBillType->name);
+                                $key = $masterCleanName . '_' . $masterBillType->academic_year_id;
+                                $localBillType = $lb_bill_types_by_match[$key] ?? null;
+                                if ($localBillType) {
+                                    $targetBillTypeId = $localBillType->id;
+                                }
+                            }
+                            $row['bill_type_id'] = $targetBillTypeId;
+
+                            // Injeksi manual paid_amount
+                            if (isset($row['status'])) {
+                                if ($row['status'] === 'PAID') {
+                                    $row['paid_amount'] = isset($row['amount']) ? $row['amount'] : 0;
+                                } elseif ($row['status'] === 'UNPAID') {
+                                    $row['paid_amount'] = 0;
+                                }
+                            }
+
+
+                            // Match Local Bill by student_id, mapped bill_type_id, month, year, and academic_year_id
+                            $localBill = null;
+                            $stuLocalBills = $lb_bills_by_student[$mBill->student_id] ?? [];
+                            foreach ($stuLocalBills as $slb) {
+                                if ($slb->bill_type_id === $targetBillTypeId && 
+                                    $slb->month === $mBill->month && 
+                                    $slb->academic_year_id === $mBill->academic_year_id &&
+                                    $slb->year === $mBill->year) {
+                                    $localBill = $slb;
+                                    break;
+                                }
+                            }
+
+                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, month, academic_year_id, dan year
+                            $localBill = $localConn->table('bills')
+                                ->where('student_id', $mBill->student_id)
+                                ->where('bill_type_id', $targetBillTypeId)
+                                ->where('month', $mBill->month)
+                                ->where('academic_year_id', $mBill->academic_year_id)
+                                ->where('year', $mBill->year)
+                                ->whereNull('deleted_at')
+                                ->first();
+
+                            $targetBillId = null;
+                            $skipUpdate = false;
+                            
+                            if ($localBill) {
+                                $targetBillId = $localBill->id;
+                                
+                                // BUSINESS RULE: One-Way Positive Sync.
+                                // Do not downgrade a PAID local bill to UNPAID if Master is UNPAID.
+                                if ($localBill->status === 'PAID' && $row['status'] === 'UNPAID') {
+                                    $skipUpdate = true;
+                                }
+                                
+                                if (!$skipUpdate) {
+                                    unset($row['id']);
+                                    $localConn->table('bills')->where('id', $targetBillId)->update($row);
+                                }
+                            } else {
+                                $targetBillId = $row['id'];
+                                $localConn->table('bills')->insert($row);
+                            }
+
+                            if (!$skipUpdate) {
+                                // Enforce Transactional Atomicity: Copy transactions when paid
+                                if ($mBill->status === 'PAID') {
+                                    $mDetails = $mb_tx_details_by_bill[$mBill->id] ?? [];
+                                    foreach ($mDetails as $mDetail) {
+                                        $mTx = $mb_txs_by_id[$mDetail->transaction_id] ?? null;
+                                        
+                                        if ($mTx && !$localConn->table('transactions')->where('id', $mTx->id)->exists()) {
+                                            $localConn->table('transactions')->insert((array) $mTx);
+                                            
+                                            // Also ingest saldo history if paid via SALDO
+                                            if ($mTx->payment_method_id) {
+                                                try {
+                                                    // Attempt to find by description or amount since transaction_id is missing
+                                                    $allSH = $mb_saldo_histories_by_student[$mTx->student_id] ?? [];
+                                                    $mSaldoHist = [];
+                                                    foreach ($allSH as $sh) {
+                                                        if ($sh->amount == $mTx->amount && $sh->created_at >= $mTx->created_at) {
+                                                            $mSaldoHist[] = $sh;
+                                                        }
+                                                    }
+                                                    foreach ($mSaldoHist as $sh) {
+                                                        if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
+                                                            $localConn->table('saldo_histories')->insert((array) $sh);
+                                                        }
+                                                    }
+                                                } catch (\Exception $e) {
+                                                    \Illuminate\Support\Facades\Log::warning("Could not sync saldo_histories for tx {$mTx->id}: " . $e->getMessage());
+                                                }
+                                            }
+                                        }
+                                        
+                                        $detailRow = (array) $mDetail;
+                                        $detailRow['bill_id'] = $targetBillId; // Re-map ke bill lokal
+                                        
+                                        if (!$localConn->table('transaction_details')->where('id', $detailRow['id'])->exists()) {
+                                            $localConn->table('transaction_details')->insert($detailRow);
+                                        }
+                                    }
+                                }
+
+                                // Enforce Single Source of Truth (SSoT): Rekonsiliasi akumulasi riil transaction_details ke bill
+                                $realPaidFromTx = $localConn->table('transaction_details as td')
+                                    ->join('transactions as t', 't.id', '=', 'td.transaction_id')
+                                    ->where('td.bill_id', $targetBillId)
+                                    ->whereNull('td.deleted_at')
+                                    ->whereNull('t.deleted_at')
+                                    ->where('t.status', 'PAID')
+                                    ->sum('td.amount');
+
+                                if ($realPaidFromTx > 0) {
+                                    $targetBillObj = $localConn->table('bills')->where('id', $targetBillId)->first();
+                                    $billAmount = (int) ($targetBillObj->amount ?? 0);
+                                    $syncedStatus = ($billAmount > 0 && $realPaidFromTx >= $billAmount) ? 'PAID' : 'PARTIAL';
+
+                                    $localConn->table('bills')->where('id', $targetBillId)->update([
+                                        'paid_amount' => $realPaidFromTx,
+                                        'status' => $syncedStatus,
+                                        'updated_at' => now(),
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+
                 } elseif ($module === 'saldo') {
                     // Resolve real-time active balance from Master DB's `saldo_histories`
                     $latestMasterHistory = $masterConn->table('saldo_histories')
@@ -663,6 +978,7 @@ class MasterIngestionBridgeService
                 $localConn->statement('SET FOREIGN_KEY_CHECKS=1;');
             }
             Cache::forget('audit_diagnostics_results');
+            $localConn->commit();
 
             return [
                 'status' => 'success',
@@ -670,6 +986,7 @@ class MasterIngestionBridgeService
                 'message' => "Berhasil mengintegrasikan {$syncedCount} record terverifikasi untuk modul '{$module}'.",
             ];
         } catch (\Throwable $e) {
+            $localConn->rollBack();
             if ($driver === 'sqlite') {
                 $localConn->statement('PRAGMA foreign_keys = ON;');
             } else {

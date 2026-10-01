@@ -69,7 +69,12 @@
                             <tr>
                                 <td class="text-slate-400 fw-medium" style="width: 40%">Nama Lengkap</td>
                                 <td style="width: 5%">:</td>
-                                <td class="fw-semibold text-gray-800">{{ $student->name }}</td>
+                                <td class="fw-semibold text-gray-800">
+                                    {{ $student->name }}
+                                    <span class="badge {{ $student->isAlumniSmpMa() ? 'badge-light-success' : 'badge-light-secondary text-gray-700' }} ms-2 px-2 py-1 fs-9">
+                                        {{ $student->isAlumniSmpMa() ? 'Alumni' : 'Non Alumni' }}
+                                    </span>
+                                </td>
                             </tr>
                             <tr>
                                 <td class="text-slate-400 fw-medium">Nama Panggilan</td>
@@ -215,6 +220,7 @@
                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                             <th style="width: 5%">No</th>
                             <th>Tahun Ajaran</th>
+                            <th>Kelas</th>
                             <th>Item Pembayaran</th>
                             <th>Total Tagihan</th>
                             <th>Dibayar</th>
@@ -309,6 +315,7 @@
                 columns: [
                     { data: null, render: function(d, t, r, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
                     { data: 'academic_year.name', name: 'academic_year.name' },
+                    { data: 'classroom', name: 'classroom' },
                     { data: 'name', name: 'name' },
                     { data: 'total', name: 'total' },
                     { data: 'total_paid', name: 'total_paid' },

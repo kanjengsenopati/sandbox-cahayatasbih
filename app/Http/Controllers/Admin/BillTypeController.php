@@ -29,7 +29,8 @@ class BillTypeController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = BillType::with('billItem', 'academicYear', 'billTypeBank')
+            session()->save();
+            $data = BillType::with('billItem', 'academicYear', 'billTypeBank.bank')
                 ->when(request()->academic_year_id, function ($query) {
                     $query->where('academic_year_id', request()->academic_year_id);
                 })

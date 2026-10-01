@@ -52,9 +52,45 @@
         outline: none;
         box-shadow: none;
     }
-    #myTabContent {
-        position: relative;
-        z-index: 1;
+    #myTabContent,
+    #penyesuaian-saldo,
+    #penyesuaian-saldo .card-header,
+    #penyesuaian-saldo .card-title {
+        overflow: visible !important;
+    }
+    #penyesuaian_classroom_dropdown_container {
+        position: relative !important;
+        z-index: 1050 !important;
+    }
+    #penyesuaian_classroom_btn {
+        width: 250px !important;
+        min-width: 250px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        background-color: #f5f8fa !important;
+        border: 1px solid #f5f8fa !important;
+        border-radius: 20px !important;
+        color: #5e6278 !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    #penyesuaian_classroom_btn:hover {
+        background-color: #eef3f7 !important;
+        border-color: #eef3f7 !important;
+        color: #181c32 !important;
+    }
+    #penyesuaian_classroom_menu:not(.show) {
+        display: none !important;
+    }
+    #penyesuaian_classroom_menu.show {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 </style>
 @endpush
@@ -188,12 +224,15 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                            <select id="topup-classroom-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
-                                                <option value="">Semua Kelas</option>
-                                                @foreach($classrooms as $cls)
-                                                    <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
-                                                @endforeach
-                                            </select>
+                                            <div class="dropdown" id="topup_classroom_dropdown_container" style="position: relative !important;">
+                                                <input type="hidden" id="topup-classroom-id" value="">
+                                                <button class="btn btn-light form-select-solid form-select-sm rounded-pill fs-7 d-flex justify-content-between align-items-center bg-white border" type="button" id="topup_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer; padding: 0 12px;">
+                                                    <span id="topup_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                    <i class="fas fa-chevron-down fs-9 text-gray-500 topup-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                                </button>
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="topup_classroom_btn" id="topup_classroom_mega_menu">
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
@@ -244,7 +283,7 @@
                                         <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari santri (min. 3 huruf)..." />
                                     </div>
             
-                                    <div class="dropdown" style="z-index: 105;">
+                                    <div class="dropdown" id="penyesuaian_classroom_dropdown_container" style="position: relative !important; z-index: 1050;">
                                         @php
                                             $groupedClasses = [
                                                 'Kelas 7' => [],
@@ -269,24 +308,32 @@
                                                 elseif (str_starts_with($name, '12')) $groupedClasses['Kelas 12'][] = $cls;
                                                 else $groupedClasses['Pondok'][] = $cls;
                                             }
+                                            $activeGroups = array_filter($groupedClasses, fn($c) => count($c) > 0);
+                                            $activeGroupCount = count($activeGroups);
+                                            $penyesuaianColClass = $activeGroupCount === 1 ? 'col-12' : ($activeGroupCount === 2 ? 'col-6' : ($activeGroupCount === 3 ? 'col-4' : 'col-3'));
+                                            $penyesuaianMenuWidth = $activeGroupCount === 1 ? '260px' : ($activeGroupCount === 2 ? '380px' : ($activeGroupCount === 3 ? '500px' : '640px'));
                                         @endphp
-                                        <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="penyesuaian_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                            Semua Kelas
-                                        </button>
                                         <input type="hidden" id="filter-classroom" value="">
-                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; border: 1px solid #e2e8f0; margin-top: 5px; z-index: 9999;" aria-labelledby="penyesuaian_classroom_btn">
+                                        <button class="btn btn-light fs-7" type="button" id="penyesuaian_classroom_btn" aria-expanded="false">
+                                            <span id="penyesuaian_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                            <i class="fas fa-chevron-down fs-8 text-gray-500 penyesuaian-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                        </button>
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" id="penyesuaian_classroom_menu" style="min-width: 260px; width: {{ $penyesuaianMenuWidth }}; max-width: calc(100vw - 32px); max-height: 460px; overflow-y: auto; border: 1px solid #e2e8f0; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
                                                 <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
-                                                <button class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
+                                                <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="resetPenyesuaianClassFilter()">Reset Filter</button>
                                             </div>
-                                            <div class="row flex-nowrap">
+                                            <div class="row g-3">
                                                 @foreach($groupedClasses as $groupName => $classes)
                                                     @if(count($classes) > 0)
-                                                    <div class="col" style="min-width: 100px;">
-                                                        <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-7">{{ $groupName }}</div>
+                                                    <div class="{{ $penyesuaianColClass }}">
+                                                        <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-8 text-uppercase">{{ $groupName }}</div>
                                                         <div class="d-flex flex-column gap-1">
                                                             @foreach($classes as $cls)
-                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium py-1 d-block w-100" style="position: relative; z-index: 10000;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
+                                                            <button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 penyesuaian-class-item border border-gray-200 mb-1 fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">
+                                                                <span class="text-truncate" style="pointer-events: none;">{{ $cls->name }}</span>
+                                                                <i class="fas fa-check text-white fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                                                            </button>
                                                             @endforeach
                                                         </div>
                                                     </div>
@@ -377,20 +424,20 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                            <div class="dropdown">
-                                                <button class="btn btn-light form-select-sm dropdown-toggle text-start rounded-pill" style="width: 140px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                                    Semua
-                                                </button>
+                                            <div class="dropdown" id="history_classroom_dropdown_container" style="position: relative !important;">
                                                 <input type="hidden" id="saldo-history-classroom-id" value="">
-                                                <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
-                                                    <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+                                                <button class="btn btn-light form-select-solid form-select-sm rounded-pill fs-7 d-flex justify-content-between align-items-center bg-white border" type="button" id="history_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-width: 140px; height: 32px; cursor: pointer; padding: 0 12px;">
+                                                    <span id="history_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                                    <i class="fas fa-chevron-down fs-9 text-gray-500 history-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                                </button>
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" style="min-width: 260px; width: 500px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;" aria-labelledby="history_classroom_btn" id="history_classroom_mega_menu">
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
                                             <div class="position-relative">
-                                                <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 160px;">
+                                                <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 200px;" autocomplete="off">
                                                 <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-gray-400 fs-8"></i>
                                             </div>
                                         </div>
@@ -489,7 +536,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-6 bg-white">
-                <img id="imagePreviewSrc" src="" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
+                <img id="imagePreviewSrc" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221%22 height=%221%22%3E%3C/svg%3E" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 200%22%3E%3Crect width=%22400%22 height=%22200%22 fill=%22%23f1f5f9%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 font-weight=%22bold%22 fill=%22%2394a3b8%22%3EBukti Pembayaran Tidak Ditemukan%3C/text%3E%3C/svg%3E';" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
             </div>
         </div>
     </div>
@@ -851,6 +898,104 @@
     // MAIN DOCUMENT READY EXECUTION
     $(document).ready(function() {
         // ==========================================
+        // CLASSROOM MEGA DROPDOWN HELPERS
+        // ==========================================
+        const allHistoryClassrooms = @json($classrooms);
+
+        function renderDynamicClassroomMenu(menuId, schoolId, itemClass, currentSelectedId) {
+            const container = $(menuId);
+            container.empty();
+
+            const filteredClasses = schoolId 
+                ? allHistoryClassrooms.filter(c => c.school_id == schoolId)
+                : allHistoryClassrooms;
+
+            if (filteredClasses.length === 0) {
+                container.html('<div class="text-muted fs-7 mb-2 p-2">Tidak ada kelas ditemukan</div>');
+                return;
+            }
+
+            const groups = {};
+            filteredClasses.forEach(c => {
+                let match = c.name.match(/^(\d+)/);
+                let key = match ? match[1] : 'Lainnya';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(c);
+            });
+
+            const sortedKeys = Object.keys(groups).sort((a,b) => {
+                let numA = parseInt(a);
+                let numB = parseInt(b);
+                if (isNaN(numA)) return 1;
+                if (isNaN(numB)) return -1;
+                return numA - numB;
+            });
+
+            const colCount = sortedKeys.length;
+            let colClass = 'col-12';
+            let menuWidth = '260px';
+            if (colCount === 2) {
+                colClass = 'col-6';
+                menuWidth = '380px';
+            } else if (colCount === 3) {
+                colClass = 'col-4';
+                menuWidth = '500px';
+            } else if (colCount >= 4) {
+                colClass = 'col-3';
+                menuWidth = '620px';
+            }
+            container.css({ 'width': menuWidth });
+
+            container.append($(`<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 ${itemClass} text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>`));
+
+            const row = $('<div class="row g-2"></div>');
+            sortedKeys.forEach(key => {
+                const col = $(`<div class="${colClass}"></div>`);
+                const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">${headerTitle}</h6>`);
+                const list = $('<div class="d-flex flex-column gap-1"></div>');
+                groups[key].forEach(c => {
+                    const isSelected = currentSelectedId && currentSelectedId == c.id;
+                    const activeClass = isSelected ? 'active bg-primary text-white' : 'btn-light text-slate-700';
+                    const checkClass = isSelected ? '' : 'd-none';
+                    list.append(`<button type="button" class="btn btn-sm ${activeClass} btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 ${itemClass} fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 32px;">
+                        <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                        <i class="fas fa-check text-white fs-9 ${checkClass} class-check-icon" style="pointer-events: none;"></i>
+                    </button>`);
+                });
+                col.append(list);
+                row.append(col);
+            });
+
+            container.append(row);
+        }
+
+        // Initialize classroom mega menus
+        renderDynamicClassroomMenu('#topup_classroom_mega_menu', '', 'topup-classroom-item', '');
+        renderDynamicClassroomMenu('#archive_classroom_mega_menu', '', 'archive-classroom-item', '');
+        renderDynamicClassroomMenu('#history_classroom_mega_menu', '', 'history-classroom-item', '');
+
+        // Positioning & arrow rotation for Bootstrap 5 dropdown containers
+        $('#topup_classroom_dropdown_container, #archive_classroom_dropdown_container, #history_classroom_dropdown_container').on('show.bs.dropdown', function () {
+            const $container = $(this);
+            const $btn = $container.find('button[data-bs-toggle="dropdown"]');
+            const $menu = $container.find('.dropdown-menu');
+            $btn.find('i.fa-chevron-down').css('transform', 'rotate(180deg)');
+            const btnOffset = $btn.offset();
+            const menuWidth = $menu.outerWidth() || 500;
+            const winWidth = $(window).width();
+            if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                $menu.css({ 'left': 'auto', 'right': '0' });
+            } else {
+                $menu.css({ 'left': '0', 'right': 'auto' });
+            }
+        });
+
+        $('#topup_classroom_dropdown_container, #archive_classroom_dropdown_container, #history_classroom_dropdown_container').on('hide.bs.dropdown', function () {
+            $(this).find('button[data-bs-toggle="dropdown"] i.fa-chevron-down').css('transform', 'rotate(0deg)');
+        });
+
+        // ==========================================
         // 1. TOP UP SALDO DATATABLE
         // ==========================================
         var topupTable = $('#table-transfer').DataTable({
@@ -943,21 +1088,38 @@
             ]
         });
 
-        $('#topup-school-id').on('change', function() {
-            var schoolId = $(this).val();
-            $('#topup-classroom-id option').each(function() {
-                var clsSchool = $(this).data('school');
-                if (!schoolId || !clsSchool || clsSchool == schoolId) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
-            $('#topup-classroom-id').val('');
+        $(document).on('click', '.topup-classroom-item', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            $('#topup-classroom-id').val(id);
+            if (id) {
+                $('#topup_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#topup_classroom_btn_text').text('Semua Kelas');
+            }
+
+            $('#topup_classroom_mega_menu .class-check-icon').addClass('d-none');
+            $('#topup_classroom_mega_menu .topup-classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+            if (id) {
+                $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+                $(this).find('.class-check-icon').removeClass('d-none');
+            }
+
+            const btnEl = document.getElementById('topup_classroom_btn');
+            if (btnEl) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(btnEl);
+                if (bsDropdown) bsDropdown.hide();
+            }
             topupTable.ajax.reload();
         });
 
-        $('#topup-classroom-id').on('change', function() {
+        $('#topup-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#topup-classroom-id').val('');
+            $('#topup_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#topup_classroom_mega_menu', schoolId, 'topup-classroom-item', '');
             topupTable.ajax.reload();
         });
 
@@ -967,7 +1129,9 @@
 
         $('#topup-btn-reset').on('click', function() {
             $('#topup-school-id').val('');
-            $('#topup-classroom-id').val('').find('option').show();
+            $('#topup-classroom-id').val('');
+            $('#topup_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#topup_classroom_mega_menu', '', 'topup-classroom-item', '');
             $('#topup-search-name').val('');
             topupTable.ajax.reload();
         });
@@ -1164,13 +1328,80 @@
                 adjustTable.ajax.reload();
             });
 
-            $(document).on('click', '.penyesuaian-class-item', function() {
+            window.resetPenyesuaianClassFilter = function() {
+                $('#filter-classroom').val('').trigger('change');
+                $('#penyesuaian_classroom_btn_text').text('Semua Kelas');
+                $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
+                $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
+                $('#penyesuaian_classroom_menu').removeClass('show');
+                $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
+            };
+
+            // Full hitbox toggle handler for classroom dropdown button
+            $(document).on('click', '#penyesuaian_classroom_btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var $btn = $(this);
+                var $menu = $('#penyesuaian_classroom_menu');
+                var isShown = $menu.hasClass('show');
+
+                if (isShown) {
+                    $menu.removeClass('show');
+                    $btn.removeClass('show').attr('aria-expanded', 'false');
+                    $btn.find('.penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
+                } else {
+                    // Close any other open dropdowns first
+                    $('.dropdown-menu.show').not($menu).removeClass('show');
+                    $('.dropdown-toggle[aria-expanded="true"]').not($btn).removeClass('show').attr('aria-expanded', 'false');
+                    
+                    // Smart positioning: check if opening right overflows window
+                    const btnOffset = $btn.offset();
+                    const menuWidth = $menu.outerWidth() || 500;
+                    const winWidth = $(window).width();
+                    if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                        $menu.css({ 'left': 'auto', 'right': '0' });
+                    } else {
+                        $menu.css({ 'left': '0', 'right': 'auto' });
+                    }
+
+                    $menu.addClass('show');
+                    $btn.addClass('show').attr('aria-expanded', 'true');
+                    $btn.find('.penyesuaian-classroom-arrow').css('transform', 'rotate(180deg)');
+                }
+            });
+
+            // Prevent clicks inside the dropdown menu from closing it prematurely
+            $(document).on('click', '#penyesuaian_classroom_menu', function(e) {
+                e.stopPropagation();
+            });
+
+            // Close when clicking anywhere outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#penyesuaian_classroom_dropdown_container').length) {
+                    $('#penyesuaian_classroom_menu').removeClass('show');
+                    $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                    $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
+                }
+            });
+
+            $(document).on('click', '.penyesuaian-class-item', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 var id = $(this).data('id');
                 var name = $(this).data('name');
                 $('#filter-classroom').val(id).trigger('change');
-                $('#penyesuaian_classroom_btn').text(name);
-                var dropdownBtn = bootstrap.Dropdown.getInstance(document.getElementById('penyesuaian_classroom_btn')) || new bootstrap.Dropdown(document.getElementById('penyesuaian_classroom_btn'));
-                dropdownBtn.hide();
+                $('#penyesuaian_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+                
+                $('.penyesuaian-class-item').removeClass('active bg-primary text-white border-primary').addClass('btn-light text-slate-700 border-gray-200');
+                $('.penyesuaian-class-item .class-check-icon').addClass('d-none');
+                
+                $(this).addClass('active bg-primary text-white border-primary').removeClass('btn-light text-slate-700 border-gray-200');
+                $(this).find('.class-check-icon').removeClass('d-none');
+                
+                $('#penyesuaian_classroom_menu').removeClass('show');
+                $('#penyesuaian_classroom_btn').removeClass('show').attr('aria-expanded', 'false');
+                $('#penyesuaian_classroom_btn .penyesuaian-classroom-arrow').css('transform', 'rotate(0deg)');
             });
 
             var searchTimer;
@@ -1308,21 +1539,38 @@
             ]
         });
 
-        $('#archive-school-id').on('change', function() {
-            var schoolId = $(this).val();
-            $('#archive-classroom-id option').each(function() {
-                var clsSchool = $(this).data('school');
-                if (!schoolId || !clsSchool || clsSchool == schoolId) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
-            $('#archive-classroom-id').val('');
+        $(document).on('click', '.archive-classroom-item', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            $('#archive-classroom-id').val(id);
+            if (id) {
+                $('#archive_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#archive_classroom_btn_text').text('Semua Kelas');
+            }
+
+            $('#archive_classroom_mega_menu .class-check-icon').addClass('d-none');
+            $('#archive_classroom_mega_menu .archive-classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+            if (id) {
+                $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+                $(this).find('.class-check-icon').removeClass('d-none');
+            }
+
+            const btnEl = document.getElementById('archive_classroom_btn');
+            if (btnEl) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(btnEl);
+                if (bsDropdown) bsDropdown.hide();
+            }
             archiveTable.ajax.reload();
         });
 
-        $('#archive-classroom-id').on('change', function() {
+        $('#archive-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#archive-classroom-id').val('');
+            $('#archive_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#archive_classroom_mega_menu', schoolId, 'archive-classroom-item', '');
             archiveTable.ajax.reload();
         });
 
@@ -1376,7 +1624,9 @@
 
         $('#archive-btn-reset').on('click', function() {
             $('#archive-school-id').val('');
-            $('#archive-classroom-id').val('').find('option').show();
+            $('#archive-classroom-id').val('');
+            $('#archive_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#archive_classroom_mega_menu', '', 'archive-classroom-item', '');
             $('#archive-search-name').val('');
             var dates = getPresetDates('week');
             $('#archive-start-date').val(dates.start);
@@ -1579,10 +1829,46 @@
             historyTable.ajax.reload();
         });
 
+        $(document).on('click', '.history-classroom-item', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            $('#saldo-history-classroom-id').val(id);
+            if (id) {
+                $('#history_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+            } else {
+                $('#history_classroom_btn_text').text('Semua Kelas');
+            }
+
+            $('#history_classroom_mega_menu .class-check-icon').addClass('d-none');
+            $('#history_classroom_mega_menu .history-classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+            if (id) {
+                $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+                $(this).find('.class-check-icon').removeClass('d-none');
+            }
+
+            const btnEl = document.getElementById('history_classroom_btn');
+            if (btnEl) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(btnEl);
+                if (bsDropdown) bsDropdown.hide();
+            }
+            historyTable.ajax.reload();
+        });
+
+        $('#saldo-history-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#saldo-history-classroom-id').val('');
+            $('#history_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#history_classroom_mega_menu', schoolId, 'history-classroom-item', '');
+            historyTable.ajax.reload();
+        });
+
         $('#saldo-history-btn-reset').on('click', function() {
             $('#saldo-history-school-id').val('');
             $('#saldo-history-classroom-id').val('');
-            $('#saldo_history_classroom_btn').text('Semua');
+            $('#history_classroom_btn_text').text('Semua Kelas');
+            renderDynamicClassroomMenu('#history_classroom_mega_menu', '', 'history-classroom-item', '');
             $('#saldo-history-search-name').val('');
             var dates = getPresetDates('week');
             $('#saldo-history-start-date').val(dates.start);
@@ -1590,62 +1876,6 @@
             $('.history-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
             $('.history-period-btn[data-period="week"]').removeClass('btn-light-primary').addClass('btn-primary active');
             historyTable.ajax.reload();
-        });
-        
-        const allHistoryClassrooms = @json($classrooms);
-
-        function renderHistoryClassroomMegaMenu(schoolId) {
-            const container = $('#saldo_history_classroom_mega_menu');
-            container.empty();
-
-            if (!schoolId) {
-                container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
-                return;
-            }
-
-            const filteredClasses = allHistoryClassrooms.filter(c => c.school_id == schoolId);
-            if (filteredClasses.length === 0) {
-                container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
-                return;
-            }
-
-            const groups = {};
-            filteredClasses.forEach(c => {
-                let match = c.name.match(/^(\d+)/);
-                let key = match ? match[1] : 'Lainnya';
-                if (!groups[key]) groups[key] = [];
-                groups[key].push(c);
-            });
-
-            const row = $('<div class="row g-2"></div>');
-            
-            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 history-classroom-item" data-id="" data-name="Semua">Semua</a>'));
-
-            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
-                const col = $('<div class="col-4"></div>');
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
-                groups[key].forEach(c => {
-                    col.append(`<a class="dropdown-item history-classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
-                });
-                row.append(col);
-            });
-
-            container.append(row);
-        }
-
-        $('#saldo-history-school-id').on('change', function() {
-            $('#saldo-history-classroom-id').val('');
-            $('#saldo_history_classroom_btn').text('Semua');
-            renderHistoryClassroomMegaMenu($(this).val());
-        });
-
-        $(document).on('click', '.history-classroom-item', function(e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            const name = $(this).data('name');
-            $('#saldo-history-classroom-id').val(id);
-            $('#saldo_history_classroom_btn').text(name);
-            $('#saldo_history_classroom_btn').dropdown('toggle');
         });
 
         $('#saldo-history-btn-recalculate').on('click', function() {
@@ -1684,8 +1914,9 @@
             });
         });
 
-        $('#saldo-history-search-name').on('keyup', function(e) {
+        $('#saldo-history-search-name').on('keydown', function(e) {
             if (e.keyCode === 13) {
+                e.preventDefault();
                 historyTable.ajax.reload();
             }
         });
