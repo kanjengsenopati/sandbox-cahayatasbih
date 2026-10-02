@@ -141,33 +141,39 @@ class TransactionService
         } elseif ($transaction->type == Transaction::TYPE_SALDO) {
             // check apakah transaction detail sudah ada
             if ($transaction->transactionDetails->count() > 0) {
+                $hasPendingSaldoHistory = false;
                 foreach ($transaction->transactionDetails as $detail) {
-                    $detail->saldoHistory->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS
-                    ]);
+                    if ($detail->saldoHistory && $detail->saldoHistory->status === \App\Models\SaldoHistory::STATUS_PENDING) {
+                        $detail->saldoHistory->update([
+                            'status' => \App\Models\SaldoHistory::STATUS_SUCCESS
+                        ]);
+                        $hasPendingSaldoHistory = true;
+                    }
                 }
-                $transaction->student->increment('saldo', $transaction->pay_amount);
+                
+                // Only increment saldo here if we approved a pending topup (e.g. from Wali Transfer)
+                // If it's an Admin TopUp (cash), the SaldoHistory doesn't exist yet and increment is handled manually in SaldoHistoryController
+                if ($hasPendingSaldoHistory) {
+                    $transaction->student->increment('saldo', $transaction->pay_amount);
+                }
             }
         } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-            $transaction->student->update([
-                'saving' => $transaction->student->saving + $transaction->pay_amount
-            ]);
+            $hasPendingSavingHistory = false;
             // check apakah transaction detail sudah ada
             if ($transaction->transactionDetails->count() > 0) {
                 foreach ($transaction->transactionDetails as $detail) {
-                    $detail->savingHistory->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS
-                    ]);
+                    if ($detail->savingHistory && $detail->savingHistory->status === \App\Models\SavingHistory::STATUS_PENDING) {
+                        $detail->savingHistory->update([
+                            'status' => \App\Models\SavingHistory::STATUS_SUCCESS
+                        ]);
+                        $hasPendingSavingHistory = true;
+                    }
                 }
-            } else {
-                // create saving history
-                $savingHistory = SaldoHistory::create([
-                    'student_id' => $transaction->student->id,
-                    'amount' => $transaction->pay_amount,
-                    'type' => SaldoHistory::TYPE_IN,
-                    'description' => 'Top Up Tabungan Sebesar Rp.' . number_format($transaction->pay_amount, 0, ',', '.'),
-                    'status' => SaldoHistory::STATUS_SUCCESS,
-                    'usage' => SaldoHistory::USAGE_TOPUP
+            }
+            
+            if ($hasPendingSavingHistory) {
+                $transaction->student->update([
+                    'saving' => $transaction->student->saving + $transaction->pay_amount
                 ]);
             }
         }
