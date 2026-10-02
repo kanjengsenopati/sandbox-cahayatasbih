@@ -13,18 +13,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Temukan semua transaksi TYPE_SALDO dan TYPE_SAVING
-        $transactions = DB::table('transactions')
-            ->whereIn('type', [Transaction::TYPE_SALDO, Transaction::TYPE_SAVING])
-            ->pluck('id');
-
-        // Hapus TransactionDetail yang saldo_history_id nya NULL tapi punya kembaran
-        // Hapus SEMUA transaction_details yang saldo_history_id nya NULL khusus transaksi ini,
-        // KARENA transaksi saldo/saving PASTI di-link dengan saldo_history_id jika sudah komplit.
-        // Orphan detail ini adalah sisa bug pembuatan ganda.
+        // Gunakan subquery di level database untuk menghindari limit memori PHP 
+        // dan limit placeholder (65,535) MySQL ketika data transaksi sangat banyak.
         DB::table('transaction_details')
-            ->whereIn('transaction_id', $transactions)
             ->whereNull('saldo_history_id')
+            ->whereIn('transaction_id', function ($query) {
+                $query->select('id')
+                      ->from('transactions')
+                      ->whereIn('type', [Transaction::TYPE_SALDO, Transaction::TYPE_SAVING]);
+            })
             ->delete();
     }
 
