@@ -499,11 +499,23 @@ class SaldoHistoryController extends Controller
         ]);
 
         // Create transaction detail
-        TransactionDetail::create([
-            'transaction_id' => $transaction->id,
-            'saldo_history_id' => $saldoHistory->id,
-            'amount' => $transaction->pay_amount,
-        ]);
+        // Update transaction detail created by TransactionService
+        $transactionDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)
+            ->whereNull('saldo_history_id')
+            ->first();
+
+        if ($transactionDetail) {
+            $transactionDetail->update([
+                'saldo_history_id' => $saldoHistory->id,
+            ]);
+        } else {
+            // Fallback
+            TransactionDetail::create([
+                'transaction_id' => $transaction->id,
+                'saldo_history_id' => $saldoHistory->id,
+                'amount' => $transaction->pay_amount,
+            ]);
+        }
     }
 
     private function sendNotifications($student, $saldoHistory)
@@ -914,11 +926,21 @@ class SaldoHistoryController extends Controller
                         'balance_after' => 0,
                     ]);
 
-                    TransactionDetail::create([
-                        'transaction_id' => $transaction->id,
-                        'saldo_history_id' => $saldoHistory->id,
-                        'amount' => $adjustAmount,
-                    ]);
+                    $transactionDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)
+                        ->whereNull('saldo_history_id')
+                        ->first();
+
+                    if ($transactionDetail) {
+                        $transactionDetail->update([
+                            'saldo_history_id' => $saldoHistory->id,
+                        ]);
+                    } else {
+                        TransactionDetail::create([
+                            'transaction_id' => $transaction->id,
+                            'saldo_history_id' => $saldoHistory->id,
+                            'amount' => $adjustAmount,
+                        ]);
+                    }
 
                     $resetCount++;
                     $updatedStudents[] = [
