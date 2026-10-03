@@ -100,11 +100,22 @@ class WaliDashboardController extends Controller
         ]);
 
         // Link transaction to saldo history
-        \App\Models\TransactionDetail::create([
-            'transaction_id' => $transaction->id,
-            'saldo_history_id' => $saldoHistory->id,
-            'amount' => $transaction->pay_amount,
-        ]);
+        // Update transaction detail created by TransactionService
+        $transactionDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)
+            ->whereNull('saldo_history_id')
+            ->first();
+
+        if ($transactionDetail) {
+            $transactionDetail->update([
+                'saldo_history_id' => $saldoHistory->id,
+            ]);
+        } else {
+            \App\Models\TransactionDetail::create([
+                'transaction_id' => $transaction->id,
+                'saldo_history_id' => $saldoHistory->id,
+                'amount' => $transaction->pay_amount,
+            ]);
+        }
 
         return redirect()->route('wali.history')->with('success', 'Permintaan Top Up berhasil dibuat. Silakan selesaikan pembayaran.');
     }
