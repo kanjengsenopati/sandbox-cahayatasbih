@@ -36,13 +36,25 @@ class MigrationReceiverController extends Controller
             ], 422);
         }
 
+        $classroomName = $request->input('classroom_name');
+        $batchTitle = $request->input('batch_title') ?: ($classroomName ? "Kelas {$classroomName}" : 'Semua Kelas');
+
         try {
-            return DB::transaction(function () use ($request, $studentsData, $token) {
-                // Batalkan batch pending sebelumnya jika ada agar tidak menumpuk
-                SaldoMigrationBatch::where('status', 'PENDING')->update([
-                    'status' => 'SUPERSEDED',
-                    'notes' => 'Digantikan oleh pengiriman batch baru pada ' . now()->toDateTimeString(),
-                ]);
+            return DB::transaction(function () use ($request, $studentsData, $token, $classroomName, $batchTitle) {
+                // Batalkan batch pending sebelumnya hanya untuk kelas yang sama jika ada
+                if ($classroomName) {
+                    SaldoMigrationBatch::where('status', 'PENDING')
+                        ->where('notes', 'like', "%{$classroomName}%")
+                        ->update([
+                            'status' => 'SUPERSEDED',
+                            'notes' => "Digantikan oleh pengiriman ulang {$batchTitle} pada " . now()->toDateTimeString(),
+                        ]);
+                } else {
+                    SaldoMigrationBatch::where('status', 'PENDING')->update([
+                        'status' => 'SUPERSEDED',
+                        'notes' => 'Digantikan oleh pengiriman batch baru pada ' . now()->toDateTimeString(),
+                    ]);
+                }
 
                 $batch = SaldoMigrationBatch::create([
                     'migration_token' => $token,
@@ -52,6 +64,7 @@ class MigrationReceiverController extends Controller
                     'total_saldo' => (int) $request->input('total_saldo', 0),
                     'total_saving' => (int) $request->input('total_saving', 0),
                     'status' => 'PENDING',
+                    'notes' => $batchTitle,
                 ]);
 
                 // Ambil data siswa lokal untuk komparasi cepat

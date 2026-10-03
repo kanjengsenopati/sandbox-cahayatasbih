@@ -30,14 +30,20 @@ class SaldoMigrationReviewController extends Controller
     /**
      * Halaman review konfirmasi migrasi saldo santri dari aplikasi lama.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $pendingBatch = SaldoMigrationBatch::where('status', 'PENDING')->latest()->first();
-        $latestBatch = $pendingBatch ?: SaldoMigrationBatch::latest()->first();
+        $pendingBatches = SaldoMigrationBatch::where('status', 'PENDING')->latest()->get();
 
-        $historyBatches = SaldoMigrationBatch::where('id', '!=', $latestBatch?->id)
+        $selectedBatchId = $request->query('batch_id');
+        if ($selectedBatchId) {
+            $latestBatch = SaldoMigrationBatch::find($selectedBatchId);
+        } else {
+            $latestBatch = $pendingBatches->first() ?: SaldoMigrationBatch::latest()->first();
+        }
+
+        $historyBatches = SaldoMigrationBatch::where('status', '!=', 'PENDING')
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get();
 
         $summary = null;
@@ -47,6 +53,8 @@ class SaldoMigrationReviewController extends Controller
             $totalDiff = $totalOldSaldo - $totalLocalSaldo;
 
             $summary = [
+                'batch_id' => $latestBatch->id,
+                'batch_title' => $latestBatch->notes ?: 'Batch Migrasi',
                 'total_students' => $latestBatch->total_students,
                 'total_old_saldo' => $totalOldSaldo,
                 'total_local_saldo' => $totalLocalSaldo,
@@ -57,7 +65,7 @@ class SaldoMigrationReviewController extends Controller
             ];
         }
 
-        return view('admins.migration-saldo.index', compact('latestBatch', 'historyBatches', 'summary'));
+        return view('admins.migration-saldo.index', compact('latestBatch', 'pendingBatches', 'historyBatches', 'summary'));
     }
 
     /**

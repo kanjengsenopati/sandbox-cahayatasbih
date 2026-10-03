@@ -16,7 +16,7 @@
             <div class="d-flex align-items-center gap-2">
                 @if ($latestBatch && $latestBatch->status === 'PENDING')
                 <form action="{{ route('admin.migration-saldo.reject', $latestBatch->id) }}" method="POST" class="d-inline"
-                    onsubmit="return confirm('Apakah Anda yakin ingin menolak / membatalkan paket migrasi ini?');">
+                    onsubmit="return confirm('Apakah Anda yakin ingin menolak / membatalkan paket migrasi {{ $latestBatch->notes ?: '' }} ini?');">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-light-danger fw-bolder">
                         <i class="fas fa-times me-1"></i> Tolak / Batalkan
@@ -24,10 +24,10 @@
                 </form>
 
                 <form action="{{ route('admin.migration-saldo.apply', $latestBatch->id) }}" method="POST" class="d-inline"
-                    onsubmit="return confirm('PERHATIAN: Saldo seluruh santri di Aplikasi Baru akan diperbarui dan disamakan 100% dengan saldo Aplikasi Lama.\n\nTotal Saldo: Rp {{ number_format($summary['total_old_saldo'] ?? 0, 0, ',', '.') }}\n\nLanjutkan terapkan saldo?');">
+                    onsubmit="return confirm('PERHATIAN: Saldo santri {{ $latestBatch->notes ?: '' }} di Aplikasi Baru akan diperbarui dan disamakan 100% dengan saldo Aplikasi Lama.\n\nTotal Saldo: Rp {{ number_format($summary['total_old_saldo'] ?? 0, 0, ',', '.') }}\n\nLanjutkan terapkan saldo?');">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-success fw-bolder">
-                        <i class="fas fa-check-circle me-1"></i> Terima & Terapkan Saldo
+                        <i class="fas fa-check-circle me-1"></i> Terima & Terapkan Saldo ({{ $latestBatch->notes ?: 'Batch' }})
                     </button>
                 </form>
                 @endif
@@ -70,12 +70,34 @@
             </div>
             @endif
 
+            @if (!empty($pendingBatches) && $pendingBatches->count() > 1)
+            <!--begin::Selector Pending Batches-->
+            <div class="card mb-6 border-0 bg-light-primary p-4 rounded">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="fw-bold text-gray-800 me-2">
+                        <i class="fas fa-layer-group text-primary me-1"></i>
+                        Daftar Paket Kelas Menunggu Konfirmasi ({{ $pendingBatches->count() }} Paket):
+                    </span>
+                    @foreach ($pendingBatches as $pb)
+                        <a href="{{ route('admin.migration-saldo.index', ['batch_id' => $pb->id]) }}" 
+                           class="btn btn-sm {{ $latestBatch && $latestBatch->id === $pb->id ? 'btn-primary shadow-sm' : 'btn-white text-gray-700' }} rounded-pill">
+                            <strong>{{ $pb->notes ?: 'Batch' }}</strong> ({{ $pb->total_students }} santri - Rp {{ number_format($pb->total_saldo, 0, ',', '.') }})
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+            <!--end::Selector Pending Batches-->
+            @endif
+
             @if ($latestBatch && $latestBatch->status === 'PENDING')
                 <!--begin::Banner Status Pending-->
                 <div class="alert alert-primary d-flex align-items-center p-5 mb-6 rounded border border-primary border-dashed">
                     <i class="fas fa-bell fs-2hx text-primary me-4"></i>
                     <div class="d-flex flex-column flex-grow-1">
-                        <h4 class="mb-1 text-primary">Paket Migrasi Saldo Masuk Menunggu Persetujuan!</h4>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h4 class="mb-0 text-primary">Paket Migrasi Saldo Menunggu Persetujuan!</h4>
+                            <span class="badge badge-light-primary fs-7 fw-bolder">{{ $latestBatch->notes ?: 'Semua Kelas' }}</span>
+                        </div>
                         <span class="fs-7">
                             Data dikirim dari Aplikasi Lama oleh <strong>{{ $latestBatch->sent_by }}</strong> pada 
                             <strong>{{ $latestBatch->sent_at ? $latestBatch->sent_at->translatedFormat('d F Y H:i:s') : '-' }}</strong>.
