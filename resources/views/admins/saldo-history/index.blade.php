@@ -933,27 +933,27 @@
 
             const colCount = sortedKeys.length;
             let colClass = 'col-12';
-            let menuWidth = '260px';
+            let menuWidth = '150px';
             if (colCount === 2) {
                 colClass = 'col-6';
-                menuWidth = '380px';
+                menuWidth = '230px';
             } else if (colCount === 3) {
                 colClass = 'col-4';
-                menuWidth = '500px';
+                menuWidth = '310px';
             } else if (colCount >= 4) {
                 colClass = 'col-3';
-                menuWidth = '620px';
+                menuWidth = '400px';
             }
-            container.css({ 'width': menuWidth });
+            container.css({ 'width': menuWidth, 'min-width': menuWidth, 'padding': '10px' });
 
             container.append($(`<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 ${itemClass} text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>`));
 
-            const row = $('<div class="row g-2"></div>');
+            const row = $('<div class="row g-1"></div>');
             sortedKeys.forEach(key => {
                 const col = $(`<div class="${colClass}"></div>`);
                 const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
                 col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-8 border-bottom pb-1">${headerTitle}</h6>`);
-                const list = $('<div class="d-flex flex-column gap-1"></div>');
+                const list = $('<div class="d-flex flex-column" style="gap: 3px;"></div>');
                 groups[key].forEach(c => {
                     const isSelected = currentSelectedId && currentSelectedId == c.id;
                     const activeClass = isSelected ? 'active bg-primary text-white' : 'btn-light text-slate-700';

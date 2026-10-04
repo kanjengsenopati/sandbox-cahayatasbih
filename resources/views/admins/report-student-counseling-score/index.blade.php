@@ -207,7 +207,7 @@
             groups[key].push(c);
         });
 
-        const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-3 classroom-item text-center rounded-2 py-2" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+        const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-2 classroom-item text-center rounded-2 py-1 fs-8" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
         container.append(resetBtn);
 
         const sortedKeys = Object.keys(groups).sort((a,b) => {
@@ -220,27 +220,27 @@
 
         const colCount = sortedKeys.length;
         let colClass = 'col-12';
-        let menuWidth = '260px';
+        let menuWidth = '150px';
         if (colCount === 2) {
             colClass = 'col-6';
-            menuWidth = '380px';
+            menuWidth = '230px';
         } else if (colCount === 3) {
             colClass = 'col-4';
-            menuWidth = '500px';
+            menuWidth = '310px';
         } else if (colCount >= 4) {
             colClass = 'col-3';
-            menuWidth = '620px';
+            menuWidth = '400px';
         }
-        container.css({ 'width': menuWidth });
+        container.css({ 'width': menuWidth, 'min-width': menuWidth, 'padding': '10px' });
 
-        const row = $('<div class="row g-2"></div>');
+        const row = $('<div class="row g-1"></div>');
         sortedKeys.forEach(key => {
             const col = $(`<div class="${colClass}"></div>`);
             const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
-            col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
-            const list = $('<div class="d-flex flex-column gap-1"></div>');
+            col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-1 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+            const list = $('<div class="d-flex flex-column" style="gap: 3px;"></div>');
             groups[key].forEach(c => {
-                list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1.5 px-2 mb-1 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 30px;">
+                list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 px-2 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 26px; padding-top: 3px; padding-bottom: 3px;">
                     <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
                     <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
                 </button>`);

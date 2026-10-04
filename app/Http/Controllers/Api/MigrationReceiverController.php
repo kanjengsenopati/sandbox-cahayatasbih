@@ -132,4 +132,52 @@ class MigrationReceiverController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Mengambil saldo berjalan terkini dari Aplikasi Baru untuk keperluan Failback / Migrasi Balik ke Aplikasi Lama.
+     */
+    public function exportCurrentSaldo(Request $request)
+    {
+        $token = $request->input('migration_token') ?: $request->header('x-migration-token');
+        $validToken = config('services.migration.token', env('MIGRATION_SECRET_TOKEN', 'cahaya-tasbih-migration-secret'));
+
+        if (empty($token) || $token !== $validToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token otentikasi migrasi tidak valid.',
+            ], 401);
+        }
+
+        $classroomName = $request->input('classroom_name');
+        $studentNises = $request->input('student_nises', []);
+
+        $query = Student::whereNull('deleted_at');
+
+        if (!empty($studentNises) && is_array($studentNises)) {
+            $query->whereIn('nis', $studentNises);
+        } elseif (!empty($classroomName) && $classroomName !== 'Tanpa Kelas') {
+            $query->whereHas('classroom', function ($q) use ($classroomName) {
+                $q->where('name', $classroomName);
+            });
+        } elseif ($classroomName === 'Tanpa Kelas') {
+            $query->whereNull('classroom_id');
+        }
+
+        $students = $query->select('id', 'nis', 'nisn', 'name', 'saldo', 'saving')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'classroom_name' => $classroomName,
+            'total_students' => $students->count(),
+            'total_saldo' => (int) $students->sum('saldo'),
+            'total_saving' => (int) $students->sum('saving'),
+            'students' => $students->map(fn($s) => [
+                'id' => (string) $s->id,
+                'nis' => (string) ($s->nis ?? ''),
+                'name' => (string) $s->name,
+                'saldo' => (int) $s->saldo,
+                'saving' => (int) $s->saving,
+            ])->toArray(),
+        ]);
+    }
 }

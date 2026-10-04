@@ -218,5 +218,6 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
 // Internal Migration Endpoint from Old App
 Route::prefix('internal/migration')->group(function () {
     Route::post('receive-saldo', [\App\Http\Controllers\Api\MigrationReceiverController::class, 'receiveSaldo']);
+    Route::match(['get', 'post'], 'export-current-saldo', [\App\Http\Controllers\Api\MigrationReceiverController::class, 'exportCurrentSaldo']);
 });
 

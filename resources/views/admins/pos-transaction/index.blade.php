@@ -47,6 +47,22 @@
     .modal-custom {
         border-radius: 24px !important;
     }
+    /* Modern Vertical Stack Item */
+    .pos-item-stack {
+        line-height: 1.25;
+    }
+    .btn-toggle-pos-items[aria-expanded="true"] .show-more-badge {
+        display: none !important;
+    }
+    .btn-toggle-pos-items[aria-expanded="true"] .show-less-badge {
+        display: inline-flex !important;
+    }
+    .btn-toggle-pos-items[aria-expanded="false"] .show-more-badge {
+        display: inline-flex !important;
+    }
+    .btn-toggle-pos-items[aria-expanded="false"] .show-less-badge {
+        display: none !important;
+    }
 </style>
 
 <div class="content d-flex flex-column flex-column-fluid safe-padding" id="kt_content">
@@ -287,7 +303,7 @@
                                             <th>Outlet</th>
                                             <th>Kasir</th>
                                             <th>Pembeli</th>
-                                            <th>Item Belanja</th>
+                                            <th style="min-width: 185px;">Item Belanja</th>
                                             <th>Total Omzet</th>
                                             @if(!$isKasir)
                                             <th>Profit</th>
@@ -893,7 +909,7 @@
                 { data: 'outlet', name: 'outlet' },
                 { data: 'admin', name: 'admin' },
                 { data: 'student', name: 'student' },
-                { data: 'details', name: 'details' },
+                { data: 'details', name: 'details', orderable: false, searchable: false },
                 { data: 'pay_amount', name: 'pay_amount' },
                 @if(!$isKasir)
                 { data: 'profit', name: 'profit' },

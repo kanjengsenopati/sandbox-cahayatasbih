@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { LogOut, Loader2, RefreshCw, Mail, Phone, User as UserIcon, MapPin, CreditCard as IdCard, Clock, Activity, ShieldCheck, Shield, Bell, CreditCard, Settings, HelpCircle, ChevronRight } from "lucide-react";
+import { LogOut, Loader2, RefreshCw, Mail, Phone, User as UserIcon, MapPin, CreditCard as IdCard, Clock, Activity, ShieldCheck, Shield, Bell, CreditCard, Settings, HelpCircle, ChevronRight, Download } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchProfile, postLogout, postSwitchRole } from "@/lib/api";
@@ -255,6 +255,29 @@ function Profil() {
             </span>
             <ChevronRight size={18} className="text-slate-300" />
           </Link>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof (window as any).__showPwaInstallModal === 'function') {
+                (window as any).__showPwaInstallModal();
+              }
+            }}
+            className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group text-left"
+          >
+            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-[#9b1de8] group-active:scale-95 transition-transform">
+              <Download size={18} />
+            </div>
+            <div className="flex-1">
+              <span className="block text-[14px] font-semibold text-foreground">
+                Pasang Aplikasi CT-Mobile
+              </span>
+              <span className="block text-[11px] text-slate-400 font-medium">
+                Panduan & pasang ke layar utama HP
+              </span>
+            </div>
+            <ChevronRight size={18} className="text-slate-300" />
+          </button>
         </div>
       </section>
 
