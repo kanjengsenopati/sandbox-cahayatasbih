@@ -307,11 +307,57 @@ class PosTransactionController extends Controller
                         }
                     })
                     ->addColumn('details', function ($data) {
-                        $items = [];
-                        foreach ($data->pointOfSaleTransactionDetails as $detail) {
-                            $items[] = ($detail->item?->name ?? 'Barang') . ' (' . $detail->quantity . 'x)';
+                        $details = $data->pointOfSaleTransactionDetails;
+                        if (!$details || $details->isEmpty()) {
+                            return '<span class="text-muted fs-8">-</span>';
                         }
-                        return implode(', ', $items) ?: '-';
+
+                        $totalItems = $details->count();
+                        $visibleLimit = 2;
+
+                        $renderItem = function ($detail) {
+                            $name = htmlspecialchars($detail->item?->name ?? 'Barang', ENT_QUOTES, 'UTF-8');
+                            $qty = (int) $detail->quantity;
+                            return '<div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge badge-light-primary fw-bolder px-2 py-1 fs-8 text-primary flex-shrink-0" style="min-width: 28px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px;">' . $qty . 'x</span>
+                                <span class="text-gray-800 fw-semibold fs-7 text-truncate" title="' . $name . '" style="max-width: 190px;">' . $name . '</span>
+                            </div>';
+                        };
+
+                        $html = '<div class="pos-item-stack d-flex flex-column py-1" style="min-width: 175px;">';
+
+                        foreach ($details->take($visibleLimit) as $detail) {
+                            $html .= $renderItem($detail);
+                        }
+
+                        if ($totalItems > $visibleLimit) {
+                            $remaining = $details->slice($visibleLimit);
+                            $remainingCount = $totalItems - $visibleLimit;
+                            $collapseId = 'collapse-pos-items-' . $data->id;
+
+                            $html .= '<div class="collapse" id="' . $collapseId . '">';
+                            foreach ($remaining as $detail) {
+                                $html .= $renderItem($detail);
+                            }
+                            $html .= '</div>';
+
+                            $html .= '<a class="btn-toggle-pos-items text-primary fw-bold cursor-pointer text-decoration-none d-inline-flex align-items-center gap-1 mt-0.5" 
+                                        data-bs-toggle="collapse" 
+                                        href="#' . $collapseId . '" 
+                                        role="button" 
+                                        aria-expanded="false" 
+                                        onclick="event.stopPropagation();">
+                                        <span class="badge badge-light-info text-primary px-2 py-1 fs-8 fw-bold show-more-badge">
+                                            +' . $remainingCount . ' item lainnya <i class="fas fa-chevron-down fs-9 ms-1"></i>
+                                        </span>
+                                        <span class="badge badge-light-secondary text-gray-600 px-2 py-1 fs-8 fw-bold show-less-badge d-none">
+                                            <i class="fas fa-chevron-up fs-9 me-1"></i> Tutup
+                                        </span>
+                                    </a>';
+                        }
+
+                        $html .= '</div>';
+                        return $html;
                     })
                     ->addColumn('student', function ($data) {
                         if ($data->type == PointOfSaleTransaction::TYPE_UMUM || !$data->student) {
