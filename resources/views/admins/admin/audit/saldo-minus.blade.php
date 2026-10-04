@@ -856,25 +856,25 @@
 
             const colCount = sortedKeys.length;
             let colClass = 'col-12';
-            let menuWidth = '260px';
+            let menuWidth = '150px';
             if (colCount === 2) {
                 colClass = 'col-6';
-                menuWidth = '380px';
+                menuWidth = '230px';
             } else if (colCount === 3) {
                 colClass = 'col-4';
-                menuWidth = '500px';
+                menuWidth = '310px';
             } else if (colCount >= 4) {
                 colClass = 'col-3';
-                menuWidth = '620px';
+                menuWidth = '400px';
             }
-            container.css({ 'width': menuWidth });
+            container.css({ 'width': menuWidth, 'min-width': menuWidth, 'padding': '10px' });
 
-            const row = $('<div class="row g-2"></div>');
+            const row = $('<div class="row g-1"></div>');
             sortedKeys.forEach(key => {
                 const col = $(`<div class="${colClass}"></div>`);
                 const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-2 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
-                const list = $('<div class="d-flex flex-column gap-1"></div>');
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-1 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+                const list = $('<div class="d-flex flex-column" style="gap: 3px;"></div>');
                 groups[key].forEach(c => {
                     list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 py-1 px-2 mb-1 rounded-2 audit-classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 28px;">
                         <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
