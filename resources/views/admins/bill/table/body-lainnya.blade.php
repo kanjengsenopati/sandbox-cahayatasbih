@@ -313,9 +313,16 @@
                             </h4>
                             @php
                                 $firstBillDetail = $bill->bills->where('student_id', $student->id)->first();
-                                $historyDetails = [];
+                                $historyDetails = collect([]);
                                 if ($firstBillDetail) {
-                                    $historyDetails = $firstBillDetail->transactionDetails;
+                                    $historyDetails = $firstBillDetail->transactionDetails()
+                                        ->whereNull('transaction_details.deleted_at')
+                                        ->whereHas('transaction', function($q) {
+                                            $q->whereNull('transactions.deleted_at')
+                                              ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas']);
+                                        })
+                                        ->orderBy('created_at', 'asc')
+                                        ->get();
                                 }
                             @endphp
                             
