@@ -15,6 +15,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CT-Mobile">
     
+    <!-- Early PWA Prompt Capture -->
+    <script>
+        window.__deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window.__deferredPwaPrompt = e;
+            if (typeof window.__onPwaPromptReady === 'function') {
+                try { window.__onPwaPromptReady(e); } catch(err) { console.warn(err); }
+            }
+        });
+    </script>
+    
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
