@@ -1077,7 +1077,7 @@ class TransactionService
         return $billIdOrDescriptor;
     }
 
-        public static function syncStudentBillsFromPaidTransactions($studentId)
+    public static function syncStudentBillsFromPaidTransactions($studentId)
     {
         if (empty($studentId)) return;
 
@@ -1089,14 +1089,15 @@ class TransactionService
                 ->get();
 
             if ($paidTransactions->isEmpty()) return;
-            
+
             // Preload all bills to avoid N+1 queries in loops
             $allBills = \App\Models\Bill::withTrashed()->where('student_id', $studentId)->get();
             $billsById = $allBills->keyBy('id');
-            // Active bills grouped by key to handle trashed replacements
             $activeBillsByKey = $allBills->whereNull('deleted_at')->keyBy(fn($b) => "{$b->bill_type_id}_{$b->academic_year_id}_{$b->month}");
 
             DB::transaction(function () use ($paidTransactions, $studentId, $billsById, $activeBillsByKey) {
+                $billIdsToRecalc = collect();
+
                 foreach ($paidTransactions as $tx) {
                     foreach ($tx->transactionDetails as $detail) {
                         $billId = $detail->bill_id;
@@ -1118,30 +1119,54 @@ class TransactionService
                         if ($bill && $bill->trashed()) {
                             $key = "{$bill->bill_type_id}_{$bill->academic_year_id}_{$bill->month}";
                             $activeReplacement = $activeBillsByKey->get($key);
-
                             if ($activeReplacement) {
                                 $detail->update(['bill_id' => $activeReplacement->id]);
                                 $bill = $activeReplacement;
                             }
                         }
 
-                        if ($bill && $bill->status !== Bill::STATUS_PAID) {
-                            $rawDetailAmount = $detail->amount ?? 0;
-                            $detailAmount = intval(preg_replace('/[^0-9]/', '', (string)$rawDetailAmount));
-                            $paidVal = $detailAmount > 0 ? $detailAmount : ($bill->amount > 0 ? $bill->amount : ($tx->pay_amount > 0 ? $tx->pay_amount : 10000));
-                            if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
-                                $detail->update(['amount' => $paidVal]);
-                            }
-                            if ($bill->paid_amount < $bill->amount) {
-                                $newPaid = min($bill->amount, $bill->paid_amount + $paidVal);
-                                $newStatus = ($newPaid >= $bill->amount) ? Bill::STATUS_PAID : $bill->status;
-                                if ($bill->paid_amount != $newPaid || $bill->status != $newStatus) {
-                                    $bill->paid_amount = $newPaid;
-                                    $bill->status = $newStatus;
-                                    $bill->save();
-                                }
-                            }
+                        // Fix detail amount jika 0
+                        if ($bill && (!$detail->amount || $detail->amount <= 0)) {
+                            $fallback = $bill->amount > 0 ? $bill->amount : ($tx->pay_amount > 0 ? $tx->pay_amount : 10000);
+                            $detail->update(['amount' => $fallback]);
                         }
+
+                        // Tandai untuk recalculate
+                        if ($bill && !$bill->trashed()) {
+                            $billIdsToRecalc->push($bill->id);
+                        }
+                    }
+                }
+
+                // Recalculate paid_amount secara IDEMPOTENT dari SUM(transaction_details).
+                // Tidak bisa double-count meskipun fungsi ini dipanggil berkali-kali.
+                $uniqueBillIds = $billIdsToRecalc->unique()->values()->toArray();
+                if (empty($uniqueBillIds)) return;
+
+                $paidSums = DB::table('transaction_details')
+                    ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+                    ->whereIn('transaction_details.bill_id', $uniqueBillIds)
+                    ->whereIn('transactions.status', [Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas'])
+                    ->whereNull('transaction_details.deleted_at')
+                    ->whereNull('transactions.deleted_at')
+                    ->groupBy('transaction_details.bill_id')
+                    ->select('transaction_details.bill_id', DB::raw('SUM(transaction_details.amount) as total_paid'))
+                    ->pluck('total_paid', 'bill_id');
+
+                foreach ($uniqueBillIds as $bid) {
+                    $bill = $billsById->get($bid) ?? \App\Models\Bill::find($bid);
+                    if (!$bill || $bill->trashed()) continue;
+
+                    $realPaid  = (int)($paidSums[$bid] ?? 0);
+                    $newPaid   = min((int)$bill->amount, $realPaid);
+                    $newStatus = ($newPaid >= (int)$bill->amount && $bill->amount > 0) ? Bill::STATUS_PAID : $bill->status;
+
+                    if ((int)$bill->getRawOriginal('paid_amount') !== $newPaid ||
+                        ($newStatus === Bill::STATUS_PAID && $bill->status !== Bill::STATUS_PAID)) {
+                        $bill->paid_amount = $newPaid;
+                        $bill->status      = $newStatus;
+                        $bill->save();
+                        $billsById->put($bid, $bill);
                     }
                 }
             }, 5);

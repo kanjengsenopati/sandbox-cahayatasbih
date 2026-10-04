@@ -118,6 +118,12 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Audit Saldo Minus
     Route::get('audit/saldo-minus', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'index'])->name('admin.audit.saldo-minus');
     Route::get('audit/saldo-minus/data', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'data'])->name('admin.audit.saldo-minus.data');
+
+    // Review & Konfirmasi Migrasi Saldo dari Aplikasi Lama
+    Route::get('migration-saldo', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'index'])->name('admin.migration-saldo.index');
+    Route::get('migration-saldo/datatable/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'datatable'])->name('admin.migration-saldo.datatable');
+    Route::post('migration-saldo/apply/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'apply'])->name('admin.migration-saldo.apply');
+    Route::post('migration-saldo/reject/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'reject'])->name('admin.migration-saldo.reject');
     Route::get('audit/saldo-minus/{id}/logs', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'logs'])->name('admin.audit.saldo-minus.logs');
     Route::get('audit/saldo-minus/export', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'export'])->name('admin.audit.saldo-minus.export');
 

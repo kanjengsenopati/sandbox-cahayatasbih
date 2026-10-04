@@ -214,3 +214,9 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('biometric/log', [App\Http\Controllers\Api\BiometricAttendanceController::class, 'logWebhook']);
     Route::post('attendance/mobile-checkin', [App\Http\Controllers\Api\BiometricAttendanceController::class, 'mobileCheckin']);
 });
+
+// Internal Migration Endpoint from Old App
+Route::prefix('internal/migration')->group(function () {
+    Route::post('receive-saldo', [\App\Http\Controllers\Api\MigrationReceiverController::class, 'receiveSaldo']);
+});
+
