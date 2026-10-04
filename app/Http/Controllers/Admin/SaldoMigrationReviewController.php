@@ -166,6 +166,8 @@ class SaldoMigrationReviewController extends Controller
             Log::error("[MigrationReview] Gagal menerapkan batch: " . $e->getMessage());
             return redirect()->back()->with('error', "Gagal menerapkan saldo migrasi: " . $e->getMessage());
         }
+    }
+
     /**
      * Terima dan Terapkan SEMUA Batch Migrasi Saldo Sekaligus.
      */
