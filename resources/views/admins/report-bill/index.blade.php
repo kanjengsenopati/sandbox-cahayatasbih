@@ -243,6 +243,14 @@
             groups[key].push(c);
         });
 
+        const sortedKeys = Object.keys(groups).sort((a, b) => {
+            const na = parseInt(a), nb = parseInt(b);
+            if (isNaN(na) && isNaN(nb)) return a.localeCompare(b);
+            if (isNaN(na)) return 1;
+            if (isNaN(nb)) return -1;
+            return na - nb;
+        });
+
         const colCount = sortedKeys.length;
         let colClass = 'col-12';
         let menuWidth = '260px';
