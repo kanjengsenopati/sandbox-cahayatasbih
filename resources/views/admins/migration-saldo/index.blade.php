@@ -27,9 +27,19 @@
                     onsubmit="return confirm('PERHATIAN: Saldo santri {{ $latestBatch->notes ?: '' }} di Aplikasi Baru akan diperbarui dan disamakan 100% dengan saldo Aplikasi Lama.\n\nTotal Saldo: Rp {{ number_format($summary['total_old_saldo'] ?? 0, 0, ',', '.') }}\n\nLanjutkan terapkan saldo?');">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-success fw-bolder">
-                        <i class="fas fa-check-circle me-1"></i> Terima & Terapkan Saldo ({{ $latestBatch->notes ?: 'Batch' }})
+                        <i class="fas fa-check-circle me-1"></i> Terapkan ({{ $latestBatch->notes ?: 'Batch' }})
                     </button>
                 </form>
+
+                @if (!empty($pendingBatches) && $pendingBatches->count() > 1)
+                <form action="{{ route('admin.migration-saldo.apply-all') }}" method="POST" class="d-inline"
+                    onsubmit="return confirm('PERHATIAN: Anda akan menerima dan menerapkan SELURUH {{ $pendingBatches->count() }} paket kelas sekaligus ke database Aplikasi Baru.\n\nLanjutkan terapkan SEMUA kelas?');">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-primary fw-bolder shadow-sm">
+                        <i class="fas fa-layer-group me-1"></i> Terima & Terapkan SEMUA ({{ $pendingBatches->count() }} Kelas)
+                    </button>
+                </form>
+                @endif
                 @endif
             </div>
         </div>

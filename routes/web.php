@@ -122,6 +122,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // Review & Konfirmasi Migrasi Saldo dari Aplikasi Lama
     Route::get('migration-saldo', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'index'])->name('admin.migration-saldo.index');
     Route::get('migration-saldo/datatable/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'datatable'])->name('admin.migration-saldo.datatable');
+    Route::post('migration-saldo/apply-all', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'applyAll'])->name('admin.migration-saldo.apply-all');
     Route::post('migration-saldo/apply/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'apply'])->name('admin.migration-saldo.apply');
     Route::post('migration-saldo/reject/{batchId}', [\App\Http\Controllers\Admin\SaldoMigrationReviewController::class, 'reject'])->name('admin.migration-saldo.reject');
     Route::get('audit/saldo-minus/{id}/logs', [\App\Http\Controllers\Admin\AuditSaldoMinusController::class, 'logs'])->name('admin.audit.saldo-minus.logs');

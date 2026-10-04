@@ -166,6 +166,83 @@ class SaldoMigrationReviewController extends Controller
             Log::error("[MigrationReview] Gagal menerapkan batch: " . $e->getMessage());
             return redirect()->back()->with('error', "Gagal menerapkan saldo migrasi: " . $e->getMessage());
         }
+    /**
+     * Terima dan Terapkan SEMUA Batch Migrasi Saldo Sekaligus.
+     */
+    public function applyAll(Request $request)
+    {
+        @set_time_limit(600);
+
+        $batches = SaldoMigrationBatch::where('status', 'PENDING')->get();
+        if ($batches->isEmpty()) {
+            return redirect()->back()->with('info', "Tidak ada paket migrasi berstatus PENDING yang perlu diterapkan.");
+        }
+
+        try {
+            $totalApplied = 0;
+            $now = now();
+            $adminName = Auth::user()->name ?? 'Administrator';
+
+            DB::transaction(function () use ($batches, $now, $adminName, &$totalApplied) {
+                foreach ($batches as $batch) {
+                    $items = $batch->items()->get();
+                    foreach ($items as $item) {
+                        $student = null;
+                        if ($item->student_id) {
+                            $student = Student::find($item->student_id);
+                        }
+                        if (!$student && $item->nis) {
+                            $student = Student::where('nis', $item->nis)->first();
+                        }
+                        if (!$student && $item->name) {
+                            $student = Student::where('name', $item->name)->first();
+                        }
+
+                        if ($student) {
+                            $oldBalance = (int) $student->saldo;
+                            $newBalance = (int) $item->old_saldo;
+                            $diff = $newBalance - $oldBalance;
+                            $type = $diff >= 0 ? SaldoHistory::TYPE_IN : SaldoHistory::TYPE_OUT;
+
+                            $student->update([
+                                'saldo' => $newBalance,
+                                'saving' => (int) $item->old_saving,
+                                'updated_at' => $now,
+                            ]);
+
+                            SaldoHistory::create([
+                                'id' => (string) Str::uuid(),
+                                'student_id' => $student->id,
+                                'type' => $type,
+                                'usage' => 'MIGRATION',
+                                'amount' => abs($diff),
+                                'description' => "Migrasi Saldo Awal dari Aplikasi Lama (Batch Ref: {$batch->id})",
+                                'balance_before' => $oldBalance,
+                                'balance_after' => $newBalance,
+                                'status' => 'SUCCESS',
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ]);
+
+                            $item->update(['status' => 'APPLIED']);
+                            $totalApplied++;
+                        }
+                    }
+
+                    $batch->update([
+                        'status' => 'APPLIED',
+                        'applied_at' => $now,
+                        'applied_by' => $adminName,
+                        'notes' => "Diterima dan diterapkan sekaligus oleh {$adminName} pada {$now->toDateTimeString()}",
+                    ]);
+                }
+            });
+
+            return redirect()->route('admin.migration-saldo.index')->with('success', "✅ BERHASIL! Seluruh " . $batches->count() . " paket kelas ({$totalApplied} santri) telah BERHASIL DITERIMA DAN DITERAPKAN ke database!");
+        } catch (\Throwable $e) {
+            Log::error("[MigrationReview] Gagal menerapkan semua batch: " . $e->getMessage());
+            return redirect()->back()->with('error', "Gagal menerapkan seluruh saldo migrasi: " . $e->getMessage());
+        }
     }
 
     /**
