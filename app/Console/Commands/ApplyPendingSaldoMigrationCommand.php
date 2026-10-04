@@ -112,13 +112,16 @@ class ApplyPendingSaldoMigrationCommand extends Command
                             'updated_at' => $now,
                         ]);
 
+                        $diff = $newBalance - $oldBalance;
+                        $type = $diff >= 0 ? SaldoHistory::TYPE_IN : SaldoHistory::TYPE_OUT;
+
                         // Catat riwayat audit di saldo_histories
                         SaldoHistory::create([
                             'id' => (string) Str::uuid(),
                             'student_id' => $student->id,
-                            'type' => 'IN',
+                            'type' => $type,
                             'usage' => 'MIGRATION',
-                            'amount' => abs($newBalance - $oldBalance) ?: $newBalance,
+                            'amount' => abs($diff),
                             'description' => "Migrasi Saldo Awal dari Aplikasi Lama (Batch Ref: {$batch->id})",
                             'balance_before' => $oldBalance,
                             'balance_after' => $newBalance,
