@@ -180,14 +180,15 @@ class SaldoMigrationReviewController extends Controller
             return redirect()->back()->with('info', "Tidak ada paket migrasi berstatus PENDING yang perlu diterapkan.");
         }
 
-        try {
-            $totalApplied = 0;
-            $now = now();
-            $adminName = Auth::user()->name ?? 'Administrator';
+        $totalApplied = 0;
+        $totalSuccessBatches = 0;
+        $now = now();
+        $adminName = Auth::user()->name ?? 'Administrator';
 
-            DB::transaction(function () use ($batches, $now, $adminName, &$totalApplied) {
-                foreach ($batches as $batch) {
-                    $items = $batch->items()->get();
+        foreach ($batches as $batch) {
+            try {
+                DB::transaction(function () use ($batch, $now, $adminName, &$totalApplied) {
+                    $items = $batch->items()->where('status', 'PENDING')->get();
                     foreach ($items as $item) {
                         $student = null;
                         if ($item->student_id) {
@@ -237,13 +238,18 @@ class SaldoMigrationReviewController extends Controller
                         'applied_by' => $adminName,
                         'notes' => "Diterima dan diterapkan sekaligus oleh {$adminName} pada {$now->toDateTimeString()}",
                     ]);
-                }
-            });
+                }, 3);
 
-            return redirect()->route('admin.migration-saldo.index')->with('success', "✅ BERHASIL! Seluruh " . $batches->count() . " paket kelas ({$totalApplied} santri) telah BERHASIL DITERIMA DAN DITERAPKAN ke database!");
-        } catch (\Throwable $e) {
-            Log::error("[MigrationReview] Gagal menerapkan semua batch: " . $e->getMessage());
-            return redirect()->back()->with('error', "Gagal menerapkan seluruh saldo migrasi: " . $e->getMessage());
+                $totalSuccessBatches++;
+            } catch (\Throwable $e) {
+                Log::error("[MigrationReview] Gagal menerapkan batch {$batch->id}: " . $e->getMessage());
+            }
+        }
+
+        if ($totalSuccessBatches > 0) {
+            return redirect()->route('admin.migration-saldo.index')->with('success', "✅ BERHASIL! Sebanyak {$totalSuccessBatches} dari " . $batches->count() . " paket kelas ({$totalApplied} santri) telah BERHASIL DITERIMA DAN DITERAPKAN ke database!");
+        } else {
+            return redirect()->back()->with('error', "Gagal menerapkan saldo migrasi. Silakan gunakan perintah CLI di terminal VPS: php artisan migration:apply-all-pending");
         }
     }
 
