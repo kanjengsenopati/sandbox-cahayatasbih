@@ -650,30 +650,6 @@ class TransactionService
                         'status' => TransactionProof::STATUS_CONFIRMED
                     ]);
                 }
-                // check unique payment
-                if ($transaction->unique_payment > 0) {
-                    $student = Student::find($transaction->student_id);
-
-                    // Buat history untuk unique payment (SaldoService::addHistory sudah otomatis mengupdate saldo via recalculateForStudent)
-                    $uniqueHistory = SaldoService::addHistory(
-                        $student,
-                        $transaction->unique_payment,
-                        SaldoHistory::TYPE_IN,
-                        SaldoHistory::USAGE_TOPUP,
-                        SaldoHistory::STATUS_SUCCESS,
-                        'Pengembalian Kode Unik Transaksi #' . $transaction->payment_code . ' Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.')
-                    );
-
-                    // Tautkan history kode unik ke TransactionDetail agar terlacak secara presisi
-                    if ($uniqueHistory) {
-                        TransactionDetail::create([
-                            'id' => \Illuminate\Support\Str::uuid()->toString(),
-                            'transaction_id' => $transaction->id,
-                            'amount' => $transaction->unique_payment,
-                            'saldo_history_id' => $uniqueHistory->id,
-                        ]);
-                    }
-                }
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
                     $transaction->transactionDetails->each(function ($detail) use ($transaction) {
@@ -702,77 +678,162 @@ class TransactionService
                         }
                     });
 
-                    // === UNIT TRANSFER HOOK ===
+                    // Unit transfer hook
                     self::handleUnitTransferIfApplicable($transaction);
+
+                    // Credit unique payment to student saldo for bill payments
+                    if ($transaction->unique_payment > 0) {
+                        $student = Student::find($transaction->student_id);
+                        if ($student) {
+                            $existingUniqueHistory = SaldoHistory::where('student_id', $student->id)
+                                ->where('amount', (int)$transaction->unique_payment)
+                                ->where('description', 'like', '%' . $transaction->payment_code . '%')
+                                ->first();
+
+                            if (!$existingUniqueHistory) {
+                                $uniqueHistory = SaldoHistory::create([
+                                    'student_id' => $student->id,
+                                    'amount' => (int)$transaction->unique_payment,
+                                    'type' => SaldoHistory::TYPE_IN,
+                                    'description' => 'Pengembalian Kode Unik Transaksi #' . $transaction->payment_code . ' Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.'),
+                                    'usage' => SaldoHistory::USAGE_TOPUP,
+                                    'status' => SaldoHistory::STATUS_SUCCESS,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+
+                                TransactionDetail::create([
+                                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                                    'transaction_id' => $transaction->id,
+                                    'amount' => (int)$transaction->unique_payment,
+                                    'saldo_history_id' => $uniqueHistory->id,
+                                ]);
+                            } else {
+                                $existingUniqueHistory->update(['status' => SaldoHistory::STATUS_SUCCESS]);
+                            }
+
+                            SaldoRecalculatorService::recalculateForStudent($student->id);
+                        }
+                    }
                 }
-                // Proses transaksi berdasarkan tipe
-                if ($transaction->type == Transaction::TYPE_SALDO) {
+                // Proses transaksi berdasarkan tipe TYPE_SALDO
+                elseif ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
-                    $transactionDetail = $transaction->transactionDetails()
+
+                    // 1. Hitung nominal pokok topup (tanpa kode unik)
+                    $mainAmount = max(0, (int)($transaction->unique_payment > 0 
+                        ? ($transaction->pay_amount - $transaction->unique_payment) 
+                        : ($transaction->amount ?? $transaction->pay_amount)));
+
+                    // 2. Cari detail pokok transaksi ini (prioritaskan yang sudah terhubung ke saldo_history_id)
+                    $mainDetail = $transaction->transactionDetails()
                         ->where(function($q) {
                             $q->whereNull('saldo_history_id')
                               ->orWhereHas('saldoHistory', function($sh) {
                                   $sh->where('description', 'not like', '%Kode Unik%');
                               });
                         })
+                        ->orderByRaw("CASE WHEN saldo_history_id IS NOT NULL THEN 0 ELSE 1 END")
                         ->first();
 
-                    // Hitung nominal pokok topup (tanpa kode unik)
-                    $mainAmount = $transaction->unique_payment > 0 
-                        ? ($transaction->pay_amount - $transaction->unique_payment) 
-                        : ($transaction->amount ?? $transaction->pay_amount);
-
-                    if ($transactionDetail && $transactionDetail->saldoHistory) {
-                        $saldoBefore = $student->saldo;
-                        $amountToAdd = $transactionDetail->saldoHistory->amount;
-
-                        // Update saldo siswa secara atomic
-                        $student->increment('saldo', $amountToAdd);
-
-                        // Update status saldo history jika ada
-                        $transactionDetail->saldoHistory->update([
+                    $saldoHistory = null;
+                    if ($mainDetail && $mainDetail->saldoHistory) {
+                        $saldoHistory = $mainDetail->saldoHistory;
+                        $saldoHistory->update([
                             'status' => SaldoHistory::STATUS_SUCCESS,
-                            'balance_before' => $saldoBefore ?? 0,
-                            'balance_after' => $student->saldo ?? 0,
-                            'created_at' => now(),
+                            'amount' => $mainAmount > 0 ? $mainAmount : $saldoHistory->amount,
+                            'type' => SaldoHistory::TYPE_IN,
+                            'usage' => SaldoHistory::USAGE_TOPUP,
+                            'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($mainAmount > 0 ? $mainAmount : $saldoHistory->amount, 0, ',', '.'),
+                            'updated_at' => now(),
                         ]);
                     } else {
-                        // Fallback auto-recovery: jika TransactionDetail/SaldoHistory belum ada (kasus PWA lama)
-                        $saldoBefore = $student->saldo;
-                        $student->increment('saldo', $mainAmount);
+                        // Fallback: cari apakah ada record PENDING milik santri yang sesuai rentang waktu transaksi
+                        $pendingHistory = SaldoHistory::where('student_id', $student->id)
+                            ->where('status', SaldoHistory::STATUS_PENDING)
+                            ->where('type', SaldoHistory::TYPE_IN)
+                            ->where('description', 'not like', '%Kode Unik%')
+                            ->when($transaction->created_at, function($q) use ($transaction) {
+                                $cAt = Carbon::parse($transaction->getRawOriginal('created_at') ?? $transaction->created_at);
+                                $q->whereBetween('created_at', [
+                                    $cAt->copy()->subHours(2),
+                                    $cAt->copy()->addHours(2)
+                                ]);
+                            })
+                            ->latest()
+                            ->first();
 
-                        $txTimestamp = now();
-                        $saldoHistory = SaldoHistory::create([
-                            'student_id' => $student->id,
-                            'amount' => $mainAmount,
-                            'type' => SaldoHistory::TYPE_IN,
-                            'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($mainAmount, 0, ',', '.'),
-                            'status' => SaldoHistory::STATUS_SUCCESS,
-                            'usage' => SaldoHistory::USAGE_TOPUP,
-                            'balance_before' => $saldoBefore ?? 0,
-                            'balance_after' => $student->saldo ?? 0,
-                            'created_at' => $txTimestamp,
-                            'updated_at' => $txTimestamp,
-                        ]);
+                        if ($pendingHistory) {
+                            $saldoHistory = $pendingHistory;
+                            $saldoHistory->update([
+                                'status' => SaldoHistory::STATUS_SUCCESS,
+                                'amount' => $mainAmount > 0 ? $mainAmount : $pendingHistory->amount,
+                                'usage' => SaldoHistory::USAGE_TOPUP,
+                                'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($mainAmount > 0 ? $mainAmount : $pendingHistory->amount, 0, ',', '.'),
+                                'updated_at' => now(),
+                            ]);
+                        } else {
+                            $saldoHistory = SaldoHistory::create([
+                                'student_id' => $student->id,
+                                'amount' => $mainAmount,
+                                'type' => SaldoHistory::TYPE_IN,
+                                'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($mainAmount, 0, ',', '.'),
+                                'status' => SaldoHistory::STATUS_SUCCESS,
+                                'usage' => SaldoHistory::USAGE_TOPUP,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
 
-                        if ($transactionDetail) {
-                            $transactionDetail->update([
+                        if ($mainDetail) {
+                            $mainDetail->update([
                                 'saldo_history_id' => $saldoHistory->id,
-                                'amount' => $transactionDetail->amount ?: $transaction->pay_amount,
+                                'amount' => $mainAmount,
                             ]);
                         } else {
                             TransactionDetail::create([
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'transaction_id' => $transaction->id,
                                 'saldo_history_id' => $saldoHistory->id,
-                                'amount' => $transaction->pay_amount,
-                                'created_at' => $txTimestamp,
-                                'updated_at' => $txTimestamp,
+                                'amount' => $mainAmount,
                             ]);
                         }
                     }
 
-                    // Recalculate running balance to guarantee chronological precision
-                    SaldoRecalculatorService::recalculateForStudent($student->id);
+                    // 3. Proses kode unik top up (wajib masuk ke saldo santri)
+                    if ($transaction->unique_payment > 0 && $student) {
+                        $existingUniqueHistory = SaldoHistory::where('student_id', $student->id)
+                            ->where('amount', (int)$transaction->unique_payment)
+                            ->where('description', 'like', '%' . $transaction->payment_code . '%')
+                            ->first();
+
+                        if (!$existingUniqueHistory) {
+                            $uniqueHistory = SaldoHistory::create([
+                                'student_id' => $student->id,
+                                'amount' => (int)$transaction->unique_payment,
+                                'type' => SaldoHistory::TYPE_IN,
+                                'description' => 'Pengembalian Kode Unik Transaksi #' . $transaction->payment_code . ' Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.'),
+                                'usage' => SaldoHistory::USAGE_TOPUP,
+                                'status' => SaldoHistory::STATUS_SUCCESS,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+
+                            TransactionDetail::create([
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                                'transaction_id' => $transaction->id,
+                                'amount' => (int)$transaction->unique_payment,
+                                'saldo_history_id' => $uniqueHistory->id,
+                            ]);
+                        } else {
+                            $existingUniqueHistory->update(['status' => SaldoHistory::STATUS_SUCCESS]);
+                        }
+                    }
+
+                    // 4. Recalculate running balance santri secara atomik dan kronologis (Pokok + Kode Unik terhitung utuh)
+                    if ($student) {
+                        SaldoRecalculatorService::recalculateForStudent($student->id);
+                    }
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->savingHistory->update([
