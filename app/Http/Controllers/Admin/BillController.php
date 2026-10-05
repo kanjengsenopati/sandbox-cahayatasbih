@@ -1022,7 +1022,7 @@ class BillController extends Controller
         $isAuthorized = false;
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan') || $user->can('Edit Tagihan')) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Cancel Tagihan') || $user->can('Batal Transaksi Tagihan') || $user->can('Edit Status Tagihan')) {
                 $isAuthorized = true;
             }
         }
@@ -1100,13 +1100,13 @@ class BillController extends Controller
         $isAuthorized = false;
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan') || $user->can('Edit Tagihan')) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Cancel Tagihan') || $user->can('Batal Transaksi Tagihan') || $user->can('Edit Status Tagihan')) {
                 $isAuthorized = true;
             }
         }
 
         if (!$isAuthorized) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses khusus untuk mengubah status tagihan.');
         }
 
         $requestData = request()->only(['bill_id', 'status']);
@@ -1173,6 +1173,143 @@ class BillController extends Controller
             Log::error($th);
             return redirect()->back()->with('error', 'Gagal mengubah status tagihan: ' . $th->getMessage());
         }
+    }
+
+    /**
+     * Membatalkan pembayaran tagihan (End-to-End Atomic Transaction).
+     * Memerlukan permission khusus: 'Cancel Tagihan' atau 'Batal Transaksi Tagihan'.
+     */
+    public function cancelPayment(Request $request)
+    {
+        $user = Auth::user();
+        $isAuthorized = false;
+
+        if ($user) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Cancel Tagihan') || $user->can('Batal Transaksi Tagihan')) {
+                $isAuthorized = true;
+            }
+        }
+
+        if (!$isAuthorized) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak: Anda tidak memiliki wewenang khusus (Permission: Cancel Tagihan) untuk membatalkan pembayaran ini. Hubungi Administrator.'
+                ], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin khusus untuk membatalkan pembayaran tagihan.');
+        }
+
+        $request->validate([
+            'bill_id' => 'required',
+        ]);
+
+        return DB::transaction(function () use ($request, $user) {
+            $bill = Bill::where('id', $request->bill_id)->lockForUpdate()->firstOrFail();
+
+            if ($bill->paid_amount <= 0 && $bill->status !== Bill::STATUS_PAID && $bill->status !== Bill::STATUS_PARTIAL) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tagihan ini belum memiliki pembayaran yang tercatat untuk dibatalkan.'
+                ], 422);
+            }
+
+            $student = Student::where('id', $bill->student_id)->lockForUpdate()->first();
+            $cancelledAmount = $bill->paid_amount;
+            $oldStatus = $bill->status;
+            $cancelledTransactions = [];
+
+            // Ambil semua detail transaksi aktif untuk tagihan ini
+            $transactionDetails = TransactionDetail::where('bill_id', $bill->id)->get();
+
+            foreach ($transactionDetails as $detail) {
+                $transaction = Transaction::where('id', $detail->transaction_id)->lockForUpdate()->first();
+                if ($transaction) {
+                    $cancelledTransactions[] = $transaction->payment_code;
+
+                    // Jika pembayaran menggunakan Saldo / Tabungan Santri, kembalikan saldo santri (Atomic Refund)
+                    if ($transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || !empty($detail->saldo_history_id)) {
+                        if ($student) {
+                            $refundAmount = $detail->amount > 0 ? $detail->amount : $bill->paid_amount;
+                            $balanceBefore = $student->saldo;
+                            $student->increment('saldo', $refundAmount);
+                            $student->refresh();
+                            $balanceAfter = $student->saldo;
+
+                            \App\Models\SaldoHistory::create([
+                                'student_id' => $student->id,
+                                'amount' => $refundAmount,
+                                'type' => \App\Models\SaldoHistory::TYPE_IN,
+                                'description' => 'Refund Pembatalan Tagihan ' . ($bill->billType?->name ?? 'Tagihan') . ' (' . ($transaction->payment_code ?? '') . ') Sebesar Rp ' . number_format($refundAmount, 0, ',', '.'),
+                                'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
+                                'usage' => \App\Models\SaldoHistory::USAGE_TOPUP,
+                                'balance_before' => $balanceBefore,
+                                'balance_after' => $balanceAfter,
+                            ]);
+
+                            \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
+                        }
+                    }
+
+                    // Cek apakah transaksi ini hanya membayar bill ini atau banyak bill
+                    $otherDetailsCount = TransactionDetail::where('transaction_id', $transaction->id)
+                        ->where('id', '!=', $detail->id)
+                        ->whereNull('deleted_at')
+                        ->count();
+
+                    if ($otherDetailsCount === 0) {
+                        $transaction->update([
+                            'status' => Transaction::STATUS_CANCELLED,
+                        ]);
+                        $transaction->delete();
+                    } else {
+                        $transaction->decrement('pay_amount', min($transaction->pay_amount, $detail->amount));
+                    }
+
+                    $detail->delete();
+                }
+            }
+
+            // Kembalikan tagihan ke status UNPAID dan paid_amount = 0
+            $bill->paid_amount = 0;
+            $bill->status = Bill::STATUS_UNPAID;
+            $bill->save();
+
+            // Audit Trail Log
+            Log::info("[BILL_PAYMENT_CANCELLED] Pembayaran Tagihan Berhasil Dibatalkan", [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                ],
+                'student' => [
+                    'id' => $student?->id,
+                    'name' => $student?->name,
+                ],
+                'bill' => [
+                    'id' => $bill->id,
+                    'type' => $bill->billType?->name,
+                    'amount' => $bill->amount,
+                    'cancelled_amount' => $cancelledAmount,
+                    'old_status' => $oldStatus,
+                    'new_status' => Bill::STATUS_UNPAID,
+                ],
+                'cancelled_transactions' => $cancelledTransactions,
+            ]);
+
+            // Clear cache
+            Cache::forget("student_bills_synced_{$bill->student_id}");
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pembayaran tagihan ' . ($bill->billType?->name ?? '') . ' sebesar Rp ' . number_format($cancelledAmount, 0, ',', '.') . ' berhasil dibatalkan secara atomik.',
+                    'bill_id' => $bill->id,
+                    'new_status' => Bill::STATUS_UNPAID
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Pembayaran tagihan berhasil dibatalkan secara atomik.');
+        });
     }
 
     public function deleteStudentBill(Request $request)
