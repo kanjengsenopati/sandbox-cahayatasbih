@@ -8,6 +8,9 @@ $app = require_once dirname(__DIR__) . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
+// Force array cache driver for CLI script to avoid PhpRedisConnector error
+config(['cache.default' => 'array']);
+
 use App\Models\Bill;
 use App\Models\BillType;
 use App\Models\PaymentRate;

@@ -8,6 +8,9 @@ $app = require_once dirname(__DIR__) . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
+// Force array cache driver for CLI script to avoid PhpRedisConnector error
+config(['cache.default' => 'array']);
+
 use App\Models\Student;
 use App\Models\Classroom;
 use App\Models\School;
