@@ -19,8 +19,16 @@ class PaymentRate extends Model
 
     protected static function booted()
     {
-        static::saved(fn () => \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates'));
-        static::deleted(fn () => \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates'));
+        static::saved(function () {
+            try {
+                \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates');
+            } catch (\Throwable $e) {}
+        });
+        static::deleted(function () {
+            try {
+                \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates');
+            } catch (\Throwable $e) {}
+        });
     }
 
     protected $fillable = [

@@ -200,7 +200,7 @@ try {
     }
 
     DB::commit();
-    Cache::flush();
+    try { Cache::flush(); } catch (\Throwable $e) {}
 
     echo "\n=================================================================\n";
     echo "[SUKSES] Migrasi Zarkasi Berhasil 100%!\n";
