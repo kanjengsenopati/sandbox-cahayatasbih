@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/errorContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="28dp"
+    android:background="@color/background_light"
+    android:visibility="gone">
+
+    <!-- Icon Wifi Off -->
+    <ImageView
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@drawable/ic_wifi_off"
+        android:contentDescription="@string/error_connection_title"
+        android:alpha="0.8" />
+
+    <!-- Error Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/error_connection_title"
+        android:textColor="@color/text_slate_900"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textAlignment="center" />
+
+    <!-- Error Description -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/error_connection_message"
+        android:textColor="@color/text_slate_600"
+        android:textSize="14sp"
+        android:lineSpacingExtra="3dp"
+        android:textAlignment="center" />
+
+    <!-- Retry Button (PakRT Native 24px radius look) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRetry"
+        android:layout_width="wrap_content"
+        android:layout_height="52dp"
+        android:layout_marginTop="24dp"
+        android:paddingHorizontal="32dp"
+        android:text="@string/retry"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:textColor="@color/surface_white"
+        android:backgroundTint="@color/primary"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+</LinearLayout>
