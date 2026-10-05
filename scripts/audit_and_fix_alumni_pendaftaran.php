@@ -3,8 +3,8 @@
 // Script: audit_and_fix_alumni_pendaftaran.php
 // Jalankan di root Laravel: php audit_and_fix_alumni_pendaftaran.php
 
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
+require dirname(__DIR__) . '/vendor/autoload.php';
+$app = require_once dirname(__DIR__) . '/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
