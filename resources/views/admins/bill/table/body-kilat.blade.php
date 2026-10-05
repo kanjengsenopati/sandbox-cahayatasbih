@@ -423,9 +423,26 @@
                                 @if($amount == 0)
                                     <span class="badge badge-light text-slate-400 fs-9 fw-bold">Rp 0 (Bebas)</span>
                                 @elseif($isPaid)
-                                    <span class="badge badge-success fw-bolder px-3 py-1 text-white">
-                                        <i class="fas fa-check-circle me-1 text-white"></i> Lunas
-                                    </span>
+                                    <div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">
+                                        <span class="badge badge-success fw-bolder px-2.5 py-1 text-white">
+                                            <i class="fas fa-check-circle me-1 text-white"></i> Lunas
+                                        </span>
+                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                            @php
+                                                $cancelBillId = $billDetail?->id;
+                                            @endphp
+                                            @if($cancelBillId)
+                                            <button type="button" 
+                                                class="btn btn-sm btn-icon btn-light-danger w-22px h-22px btn-cancel-bill" 
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="top"
+                                                title="Batalkan Pembayaran Tagihan Ini"
+                                                onclick="handleCancelBillPayment('{{ $cancelBillId }}', '{{ addslashes($bill->name) }} (Bulan {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }})', event)">
+                                                <i class="fas fa-undo fs-9 text-danger"></i>
+                                            </button>
+                                            @endif
+                                        @endif
+                                    </div>
                                 @elseif($showModal)
                                     @if($canPayBill)
                                     <div class="form-check form-check-custom form-check-solid form-check-sm">

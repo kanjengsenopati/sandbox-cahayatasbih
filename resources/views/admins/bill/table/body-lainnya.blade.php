@@ -269,9 +269,21 @@
                                             <!-- Right side: Status / Checkbox -->
                                             <div>
                                                 @if($isPaid)
-                                                    <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
-                                                        <i class="fas fa-check-circle me-1 text-white"></i> Lunas
-                                                    </span>
+                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                        <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
+                                                            <i class="fas fa-check-circle me-1 text-white"></i> Lunas
+                                                        </span>
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                            @if(!empty($billDetail?->id))
+                                                            <button type="button" 
+                                                                class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-bill ms-1"
+                                                                title="Batalkan Pembayaran Tagihan Ini"
+                                                                onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
+                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                            </button>
+                                                            @endif
+                                                        @endif
+                                                    </div>
                                                 @elseif($showModal)
                                                     @if($canPayBill)
                                                     <div class="form-check form-check-custom form-check-solid form-check-sm">
@@ -453,11 +465,21 @@
                                             @endif
                                         </div>
     
-                                        <!-- Right side: Badge Lunas -->
-                                        <div class="d-flex align-items-center ms-md-auto">
+                                        <!-- Right side: Badge Lunas & Tombol Batal -->
+                                        <div class="d-flex align-items-center ms-md-auto gap-2 flex-wrap">
                                             <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
                                                 <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                             </span>
+                                            @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                @if(!empty($billDetail?->id))
+                                                <button type="button" 
+                                                    class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 btn-cancel-bill"
+                                                    title="Batalkan Pembayaran Tagihan Ini"
+                                                    onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
+                                                    <i class="fas fa-undo me-1 fs-8"></i> Batal
+                                                </button>
+                                                @endif
+                                            @endif
                                         </div>
                                     @else
                                         <!-- Unpaid action: Klik Bayar -->

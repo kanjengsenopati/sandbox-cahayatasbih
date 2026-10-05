@@ -976,5 +976,74 @@
             });
 
         });
+
+        // Global Handler Pembatalan Pembayaran Tagihan (Atomic End-to-End)
+        window.handleCancelBillPayment = function(billId, billName, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                html: 'Apakah Anda yakin ingin membatalkan pembayaran tagihan <strong>' + billName + '</strong>?<br><br>' +
+                      '<div class="alert alert-warning d-flex align-items-center p-3 text-start mb-0">' +
+                      '<i class="fas fa-exclamation-triangle fs-2 text-warning me-3"></i>' +
+                      '<div class="fs-7 text-gray-800">' +
+                      '<strong>PENTING:</strong> Status tagihan akan dikembalikan ke <strong>Belum Lunas (UNPAID)</strong> secara atomik. ' +
+                      'Jika pembayaran menggunakan Saldo Santri, saldo akan otomatis dikembalikan (refund).' +
+                      '</div></div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-undo me-1"></i> Ya, Batalkan Pembayaran!',
+                cancelButtonText: 'Tutup',
+                customClass: {
+                    confirmButton: 'btn btn-danger',
+                    cancelButton: 'btn btn-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Sedang Memproses...',
+                        text: 'Membatalkan pembayaran secara atomik...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: "{{ route('bill.cancel-payment') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            bill_id: billId
+                        },
+                        success: function(res) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Dibatalkan!',
+                                text: res.message || 'Pembayaran tagihan telah berhasil dibatalkan.',
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1200);
+                        },
+                        error: function(xhr) {
+                            var errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                                ? xhr.responseJSON.message 
+                                : 'Gagal membatalkan pembayaran tagihan.';
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal Membatalkan!',
+                                text: errorMsg
+                            });
+                        }
+                    });
+                }
+            });
+        };
 </script>
 @endpush
