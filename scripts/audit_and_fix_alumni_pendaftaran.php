@@ -36,17 +36,9 @@ $ay2526 = AcademicYear::where('name', 'like', '%2025%')->first();
 $ay2425 = AcademicYear::where('name', 'like', '%2024%')->first();
 
 // Cari Master Tarif Pendaftaran MA
-$maRates = PaymentRate::whereHas('school', function($q) {
-    $q->where('name', 'like', '%MA%')->orWhere('name', 'like', '%ALIYAH%');
-})->whereHas('billType', function($q) {
+$maRates = PaymentRate::whereHas('billType', function($q) {
     $q->where('name', 'like', '%PENDAFTARAN%')->orWhere('name', 'like', '%DAFTAR%');
-})->with('paymentRateItems', 'school', 'billType')->get();
-
-if ($maRates->isEmpty()) {
-    $maRates = PaymentRate::whereHas('billType', function($q) {
-        $q->where('name', 'like', '%PENDAFTARAN%')->orWhere('name', 'like', '%DAFTAR%');
-    })->with('paymentRateItems', 'school', 'billType')->get();
-}
+})->with('paymentRateItems', 'billType')->get();
 
 $alumniRate = null;
 $nonAlumniRate = null;
