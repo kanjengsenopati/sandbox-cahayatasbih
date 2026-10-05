@@ -136,14 +136,53 @@ if (empty($alumniWith5M)) {
 echo "=================================================================\n";
 
 if (in_array('--fix', $argv) && !empty($alumniWith5M)) {
-    echo "\n>>> MEMPERBAIKI SEMUA ALUMNI YANG SALAH TARIF MENJADI 1 JUTA... <<<\n";
+    echo "\n>>> MEMPERBAIKI HISTORI ALUMNI & TARIF PENDAFTARAN MENJADI 1 JUTA... <<<\n";
     DB::beginTransaction();
     try {
+        $ay2526 = AcademicYear::where('name', 'like', '%2025%')->first();
+        $ay2425 = AcademicYear::where('name', 'like', '%2024%')->first();
+        
+        $smpClass = Classroom::whereHas('school', fn($q) => $q->where('name', 'like', '%SMP%'))
+            ->where('name', 'like', '9%')
+            ->first() ?? Classroom::whereHas('school', fn($q) => $q->where('name', 'like', '%SMP%'))->first();
+
+        $alumniRate = App\Models\PaymentRate::where('alumni_status', 'ALUMNI_SMP_MA')
+            ->orWhere('id', 'c74986c9-f409-4171-8614-0460e98cd42e')
+            ->with('paymentRateItems')
+            ->first();
+
+        $alumniRateItemId = $alumniRate?->paymentRateItems?->first()?->id ?? null;
+
         foreach ($alumniWith5M as $item) {
             $st = $item['student'];
             $b = $item['bill'];
             
+            // 1. Perbaiki student_classroom_histories ke SMP
+            // Cari kelas SMP asli dari riwayat tagihan lama
+            $origSmpClassId = DB::table('bills')
+                ->join('classrooms', 'bills.classroom_id', '=', 'classrooms.id')
+                ->join('schools', 'classrooms.school_id', '=', 'schools.id')
+                ->where('bills.student_id', $st->id)
+                ->where('schools.name', 'like', '%SMP%')
+                ->value('classrooms.id');
+
+            $targetClassId = $origSmpClassId ?? $smpClass?->id;
+
+            if ($ay2526 && $targetClassId) {
+                StudentClassroomHistory::updateOrCreate([
+                    'student_id' => $st->id,
+                    'academic_year_id' => $ay2526->id,
+                ], [
+                    'classroom_id' => $targetClassId,
+                ]);
+            }
+
+            // 2. Update tagihan pendaftaran ke 1 Juta
             $b->amount = 1000000;
+            if ($alumniRateItemId) {
+                $b->payment_rate_item_id = $alumniRateItemId;
+            }
+
             if ($b->paid_amount >= 1000000) {
                 $b->status = Bill::STATUS_PAID;
             } elseif ($b->paid_amount > 0) {
@@ -152,10 +191,12 @@ if (in_array('--fix', $argv) && !empty($alumniWith5M)) {
                 $b->status = Bill::STATUS_UNPAID;
             }
             $b->save();
-            echo "[FIXED] {$st->name} diubah menjadi Rp 1.000.000 (Status: {$b->status})\n";
+
+            \Illuminate\Support\Facades\Cache::forget("student_bills_synced_{$st->id}");
+            echo "[FIXED] [{$st->classroom?->name}] {$st->name} -> Histori SMP disambung & Tagihan menjadi Rp 1.000.000 (Status: {$b->status})\n";
         }
         DB::commit();
-        echo "\n[SELESAI] Semua alumni di atas telah disesuaikan menjadi Rp 1.000.000!\n";
+        echo "\n[SELESAI] Seluruh " . count($alumniWith5M) . " siswa alumni di atas telah resmi disambung riwayat SMP-nya dan tagihannya diubah menjadi Rp 1.000.000!\n";
     } catch (\Exception $e) {
         DB::rollBack();
         echo "[ERROR] Gagal: " . $e->getMessage() . "\n";
