@@ -213,9 +213,9 @@
         <div id="collapseLainnya{{ $bill->id }}" class="accordion-collapse collapse" aria-labelledby="headingLainnya{{ $bill->id }}">
             <div class="accordion-body bg-white border-top p-4 p-md-5">
                 @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
-                    <div class="row g-5">
-                        <!-- Kolom Kiri: Pilihan Pembayaran -->
-                        <div class="col-md-5 col-12">
+                    <div class="row g-4 g-lg-5">
+                        <!-- Kolom Kiri: Pilihan Pembayaran (Rasio ~30%) -->
+                        <div class="col-xl-4 col-lg-4 col-md-5 col-12">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-file-invoice text-primary me-2"></i> Pilihan Pembayaran
                             </h4>
@@ -273,13 +273,13 @@
                                                         <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
                                                             <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                                         </span>
-                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
                                                             @if(!empty($billDetail?->id))
                                                             <button type="button" 
                                                                 class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-bill ms-1"
-                                                                title="Batalkan Pembayaran Tagihan Ini"
+                                                                title="Batalkan Seluruh Pembayaran Tagihan Ini"
                                                                 onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
-                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal Semua
                                                             </button>
                                                             @endif
                                                         @endif
@@ -318,8 +318,8 @@
                             </div>
                         </div>
                         
-                        <!-- Kolom Kanan: Riwayat Pembayaran -->
-                        <div class="col-md-7 col-12 border-start border-gray-200 ps-md-5">
+                        <!-- Kolom Kanan: Riwayat Pembayaran (Rasio ~70%) -->
+                        <div class="col-xl-8 col-lg-8 col-md-7 col-12 border-start border-gray-200 ps-md-5">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-history text-primary me-2"></i> Riwayat Pembayaran
                             </h4>
@@ -348,6 +348,7 @@
                                                 <th>Nominal Bayar</th>
                                                 <th>Petugas</th>
                                                 <th>Sisa Tagihan</th>
+                                                <th class="text-center" style="width: 12%">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -358,10 +359,11 @@
                                                 @php
                                                     $paidAmt = $detail->amount ?? $firstBillDetail->amount;
                                                     $runningRemaining -= $paidAmt;
+                                                    $txDate = $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-';
                                                 @endphp
                                                 <tr class="text-slate-600">
                                                     <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-' }}</td>
+                                                    <td>{{ $txDate }}</td>
                                                     <td class="text-emerald-600 fw-boldest">Rp {{ number_format($paidAmt, 0, ',', '.') }}</td>
                                                     <td>
                                                         @if($detail->transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id)
@@ -371,6 +373,18 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
+                                                    <td class="text-center">
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                            <button type="button" 
+                                                                class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-transaction"
+                                                                title="Batalkan Angsuran Transaksi Ini"
+                                                                onclick="handleCancelTransactionDetail('{{ $detail->id }}', 'Rp {{ number_format($paidAmt, 0, ',', '.') }}', '{{ $txDate }}', event)">
+                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                            </button>
+                                                        @else
+                                                            <span class="text-muted fs-8">-</span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
