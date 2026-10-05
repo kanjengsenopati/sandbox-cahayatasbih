@@ -165,6 +165,11 @@ class Bill extends Model
         return $this->belongsTo(PaymentRateItem::class, 'payment_rate_item_id');
     }
 
+    public function paymentRateItem()
+    {
+        return $this->belongsTo(PaymentRateItem::class, 'payment_rate_item_id');
+    }
+
     public function getPaidAmountAttribute($value)
     {
         return $value ?? 0;
