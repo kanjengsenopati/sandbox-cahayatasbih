@@ -212,11 +212,6 @@ class BillController extends Controller
     private function calculateBillTotals($item, $student, $preloadedRates = null, $allStudentBills = null)
     {
         $bills = $item->bills;
-        $upperName = strtoupper($item->name ?? '');
-
-        $isZarkasi = str_contains($upperName, 'ZARKASI');
-        $isAplikasi = str_contains($upperName, 'APLIKASI');
-        $isSyahriah = str_contains($upperName, 'SYAHR');
 
         if ($item->type === 'MONTHLY') {
             $totalBill = 0;

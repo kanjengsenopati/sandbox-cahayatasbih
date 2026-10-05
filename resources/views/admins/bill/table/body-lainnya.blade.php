@@ -174,6 +174,11 @@
                          <div class="d-flex align-items-center flex-wrap gap-2">
                              <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                              <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
+                             @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
+                                 <span class="badge badge-light-warning fw-bold fs-8 px-2 py-1" title="Pengaturan: Nominal Bebas (Cicilan)">Cicilan</span>
+                             @else
+                                 <span class="badge badge-light-primary fw-bold fs-8 px-2 py-1" title="Pengaturan: Fix Amount (Nominal Tetap)">Fix</span>
+                             @endif
                          </div>
                     </div>
 
@@ -220,9 +225,17 @@
                                 <i class="fas fa-file-invoice text-primary me-2"></i> Pilihan Pembayaran
                             </h4>
                             <div class="row g-3">
-                                @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                                 @php
-                                    $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                                    $studentBills = $bill->bills->where('student_id', $student->id);
+                                    $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
+                                    $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                                    if (empty($monthsToLoop)) {
+                                        $monthsToLoop = [0];
+                                    }
+                                @endphp
+                                @foreach ($monthsToLoop as $month)
+                                @php
+                                    $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                                     $amount = $billDetail ? $billDetail->amount : 0;
                                     $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                                     $status = $billDetail ? $billDetail->status : 'UNPAID';
@@ -240,7 +253,7 @@
                                             <!-- Left side: Month & Year -->
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="fw-bold fs-6 text-slate-800">
-                                                    {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                                    {{ ($month >= 1 && $month <= 12) ? \Carbon\Carbon::create()->month($month)->translatedFormat('F') : ($bill->name ?? 'Sekali Bayar') }}
                                                 </span>
                                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                                     {{ $billDetail->year ?? ($month >= 7 ? 
@@ -324,15 +337,16 @@
                                 <i class="fas fa-history text-primary me-2"></i> Riwayat Pembayaran
                             </h4>
                             @php
-                                $firstBillDetail = $bill->bills->where('student_id', $student->id)->first();
+                                $allBillIds = $bill->bills->where('student_id', $student->id)->pluck('id')->filter()->toArray();
                                 $historyDetails = collect([]);
-                                if ($firstBillDetail) {
-                                    $historyDetails = $firstBillDetail->transactionDetails()
+                                if (!empty($allBillIds)) {
+                                    $historyDetails = \App\Models\TransactionDetail::whereIn('bill_id', $allBillIds)
                                         ->whereNull('transaction_details.deleted_at')
                                         ->whereHas('transaction', function($q) {
                                             $q->whereNull('transactions.deleted_at')
                                               ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas']);
                                         })
+                                        ->with(['transaction.admin', 'transaction.paymentMethod'])
                                         ->orderBy('created_at', 'asc')
                                         ->get();
                                 }
@@ -353,7 +367,8 @@
                                         </thead>
                                         <tbody>
                                             @php
-                                                $runningRemaining = $firstBillDetail->amount;
+                                                $totalBillForStudent = $bill->bills->where('student_id', $student->id)->sum('amount');
+                                                $runningRemaining = $totalBillForStudent;
                                             @endphp
                                             @foreach($historyDetails as $detail)
                                                 @php
@@ -399,9 +414,17 @@
                     </div>
                 @else
                     <div class="row g-3">
-                        @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                         @php
-                            $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                            $studentBills = $bill->bills->where('student_id', $student->id);
+                            $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
+                            $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                            if (empty($monthsToLoop)) {
+                                $monthsToLoop = [0];
+                            }
+                        @endphp
+                        @foreach ($monthsToLoop as $month)
+                        @php
+                            $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                             $amount = $billDetail ? $billDetail->amount : 0;
                             $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                             $status = $billDetail ? $billDetail->status : 'UNPAID';
@@ -424,7 +447,7 @@
                                     <!-- Left side: Month & Year -->
                                     <div class="d-flex align-items-center gap-2" style="min-width: 150px;">
                                         <span class="fw-bold fs-6 text-slate-800">
-                                            {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                            {{ ($month >= 1 && $month <= 12) ? \Carbon\Carbon::create()->month($month)->translatedFormat('F') : ($bill->name ?? 'Sekali Bayar') }}
                                         </span>
                                         <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                             {{ $billDetail->year ?? ($month >= 7 ? 

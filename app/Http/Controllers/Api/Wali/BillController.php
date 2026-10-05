@@ -111,11 +111,6 @@ class BillController extends BaseWaliApiController
                     ?? $first->billType?->academicYear?->name 
                     ?? '-';
 
-                $btNameUpper = strtoupper($first->billType?->name ?? '');
-                $isZarkasi = str_contains($btNameUpper, 'ZARKASI');
-                $isAplikasi = str_contains($btNameUpper, 'APLIKASI');
-                $isSyahriah = str_contains($btNameUpper, 'SYAHR');
-
                 if ($first->billType?->type === 'MONTHLY') {
                     $totalBill = 0;
                     $startYear = $first->academicYear?->start_year ?? date('Y');
