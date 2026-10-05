@@ -141,7 +141,7 @@
     @else
     @foreach ($billMonth as $bill)
     @php
-        $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
+        $isZarkasi = ($bill->type === 'MONTHLY') && str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         $isAplikasi = str_contains(strtoupper($bill->name ?? ''), 'APLIKASI');
 
         if (isset($allStudentBills) && $allStudentBills) {

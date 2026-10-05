@@ -192,10 +192,7 @@ class BillController extends BaseWaliApiController
                 return $bill;
             });
 
-        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
-        $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
-        $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
-        $isMonthly = $isZarkasi || $isAplikasi || $isSyahriah || ($billType->type === 'MONTHLY');
+        $isMonthly = ($billType->type === 'MONTHLY');
 
         if ($isMonthly) {
             $existingBills = $bills;
