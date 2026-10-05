@@ -149,7 +149,7 @@
                                         @php
                                         $billForMonth = $bills->firstWhere('month', (int)$month) ?? $bills->firstWhere('month', (string)$month);
                                         
-                                        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
+                                        $isZarkasi = ($billType->type === 'MONTHLY') && str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
                                         $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
                                         $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
 
