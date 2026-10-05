@@ -47,7 +47,8 @@ export const detectDevice = (): DeviceInfo => {
     (navigator as any).standalone === true || 
     document.referrer.includes('android-app://') ||
     window.matchMedia('(display-mode: fullscreen)').matches ||
-    window.matchMedia('(display-mode: minimal-ui)').matches
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    ua.includes('CTMobileApp')
 
   let os: 'ios' | 'android' | 'other' = 'other'
   if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
@@ -485,9 +486,19 @@ export const InstallPromptModal = () => {
               Saya Mengerti
             </button>
           )}
+          {deviceInfo.os === 'android' && (
+            <a 
+              href="/download/ct-mobile-latest.apk"
+              download="ct-mobile-latest.apk"
+              className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-2.5 rounded-[16px] border border-slate-200/80 transition active:scale-[0.98] text-xs flex items-center justify-center gap-2"
+            >
+              <Smartphone size={14} className="text-[#9b1de8]" />
+              <span>Opsi Tambahan: Unduh File APK Langsung</span>
+            </a>
+          )}
           <button 
             onClick={dismissPrompt}
-            className="w-full py-2.5 text-slate-400 text-xs font-bold hover:text-slate-600 transition"
+            className="w-full py-2 text-slate-400 text-xs font-bold hover:text-slate-600 transition"
           >
             Nanti Saja
           </button>

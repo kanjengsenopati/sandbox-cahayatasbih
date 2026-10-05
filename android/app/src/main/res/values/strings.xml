@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CT-Mobile</string>
+    <string name="press_again_to_exit">Tekan sekali lagi untuk keluar dari aplikasi</string>
+    <string name="error_connection_title">Koneksi Terputus</string>
+    <string name="error_connection_message">Tidak dapat terhubung ke server Cahaya Tasbih. Pastikan paket data atau Wi-Fi Anda aktif.</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="downloading">Mengunduh berkas…</string>
+    <string name="download_complete">Unduhan selesai. Ketuk untuk membuka.</string>
+    <string name="choose_file">Pilih Gambar atau Berkas</string>
+    <string name="update_available">Pembaruan Tersedia</string>
+    <string name="update_now">Perbarui Sekarang</string>
+    <string name="later">Nanti</string>
+</resources>
