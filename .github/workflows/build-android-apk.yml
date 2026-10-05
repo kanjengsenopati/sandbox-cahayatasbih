@@ -29,7 +29,7 @@ on:
 
 jobs:
   build-apk:
-    name: Build APK (${{ github.event.inputs.flavor || 'staging' }})
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -43,32 +43,37 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: Grant Execute Permission for Gradlew
         run: chmod +x android/gradlew
 
       - name: Build APK with Gradle
+        id: build_apk
         working-directory: android
         run: |
-          FLAVOR="${{ github.event.inputs.flavor || 'staging' }}"
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          FLAVOR="${{ inputs.flavor }}"
+          FLAVOR="${FLAVOR:-staging}"
           
-          # Kapitalisasi nama task (e.g. assembleStagingRelease)
+          BUILD_TYPE="${{ inputs.build_type }}"
+          BUILD_TYPE="${BUILD_TYPE:-release}"
+          
+          # Kapitalisasi nama task (misal: assembleStagingRelease)
           FLAVOR_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FLAVOR:0:1})${FLAVOR:1}"
           TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
           
           TASK_NAME="assemble${FLAVOR_CAP}${TYPE_CAP}"
           echo "Menjalankan Gradle Task: $TASK_NAME"
           ./gradlew $TASK_NAME --no-daemon --stacktrace
+          
+          echo "FLAVOR=$FLAVOR" >> $GITHUB_ENV
+          echo "BUILD_TYPE=$BUILD_TYPE" >> $GITHUB_ENV
 
       - name: Identify and Rename Output APK
         id: apk_info
         run: |
-          FLAVOR="${{ github.event.inputs.flavor || 'staging' }}"
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
-          
           OUTPUT_DIR="android/app/build/outputs/apk/${FLAVOR}/${BUILD_TYPE}"
           APK_FILE=$(find "$OUTPUT_DIR" -name "*.apk" | head -n 1)
           
@@ -85,6 +90,6 @@ jobs:
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ct-mobile-${{ github.event.inputs.flavor || 'staging' }}-apk
+          name: ct-mobile-${{ env.FLAVOR }}-apk
           path: ${{ steps.apk_info.outputs.APK_PATH }}
           retention-days: 14
