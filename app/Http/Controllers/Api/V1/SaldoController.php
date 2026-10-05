@@ -97,7 +97,15 @@ class SaldoController extends Controller
             $saldoHistory = $this->createSaldoHistory($request);
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
-            $this->createTransactionDetail($transaction, $saldoHistory);
+            $detail = $transaction->transactionDetails()->whereNull('saldo_history_id')->first();
+            if ($detail) {
+                $detail->update([
+                    'saldo_history_id' => $saldoHistory->id,
+                    'amount' => $saldoHistory->amount,
+                ]);
+            } else {
+                $this->createTransactionDetail($transaction, $saldoHistory);
+            }
 
             $response = $this->postSuccessResponse('Berhasil Topup Saldo', ['transaction' => $transaction]);
 
@@ -144,6 +152,7 @@ class SaldoController extends Controller
     {
         $transaction->transactionDetails()->create([
             'saldo_history_id' => $saldoHistory->id,
+            'amount' => $saldoHistory->amount,
         ]);
     }
 

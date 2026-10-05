@@ -218,17 +218,12 @@ class TransactionController extends Controller
         // check tipe transaksi
         if ($transaction->type == Transaction::TYPE_BILL) {
             $transaction->load('transactionDetails.bill.banks');
-        } else {
-            // Load necessary relationships for TYPE_SALDO and TYPE_SAVING
-            $transaction->load('student.classroom.school.topupBank.bank');
-
-            if ($transaction->type == Transaction::TYPE_SALDO) {
-                $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank
-                    ->pluck('bank');
-            } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank
-                    ->pluck('bank');
-            }
+        } elseif ($transaction->type == Transaction::TYPE_SALDO) {
+            $transaction->load('transactionDetails.saldoHistory', 'student.classroom.school.topupBank.bank');
+            $transaction['banks'] = $transaction?->student?->classroom?->school?->saldoBank?->pluck('bank');
+        } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+            $transaction->load('transactionDetails.savingHistory', 'student.classroom.school.topupBank.bank');
+            $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank?->pluck('bank');
         }
 
         return $this->getSuccessResponse($transaction);

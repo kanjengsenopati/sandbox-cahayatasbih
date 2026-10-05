@@ -1,0 +1,90 @@
+name: Build Android APK (CT-Mobile WebView)
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Varian APK yang ingin di-build'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      build_type:
+        description: 'Tipe Build'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+  push:
+    branches:
+      - staging
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-android-apk.yml'
+
+jobs:
+  build-apk:
+    name: Build APK (${{ github.event.inputs.flavor || 'staging' }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build APK with Gradle
+        working-directory: android
+        run: |
+          FLAVOR="${{ github.event.inputs.flavor || 'staging' }}"
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          
+          # Kapitalisasi nama task (e.g. assembleStagingRelease)
+          FLAVOR_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${FLAVOR:0:1})${FLAVOR:1}"
+          TYPE_CAP="$(tr '[:lower:]' '[:upper:]' <<< ${BUILD_TYPE:0:1})${BUILD_TYPE:1}"
+          
+          TASK_NAME="assemble${FLAVOR_CAP}${TYPE_CAP}"
+          echo "Menjalankan Gradle Task: $TASK_NAME"
+          ./gradlew $TASK_NAME --no-daemon --stacktrace
+
+      - name: Identify and Rename Output APK
+        id: apk_info
+        run: |
+          FLAVOR="${{ github.event.inputs.flavor || 'staging' }}"
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          
+          OUTPUT_DIR="android/app/build/outputs/apk/${FLAVOR}/${BUILD_TYPE}"
+          APK_FILE=$(find "$OUTPUT_DIR" -name "*.apk" | head -n 1)
+          
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: File APK tidak ditemukan di $OUTPUT_DIR"
+            exit 1
+          fi
+          
+          TARGET_NAME="ct-mobile-${FLAVOR}.apk"
+          cp "$APK_FILE" "$TARGET_NAME"
+          echo "APK_PATH=$TARGET_NAME" >> $GITHUB_OUTPUT
+          echo "Ditemukan dan disalin ke: $TARGET_NAME"
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ct-mobile-${{ github.event.inputs.flavor || 'staging' }}-apk
+          path: ${{ steps.apk_info.outputs.APK_PATH }}
+          retention-days: 14

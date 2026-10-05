@@ -67,20 +67,30 @@ function PembayaranPage() {
       bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
       proofUrl: proof?.proof_image_url || proof?.proof_image,
       note: proof?.note,
-      items: (p.transaction_details?.map((d: any) => ({
-        id: d.id,
-        label: d.bill?.bill_type?.name 
-          ? (d.bill.translated_month 
-              ? `${d.bill.bill_type.name} - ${d.bill.translated_month} ${d.bill.year}` 
-              : `${d.bill.bill_type.name} - ${d.bill.year}`)
-          : (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
-        amount: d.bill?.amount || d.saldo_history?.amount || d.saving_history?.amount || 0,
-        year: d.bill ? Number(d.bill.year) : 0,
-        month: d.bill ? Number(d.bill.month) : 0,
-      })) || []).sort((a: any, b: any) => {
-        if (a.year !== b.year) return a.year - b.year;
-        return a.month - b.month;
-      }),
+      items: (p.type === "SALDO" || p.type === "SAVING")
+        ? [
+            {
+              id: p.id,
+              label: p.type === "SALDO" ? "Topup Saldo" : "Pembayaran Tabungan",
+              amount: Number(p.pay_amount) - Number(p.unique_payment || 0),
+              year: 0,
+              month: 0,
+            }
+          ]
+        : (p.transaction_details?.map((d: any) => ({
+            id: d.id,
+            label: d.bill?.bill_type?.name 
+              ? (d.bill.translated_month 
+                  ? `${d.bill.bill_type.name} - ${d.bill.translated_month} ${d.bill.year}` 
+                  : `${d.bill.bill_type.name} - ${d.bill.year}`)
+              : "Pembayaran",
+            amount: d.amount || d.bill?.amount || d.saldo_history?.amount || d.saving_history?.amount || 0,
+            year: d.bill ? Number(d.bill.year) : 0,
+            month: d.bill ? Number(d.bill.month) : 0,
+          })) || []).sort((a: any, b: any) => {
+            if (a.year !== b.year) return a.year - b.year;
+            return a.month - b.month;
+          }),
     };
   }, [paymentRes]);
 

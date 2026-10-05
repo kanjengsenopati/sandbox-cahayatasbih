@@ -65,8 +65,15 @@ class SavingController extends Controller
             $saldoHistory = $this->createSavingHistory($request);
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SAVING);
 
-            $this->createTransactionDetail($transaction, $saldoHistory);
-
+            $detail = $transaction->transactionDetails()->whereNull('saving_history_id')->first();
+            if ($detail) {
+                $detail->update([
+                    'saving_history_id' => $saldoHistory->id,
+                    'amount' => $saldoHistory->amount,
+                ]);
+            } else {
+                $this->createTransactionDetail($transaction, $saldoHistory);
+            }
 
             $response = $this->postSuccessResponse('Berhasil Topup Tabungan', ['transaction' => $transaction]);
 
@@ -112,7 +119,8 @@ class SavingController extends Controller
     private function createTransactionDetail($transaction, $savingHistory)
     {
         $transaction->transactionDetails()->create([
-            'saving_history_id' => $savingHistory->id
+            'saving_history_id' => $savingHistory->id,
+            'amount' => $savingHistory->amount,
         ]);
     }
 

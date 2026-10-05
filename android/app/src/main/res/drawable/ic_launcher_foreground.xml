@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.6"
+        android:scaleY="0.6"
+        android:translateX="21.6"
+        android:translateY="21.6">
+        <!-- CT-Mobile Stylized Icon -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,20L15,40l39,20l39,-20L54,20z M15,60l39,20l39,-20v10l-39,20L15,70V60z" />
+    </group>
+</vector>

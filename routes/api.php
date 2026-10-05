@@ -20,9 +20,9 @@ use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
 
 
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
+// Public Mobile App Updater & Version Check
+Route::get('mobile/version-check', [\App\Http\Controllers\Api\MobileAppController::class, 'versionCheck'])->name('api.mobile.version-check');
+
 Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function () {
     // Route::get('/help', [HelpController::class, 'index']); //help
 
