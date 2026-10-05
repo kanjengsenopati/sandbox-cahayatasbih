@@ -348,9 +348,14 @@
                                                         data-control="select2" data-placeholder="Pilih Bulan..." multiple="multiple">
                                                         @php
                                                         $indonesianMonths = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                                                        $selectedMonths = isset($paymentRate) ? $paymentRate->paymentRateItems->pluck('month')->filter()->map(fn($m) => (int)$m)->toArray() : [];
+                                                        if (empty($selectedMonths) && isset($paymentRate)) {
+                                                            $sampleMonth = $paymentRate->bills()->whereNotNull('month')->where('month', '>', 0)->value('month');
+                                                            if ($sampleMonth) $selectedMonths = [(int)$sampleMonth];
+                                                        }
                                                         @endphp
                                                         @foreach ($indonesianMonths as $key => $monthName)
-                                                        <option value="{{ $key + 1 }}">{{ $monthName }}</option>
+                                                        <option value="{{ $key + 1 }}" {{ in_array($key + 1, $selectedMonths) ? 'selected' : '' }}>{{ $monthName }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
@@ -358,9 +363,12 @@
                                             <div class="col-lg-6">
                                                 <div class="mb-5">
                                                     <label for="year" class="form-label fs-6 fw-bold text-gray-700">Tahun</label>
+                                                    @php
+                                                    $existingYear = isset($paymentRate) ? ($paymentRate->paymentRateItems->first()?->year ?? null) : null;
+                                                    @endphp
                                                     <input type="number" name="year" id="year"
                                                         class="form-control form-control-solid" placeholder="Tahun"
-                                                        value="{{ $billType->academicYear->start_year ?? date('Y') }}">
+                                                        value="{{ $existingYear ?? ($billType->academicYear->start_year ?? date('Y')) }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -617,6 +625,7 @@
                                     @if($paymentRate->type == 'REGULAR')
                                         <div class="d-flex flex-wrap gap-2">
                                             @foreach($paymentRate->paymentRateClassrooms as $prClassroom)
+                                                <input type="hidden" name="classrooms[]" value="{{ $prClassroom->classroom_id }}">
                                                 <span class="badge badge-light-primary p-2 fs-7">{{ $prClassroom->classroom?->name ?? 'Kelas Dihapus' }}</span>
                                             @endforeach
                                         </div>

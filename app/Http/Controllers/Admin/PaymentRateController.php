@@ -973,11 +973,15 @@ class PaymentRateController extends Controller
             }
 
             // 2. Submitted Targets (Data Baru dari Form)
-            $submittedTargetIds = [];
+            $submittedTargetIds = $existingTargetIds;
             if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
-                $submittedTargetIds = $request->classrooms ?? [];
+                if ($request->has('classrooms')) {
+                    $submittedTargetIds = $request->classrooms ?? [];
+                }
             } else {
-                $submittedTargetIds = $request->students ?? [];
+                if ($request->has('students')) {
+                    $submittedTargetIds = $request->students ?? [];
+                }
             }
 
             // 3. Identify Additions & Removals
@@ -1124,18 +1128,31 @@ class PaymentRateController extends Controller
             } else {
                 // LOGIC FOR FREE / NON-MONTHLY TYPE
                 $cleanPrice = (int) preg_replace('/[^0-9]/', '', (string)($request->price ?? 0));
+                $year = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
                 
                 if (!empty($request->months)) {
+                    $existingItemWithoutMonth = $paymentRate->paymentRateItems()->whereNotIn('month', $request->months)->first();
                     foreach ($request->months as $monthNum) {
                         $item = $paymentRate->paymentRateItems()->where('month', $monthNum)->first();
                         
                         if (!$item) {
-                            $paymentRate->paymentRateItems()->create([
-                                'month'  => $monthNum,
-                                'amount' => $cleanPrice,
-                            ]);
+                            if ($existingItemWithoutMonth) {
+                                $existingItemWithoutMonth->update([
+                                    'month'  => $monthNum,
+                                    'year'   => $year,
+                                    'amount' => $cleanPrice,
+                                ]);
+                                $existingItemWithoutMonth = null;
+                            } else {
+                                $paymentRate->paymentRateItems()->create([
+                                    'month'  => $monthNum,
+                                    'year'   => $year,
+                                    'amount' => $cleanPrice,
+                                ]);
+                            }
                         } else {
                             $item->update([
+                                'year'   => $year,
                                 'amount' => $cleanPrice,
                             ]);
                         }
@@ -1146,6 +1163,7 @@ class PaymentRateController extends Controller
             }
 
             DB::commit();
+            Cache::flush();
             $lock->release();
 
             // Atomic & Robust Sync across all Regular and Transfer rates for this BillType
