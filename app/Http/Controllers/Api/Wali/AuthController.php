@@ -143,7 +143,7 @@ class AuthController extends Controller
         return array_unique($variations);
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         if (Auth::guard('wali')->check()) {
             Auth::guard('wali')->logout();
@@ -151,6 +151,14 @@ class AuthController extends Controller
         if (Auth::guard('web')->check()) {
             Auth::guard('web')->logout();
         }
+
+        try {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        } catch (\Throwable $e) {
+            // In case session driver is array or stateless
+        }
+
         return response()->json(['message' => 'Logout successful']);
     }
 

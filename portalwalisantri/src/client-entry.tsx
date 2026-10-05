@@ -4,7 +4,7 @@ import { getRouter } from "./router";
 import "./styles.css";
 
 // === FORCE PURGE CACHE ON VERSION UPDATE ===
-const CURRENT_VERSION = "2026-06-19_v3";
+const CURRENT_VERSION = "2026-10-05_v1";
 if (typeof window !== "undefined") {
     const savedVersion = localStorage.getItem("pwa_version");
     if (savedVersion !== CURRENT_VERSION) {
