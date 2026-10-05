@@ -792,3 +792,8 @@ Route::get('s/{code}', [App\Http\Controllers\Public\ShortUrlController::class, '
 Route::any('/audit-vps-data', function() {
     return require public_path('audit_vps.php');
 })->middleware('web');
+
+// Mobile APK Download Routes
+Route::get('/download/ct-mobile-latest.apk', [\App\Http\Controllers\Api\MobileAppController::class, 'downloadLatestApk'])->name('mobile.download.latest');
+Route::get('/download/{filename}', [\App\Http\Controllers\Api\MobileAppController::class, 'downloadLatestApk'])->where('filename', 'ct-mobile.*\.apk$');
+
