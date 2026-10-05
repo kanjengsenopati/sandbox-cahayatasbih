@@ -10,8 +10,8 @@ const items = [
 export function BottomNav() {
   const loc = useLocation();
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4 pb-4 pt-2">
-      <div className="flex items-center justify-around rounded-3xl bg-card/95 backdrop-blur-xl border border-border shadow-[var(--shadow-card)] px-2 py-2">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4 pb-4 pt-2 pointer-events-none">
+      <div className="flex items-center justify-around rounded-3xl bg-card/95 backdrop-blur-xl border border-border shadow-[var(--shadow-card)] px-2 py-2 pointer-events-auto">
         {items.map(({ to, label, icon: Icon }) => {
           const active = loc.pathname === to;
           return (

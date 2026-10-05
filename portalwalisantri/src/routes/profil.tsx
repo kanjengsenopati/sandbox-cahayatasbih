@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { LogOut, Loader2, RefreshCw, Mail, Phone, User as UserIcon, MapPin, CreditCard as IdCard, Clock, Activity, ShieldCheck, Shield, Bell, CreditCard, Settings, HelpCircle, ChevronRight, Download } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
@@ -52,13 +53,26 @@ function Profil() {
   const students = profileData?.students || [];
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "W";
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
-      await postLogout();
-      window.location.href = '/ct-mobile/login';
+      // Clear React Query cache immediately
+      queryClient.clear();
+
+      // Attempt postLogout with max 2.5s timeout so mobile users are never stuck
+      await Promise.race([
+        postLogout(),
+        new Promise((resolve) => setTimeout(resolve, 2500))
+      ]);
     } catch (error) {
       console.error("Logout error:", error);
-      window.location.href = '/ct-mobile/login';
+    } finally {
+      // Direct replace navigation to login hash
+      window.location.replace('/ct-mobile/login#/login');
     }
   };
 
@@ -306,13 +320,24 @@ function Profil() {
         </div>
       </section>
 
-      <section className="px-6 mt-6">
+      <section className="px-6 mt-6 mb-8">
         <button
+          type="button"
+          disabled={isLoggingOut}
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-destructive/10 text-destructive font-semibold text-sm border border-destructive/20"
+          className="w-full flex items-center justify-center gap-2.5 p-4 rounded-2xl bg-destructive/10 hover:bg-destructive/15 active:scale-[0.98] active:bg-destructive/20 text-destructive font-semibold text-sm border border-destructive/25 transition-all touch-manipulation cursor-pointer select-none shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <LogOut size={18} />
-          Keluar
+          {isLoggingOut ? (
+            <>
+              <Loader2 size={18} className="animate-spin text-destructive" />
+              <span>Sedang keluar...</span>
+            </>
+          ) : (
+            <>
+              <LogOut size={18} />
+              <span>Keluar</span>
+            </>
+          )}
         </button>
       </section>
     </MobileShell>
