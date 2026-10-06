@@ -250,16 +250,16 @@
                                 <div class="col-12">
                                     <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ ($showModal && $canPayBill) ? 'cursor-pointer clickable-payment-card' : '' }}">
                                         <div class="d-flex align-items-center justify-content-between gap-3">
-                                            <!-- Left side: Month & Year -->
+                                            <!-- Left side: Tagihan & Badge (Bebas / Cicilan, bukan bulanan) -->
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="fw-bold fs-6 text-slate-800">
-                                                    {{ ($month >= 1 && $month <= 12) ? \Carbon\Carbon::create()->month($month)->translatedFormat('F') : ($bill->name ?? 'Sekali Bayar') }}
+                                                    {{ $bill->name }}
+                                                </span>
+                                                <span class="badge badge-light-warning fs-9 fw-bolder">
+                                                    Cicilan Bebas
                                                 </span>
                                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
-                                                    {{ $billDetail->year ?? ($month >= 7 ? 
-                                                        ($bill->academicYear?->start_year ?? '-') : 
-                                                        ($bill->academicYear?->end_year ?? '-')) 
-                                                    }}
+                                                    {{ $bill->academicYear?->name ?? ($billDetail->year ?? '-') }}
                                                 </span>
                                             </div>
             
@@ -273,9 +273,14 @@
                                                         <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
                                                     </div>
                                                 @else
-                                                    <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
-                                                        Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
-                                                    </span>
+                                                    <div class="d-flex flex-column text-end">
+                                                        <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                                            Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                                        </span>
+                                                        @if(!$isPaid)
+                                                        <span class="fs-9 text-slate-400">Total Tagihan</span>
+                                                        @endif
+                                                    </div>
                                                 @endif
                                             </div>
             
@@ -306,14 +311,14 @@
                                                             id="bill-other-{{ $bill->id }}-{{ $month }}"
                                                             class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
                                                             data-bill-id="{{ $billDetail->id }}"
-                                                            data-month="{{ $billDetail->translated_month }}" 
-                                                            data-year="{{ $billDetail->year }}"
+                                                            data-month="Cicilan Bebas" 
+                                                            data-year="{{ $bill->academicYear?->name ?? ($billDetail->year ?? '') }}"
                                                             data-bill-name="{{ $bill->name }}" 
                                                             data-amount="{{ $remainingAmount }}"
-                                                            data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
+                                                            data-payment-input-type="FREE"
                                                             onclick="event.stopPropagation()">
                                                         <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
-                                                            Bayar
+                                                            Bayar Cicilan
                                                         </label>
                                                     </div>
                                                     @else

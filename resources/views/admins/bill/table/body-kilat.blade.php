@@ -558,10 +558,13 @@
                 // Remove any existing bill_ids hidden inputs
                 document.querySelectorAll('input[name="bill_ids[]"]').forEach(input => input.remove());
 
-                // Reset payment option to default LUNAS
+                // Cek apakah ada tagihan dengan tipe Cicilan (FREE) yang dipilih
+                const hasFreeBill = Array.from(selectedCheckboxes).some(cb => (cb.getAttribute('data-payment-input-type') || 'FIXED') === 'FREE');
+
+                // Set payment option: jika ada tagihan Cicilan, otomatis pilih ANGSUR agar kasir bisa ketik nominal bebas langsung
                 const paymentOption = document.getElementById('payment-option');
                 if (paymentOption) {
-                    paymentOption.value = 'LUNAS';
+                    paymentOption.value = hasFreeBill ? 'ANGSUR' : 'LUNAS';
                 }
 
                 selectedCheckboxes.forEach(checkbox => {
@@ -591,20 +594,27 @@
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <div class="d-flex flex-column text-start">
                                                 <span class="fw-bold fs-6 text-slate-800">${billName}</span>
-                                                <span class="text-slate-500 fs-7 mt-1">${translatedMonth} ${year}</span>
+                                                <span class="text-slate-500 fs-7 mt-0.5">${translatedMonth ? translatedMonth + ' • ' : ''}${year}</span>
                                             </div>
-                                            <span class="badge badge-light-warning fw-bolder fs-9">Cicilan</span>
+                                            <span class="badge badge-light-warning fw-bolder fs-9">Cicilan Bebas</span>
                                         </div>
                                         <div class="mt-2 text-start">
-                                            <label class="fs-9 text-slate-500 fw-bold text-uppercase">Jumlah Bayar (Sisa: Rp ${amount.toLocaleString('id-ID')})</label>
+                                            <label class="fs-9 text-slate-600 fw-bold text-uppercase d-flex justify-content-between">
+                                                <span>Nominal Yang Dibayarkan</span>
+                                                <span class="text-muted font-normal">Sisa: Rp ${amount.toLocaleString('id-ID')}</span>
+                                            </label>
                                             <div class="input-group input-group-sm mt-1">
-                                                <span class="input-group-text bg-white border-gray-300 text-slate-600">Rp</span>
-                                                 <input type="text" class="form-control border-gray-300 custom-amount-input input-money" 
+                                                <span class="input-group-text bg-white border-gray-300 text-slate-600 fw-bold">Rp</span>
+                                                 <input type="text" class="form-control border-gray-300 custom-amount-input input-money fw-bold fs-6" 
                                                      name="custom_amounts[${billId}]" 
                                                      value="${amount.toLocaleString('id-ID')}" 
                                                      data-bill-id="${billId}" 
-                                                     data-max-amount="${amount}">
+                                                     data-max-amount="${amount}"
+                                                     placeholder="Ketik nominal cicilan..."
+                                                     onfocus="this.select()"
+                                                     autocomplete="off">
                                             </div>
+                                            <span class="fs-9 text-primary mt-1 d-block"><i class="fas fa-edit me-1"></i>Ketik nominal berapa pun yang ingin dibayarkan santri</span>
                                         </div>
                                     </div>
                                 </div>
@@ -614,7 +624,7 @@
                             const companionDiv = document.createElement('div');
                             companionDiv.className = 'col-md-6 mb-3 sisa-angsuran-card';
                             companionDiv.setAttribute('data-companion-bill-id', billId);
-                            companionDiv.style.display = 'none'; // hidden by default since LUNAS is default
+                            companionDiv.style.display = 'none'; // will be toggled by updatePaymentOptionBehavior()
                             companionDiv.innerHTML = `
                                 <div class="card h-100 border border-success border-opacity-20 shadow-none" style="border-radius: 16px; background-color: #f0fdf4;">
                                     <div class="card-body p-3 d-flex flex-column justify-content-center align-items-center text-center">
