@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -181,6 +182,7 @@ class BillTypeController extends Controller
 
             // Commit the transaction
             DB::commit();
+            Cache::flush();
 
             return redirect()->route('bill-type.show', $billType->id)->with('success', 'Data jenis bayar berhasil ditambahkan.');
         } catch (\Throwable $e) {
@@ -331,6 +333,7 @@ class BillTypeController extends Controller
 
             // Commit the transaction
             DB::commit();
+            Cache::flush();
 
             return redirect()->route('bill-type.index')->with('success', 'Data berhasil diubah');
         } catch (\Exception $e) {
@@ -371,6 +374,8 @@ class BillTypeController extends Controller
                 $billType->delete();
             });
 
+            Cache::flush();
+
             return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Error deleting bill type: ' . $e->getMessage());
@@ -391,6 +396,8 @@ class BillTypeController extends Controller
             $billType = BillType::findOrFail($id);
             $billType->is_visible = !$billType->is_visible;
             $billType->save();
+
+            Cache::flush();
 
             $statusText = $billType->is_visible ? 'ditampilkan' : 'disembunyikan';
             return response()->json([
@@ -421,6 +428,8 @@ class BillTypeController extends Controller
 
         try {
             BillType::whereIn('id', $request->ids)->update(['is_visible' => $request->is_visible]);
+
+            Cache::flush();
 
             $statusText = $request->is_visible ? 'ditampilkan' : 'disembunyikan';
             $count = count($request->ids);

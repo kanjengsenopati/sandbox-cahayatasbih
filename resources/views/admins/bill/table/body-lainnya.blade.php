@@ -174,6 +174,11 @@
                          <div class="d-flex align-items-center flex-wrap gap-2">
                              <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                              <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
+                             @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
+                                 <span class="badge badge-light-warning fw-bold fs-8 px-2 py-1" title="Pengaturan: Nominal Bebas (Cicilan)">Cicilan</span>
+                             @else
+                                 <span class="badge badge-light-primary fw-bold fs-8 px-2 py-1" title="Pengaturan: Fix Amount (Nominal Tetap)">Fix</span>
+                             @endif
                          </div>
                     </div>
 
@@ -213,16 +218,24 @@
         <div id="collapseLainnya{{ $bill->id }}" class="accordion-collapse collapse" aria-labelledby="headingLainnya{{ $bill->id }}">
             <div class="accordion-body bg-white border-top p-4 p-md-5">
                 @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
-                    <div class="row g-5">
-                        <!-- Kolom Kiri: Pilihan Pembayaran -->
-                        <div class="col-md-5 col-12">
+                    <div class="row g-4 g-lg-5">
+                        <!-- Kolom Kiri: Pilihan Pembayaran (Rasio ~30%) -->
+                        <div class="col-xl-4 col-lg-4 col-md-5 col-12">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-file-invoice text-primary me-2"></i> Pilihan Pembayaran
                             </h4>
                             <div class="row g-3">
-                                @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                                 @php
-                                    $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                                    $studentBills = $bill->bills->where('student_id', $student->id);
+                                    $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
+                                    $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                                    if (empty($monthsToLoop)) {
+                                        $monthsToLoop = [0];
+                                    }
+                                @endphp
+                                @foreach ($monthsToLoop as $month)
+                                @php
+                                    $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                                     $amount = $billDetail ? $billDetail->amount : 0;
                                     $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                                     $status = $billDetail ? $billDetail->status : 'UNPAID';
@@ -240,7 +253,7 @@
                                             <!-- Left side: Month & Year -->
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="fw-bold fs-6 text-slate-800">
-                                                    {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                                    {{ ($month >= 1 && $month <= 12) ? \Carbon\Carbon::create()->month($month)->translatedFormat('F') : ($bill->name ?? 'Sekali Bayar') }}
                                                 </span>
                                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                                     {{ $billDetail->year ?? ($month >= 7 ? 
@@ -273,13 +286,13 @@
                                                         <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
                                                             <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                                         </span>
-                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
                                                             @if(!empty($billDetail?->id))
                                                             <button type="button" 
                                                                 class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-bill ms-1"
-                                                                title="Batalkan Pembayaran Tagihan Ini"
+                                                                title="Batalkan Seluruh Pembayaran Tagihan Ini"
                                                                 onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
-                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal Semua
                                                             </button>
                                                             @endif
                                                         @endif
@@ -318,21 +331,22 @@
                             </div>
                         </div>
                         
-                        <!-- Kolom Kanan: Riwayat Pembayaran -->
-                        <div class="col-md-7 col-12 border-start border-gray-200 ps-md-5">
+                        <!-- Kolom Kanan: Riwayat Pembayaran (Rasio ~70%) -->
+                        <div class="col-xl-8 col-lg-8 col-md-7 col-12 border-start border-gray-200 ps-md-5">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-history text-primary me-2"></i> Riwayat Pembayaran
                             </h4>
                             @php
-                                $firstBillDetail = $bill->bills->where('student_id', $student->id)->first();
+                                $allBillIds = $bill->bills->where('student_id', $student->id)->pluck('id')->filter()->toArray();
                                 $historyDetails = collect([]);
-                                if ($firstBillDetail) {
-                                    $historyDetails = $firstBillDetail->transactionDetails()
+                                if (!empty($allBillIds)) {
+                                    $historyDetails = \App\Models\TransactionDetail::whereIn('bill_id', $allBillIds)
                                         ->whereNull('transaction_details.deleted_at')
                                         ->whereHas('transaction', function($q) {
                                             $q->whereNull('transactions.deleted_at')
                                               ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas']);
                                         })
+                                        ->with(['transaction.admin', 'transaction.paymentMethod'])
                                         ->orderBy('created_at', 'asc')
                                         ->get();
                                 }
@@ -348,20 +362,23 @@
                                                 <th>Nominal Bayar</th>
                                                 <th>Petugas</th>
                                                 <th>Sisa Tagihan</th>
+                                                <th class="text-center" style="width: 12%">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @php
-                                                $runningRemaining = $firstBillDetail->amount;
+                                                $totalBillForStudent = $bill->bills->where('student_id', $student->id)->sum('amount');
+                                                $runningRemaining = $totalBillForStudent;
                                             @endphp
                                             @foreach($historyDetails as $detail)
                                                 @php
                                                     $paidAmt = $detail->amount ?? $firstBillDetail->amount;
                                                     $runningRemaining -= $paidAmt;
+                                                    $txDate = $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-';
                                                 @endphp
                                                 <tr class="text-slate-600">
                                                     <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-' }}</td>
+                                                    <td>{{ $txDate }}</td>
                                                     <td class="text-emerald-600 fw-boldest">Rp {{ number_format($paidAmt, 0, ',', '.') }}</td>
                                                     <td>
                                                         @if($detail->transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id)
@@ -371,6 +388,18 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
+                                                    <td class="text-center">
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                            <button type="button" 
+                                                                class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-transaction"
+                                                                title="Batalkan Angsuran Transaksi Ini"
+                                                                onclick="handleCancelTransactionDetail('{{ $detail->id }}', 'Rp {{ number_format($paidAmt, 0, ',', '.') }}', '{{ $txDate }}', event)">
+                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                            </button>
+                                                        @else
+                                                            <span class="text-muted fs-8">-</span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
@@ -385,9 +414,17 @@
                     </div>
                 @else
                     <div class="row g-3">
-                        @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                         @php
-                            $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                            $studentBills = $bill->bills->where('student_id', $student->id);
+                            $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
+                            $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                            if (empty($monthsToLoop)) {
+                                $monthsToLoop = [0];
+                            }
+                        @endphp
+                        @foreach ($monthsToLoop as $month)
+                        @php
+                            $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                             $amount = $billDetail ? $billDetail->amount : 0;
                             $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                             $status = $billDetail ? $billDetail->status : 'UNPAID';
@@ -410,7 +447,7 @@
                                     <!-- Left side: Month & Year -->
                                     <div class="d-flex align-items-center gap-2" style="min-width: 150px;">
                                         <span class="fw-bold fs-6 text-slate-800">
-                                            {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                            {{ ($month >= 1 && $month <= 12) ? \Carbon\Carbon::create()->month($month)->translatedFormat('F') : ($bill->name ?? 'Sekali Bayar') }}
                                         </span>
                                         <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                             {{ $billDetail->year ?? ($month >= 7 ? 

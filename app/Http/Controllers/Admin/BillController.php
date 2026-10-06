@@ -212,11 +212,6 @@ class BillController extends Controller
     private function calculateBillTotals($item, $student, $preloadedRates = null, $allStudentBills = null)
     {
         $bills = $item->bills;
-        $upperName = strtoupper($item->name ?? '');
-
-        $isZarkasi = str_contains($upperName, 'ZARKASI');
-        $isAplikasi = str_contains($upperName, 'APLIKASI');
-        $isSyahriah = str_contains($upperName, 'SYAHR');
 
         if ($item->type === 'MONTHLY') {
             $totalBill = 0;
@@ -1201,10 +1196,99 @@ class BillController extends Controller
         }
 
         $request->validate([
-            'bill_id' => 'required',
+            'bill_id' => 'required_without:transaction_detail_id',
+            'transaction_detail_id' => 'required_without:bill_id',
         ]);
 
         return DB::transaction(function () use ($request, $user) {
+            // =========================================================================
+            // SKENARIO 1: Pembatalan Transaksi Angsuran Spesifik (per Record Pembayaran)
+            // =========================================================================
+            if ($request->filled('transaction_detail_id')) {
+                $detail = TransactionDetail::where('id', $request->transaction_detail_id)->lockForUpdate()->firstOrFail();
+                $bill = Bill::where('id', $detail->bill_id)->lockForUpdate()->firstOrFail();
+                $transaction = Transaction::where('id', $detail->transaction_id)->lockForUpdate()->firstOrFail();
+                $student = Student::where('id', $bill->student_id)->lockForUpdate()->first();
+
+                $cancelledAmount = (int) $detail->amount;
+                $oldPaid = (int) $bill->getRawOriginal('paid_amount');
+                $cancelledCode = $transaction->payment_code;
+
+                // 1. Kembalikan saldo santri jika metode pembayaran saldo
+                if ($transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || !empty($detail->saldo_history_id)) {
+                    if ($student && $cancelledAmount > 0) {
+                        $balanceBefore = $student->saldo;
+                        $student->increment('saldo', $cancelledAmount);
+                        $student->refresh();
+                        $balanceAfter = $student->saldo;
+
+                        \App\Models\SaldoHistory::create([
+                            'student_id' => $student->id,
+                            'amount' => $cancelledAmount,
+                            'type' => \App\Models\SaldoHistory::TYPE_IN,
+                            'description' => 'Refund Pembatalan Angsuran ' . ($bill->billType?->name ?? 'Tagihan') . ' (' . ($transaction->payment_code ?? '') . ') Sebesar Rp ' . number_format($cancelledAmount, 0, ',', '.'),
+                            'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
+                            'usage' => \App\Models\SaldoHistory::USAGE_TOPUP,
+                            'balance_before' => $balanceBefore,
+                            'balance_after' => $balanceAfter,
+                        ]);
+
+                        \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
+                    }
+                }
+
+                // 2. Batalkan transaksi jika detailnya cuma satu, atau kurangi pay_amount
+                $otherDetailsCount = TransactionDetail::where('transaction_id', $transaction->id)
+                    ->where('id', '!=', $detail->id)
+                    ->whereNull('deleted_at')
+                    ->count();
+
+                if ($otherDetailsCount === 0) {
+                    $transaction->update(['status' => Transaction::STATUS_CANCELLED]);
+                    $transaction->delete();
+                } else {
+                    $transaction->decrement('pay_amount', min($transaction->pay_amount, $cancelledAmount));
+                }
+
+                $detail->delete();
+
+                // 3. Hitung ulang paid_amount dan update status bill
+                $newPaid = max(0, $oldPaid - $cancelledAmount);
+                $bill->paid_amount = $newPaid;
+                if ($newPaid <= 0) {
+                    $bill->status = Bill::STATUS_UNPAID;
+                } elseif ($newPaid >= $bill->amount) {
+                    $bill->status = Bill::STATUS_PAID;
+                } else {
+                    $bill->status = Bill::STATUS_PARTIAL;
+                }
+                $bill->save();
+
+                // 4. Audit Log
+                Log::info("[BILL_TRANSACTION_CANCELLED] Angsuran Pembayaran Tagihan Berhasil Dibatalkan", [
+                    'user' => ['id' => $user->id, 'name' => $user->name],
+                    'student' => ['id' => $student?->id, 'name' => $student?->name],
+                    'bill' => ['id' => $bill->id, 'type' => $bill->billType?->name, 'amount' => $bill->amount],
+                    'cancelled_detail_id' => $detail->id,
+                    'cancelled_amount' => $cancelledAmount,
+                    'new_paid_amount' => $newPaid,
+                    'payment_code' => $cancelledCode,
+                ]);
+
+                Cache::forget("student_bills_synced_{$bill->student_id}");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Transaksi angsuran sebesar Rp ' . number_format($cancelledAmount, 0, ',', '.') . ' berhasil dibatalkan secara atomik.',
+                    'cancelled_amount' => $cancelledAmount,
+                    'new_paid_amount' => $newPaid,
+                    'new_status' => $bill->status,
+                ]);
+            }
+
+            // =========================================================================
+            // SKENARIO 2: Pembatalan Seluruh Pembayaran Tagihan (per Kartu Tagihan)
+            // =========================================================================
             $bill = Bill::where('id', $request->bill_id)->lockForUpdate()->firstOrFail();
 
             if ($bill->paid_amount <= 0 && $bill->status !== Bill::STATUS_PAID && $bill->status !== Bill::STATUS_PARTIAL) {

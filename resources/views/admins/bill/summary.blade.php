@@ -169,14 +169,10 @@
                                         @php
                                         $billForMonth = $bills->firstWhere('month', (int)$month) ?? $bills->firstWhere('month', (string)$month);
                                         
-                                        $isZarkasi = ($billType->type === 'MONTHLY') && str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
                                         $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
                                         $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
 
-                                        if ($isZarkasi) {
-                                            $targetZarkasi = [7=>100000, 8=>100000, 9=>100000, 10=>100000, 11=>100000, 12=>50000];
-                                            $rawAmount = $targetZarkasi[$month] ?? 0;
-                                        } elseif ($isAplikasi) {
+                                        if ($isAplikasi) {
                                             $rawAmount = 10000;
                                         } elseif ($isSyahriah) {
                                             $rawAmount = 500000;

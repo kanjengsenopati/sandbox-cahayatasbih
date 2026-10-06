@@ -44,12 +44,21 @@ class TopupController extends BaseWaliApiController
             'usage' => \App\Models\SaldoHistory::USAGE_TOPUP
         ]);
 
-        // Link transaction to saldo history
-        \App\Models\TransactionDetail::create([
-            'transaction_id' => $transaction->id,
-            'saldo_history_id' => $saldoHistory->id,
-            'amount' => $transaction->pay_amount,
-        ]);
+        // Link transaction to saldo history (Reuse existing detail created by createTransaction to prevent duplicate details)
+        $detail = $transaction->transactionDetails()->whereNull('saldo_history_id')->first();
+        if ($detail) {
+            $detail->update([
+                'saldo_history_id' => $saldoHistory->id,
+                'amount' => $saldoHistory->amount,
+            ]);
+        } else {
+            \App\Models\TransactionDetail::create([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'transaction_id' => $transaction->id,
+                'saldo_history_id' => $saldoHistory->id,
+                'amount' => $saldoHistory->amount,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Top Up request created successfully',

@@ -141,24 +141,16 @@
     @else
     @foreach ($billMonth as $bill)
     @php
-        $isZarkasi = ($bill->type === 'MONTHLY') && str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         $isAplikasi = str_contains(strtoupper($bill->name ?? ''), 'APLIKASI');
 
         if (isset($allStudentBills) && $allStudentBills) {
-            if ($isZarkasi) {
-                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && is_null($b->billType?->deleted_at) && str_contains(strtoupper($b->billType?->name ?? ''), 'ZARKASI'));
-            } elseif ($isAplikasi) {
+            if ($isAplikasi) {
                 $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && is_null($b->billType?->deleted_at) && str_contains(strtoupper($b->billType?->name ?? ''), 'APLIKASI'));
             } else {
                 $existingBills = $allStudentBills->where('bill_type_id', $bill->id);
             }
         } else {
-            if ($isZarkasi) {
-                $existingBills = \App\Models\Bill::where('student_id', $student->id)
-                    ->where('academic_year_id', $bill->academic_year_id)
-                    ->whereHas('billType', fn($q) => $q->whereNull('deleted_at')->where('name', 'like', '%ZARKASI%'))
-                    ->get();
-            } elseif ($isAplikasi) {
+            if ($isAplikasi) {
                 $existingBills = \App\Models\Bill::where('student_id', $student->id)
                     ->where('academic_year_id', $bill->academic_year_id)
                     ->whereHas('billType', fn($q) => $q->whereNull('deleted_at')->where('name', 'like', '%APLIKASI%'))
@@ -170,38 +162,8 @@
                     ->get();
             }
         }
-        
-        // Build Zarkasi targets dynamically dari data tagihan aktual di DB
-        // (sebelumnya hardcoded 100k×5 + 50k = 550k yang hanya cocok untuk kelas 12)
-        $zarkasiTargets = [];
-        if ($isZarkasi) {
-            foreach (array_merge(range(7, 12), range(1, 6)) as $zm) {
-                $zBill = $existingBills->firstWhere('month', (int)$zm) ?? $existingBills->firstWhere('month', (string)$zm);
-                $zarkasiTargets[$zm] = $zBill ? (int)$zBill->amount : 0;
-            }
-        }
 
-        if ($isZarkasi) {
-            $zarkasiTotal = array_sum($zarkasiTargets);
-            $totalRawPaid = $existingBills->sum('paid_amount');
-            $paidAmount = min($zarkasiTotal, $totalRawPaid);
-            $unpaidAmount = max(0, $zarkasiTotal - $paidAmount);
-
-            $zarkasiPaidAllocated = [];
-            $remPool = $totalRawPaid;
-            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
-                $t = $zarkasiTargets[$m] ?? 0;
-                if ($remPool >= $t && $t > 0) {
-                    $zarkasiPaidAllocated[$m] = $t;
-                    $remPool -= $t;
-                } else if ($remPool > 0 && $t > 0) {
-                    $zarkasiPaidAllocated[$m] = $remPool;
-                    $remPool = 0;
-                } else {
-                    $zarkasiPaidAllocated[$m] = 0;
-                }
-            }
-        } elseif ($isAplikasi) {
+        if ($isAplikasi) {
             $totalRawPaid = $existingBills->sum('paid_amount');
             $paidAmount = min(120000, $totalRawPaid);
             $unpaidAmount = max(0, 120000 - $paidAmount);
@@ -293,6 +255,11 @@
                           <div class="d-flex align-items-center flex-wrap gap-2">
                               <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                               <span class="badge badge-primary fw-bold fs-8 px-3 py-1">Bulanan</span>
+                              @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
+                                  <span class="badge badge-light-warning fw-bold fs-8 px-2 py-1" title="Pengaturan: Nominal Bebas (Cicilan)">Cicilan</span>
+                              @else
+                                  <span class="badge badge-light-primary fw-bold fs-8 px-2 py-1" title="Pengaturan: Fix Amount (Nominal Tetap)">Fix</span>
+                              @endif
                           </div>
                      </div>
 
@@ -339,14 +306,7 @@
                             $billDetail = $existingBills->firstWhere('month', (string)$month);
                         }
 
-                        if ($isZarkasi) {
-                            $amount = $zarkasiTargets[$month] ?? 0;
-                            $mPaid = $zarkasiPaidAllocated[$month] ?? 0;
-                            $remainingAmount = max(0, $amount - $mPaid);
-                            $isPaid = ($amount > 0) && ($remainingAmount == 0);
-                            $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
-                        } elseif ($isAplikasi) {
+                        if ($isAplikasi) {
                             $amount = 10000;
                             $mPaid = $aplikasiPaidAllocated[$month] ?? 0;
                             $remainingAmount = max(0, $amount - $mPaid);
