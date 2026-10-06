@@ -254,12 +254,9 @@
                                     <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ ($showModal && $canPayBill) ? 'cursor-pointer clickable-payment-card' : '' }}">
                                         <div class="d-flex align-items-center justify-content-between gap-3">
                                             <!-- Left side: Tagihan & Badge (Bebas / Cicilan, bukan bulanan) -->
-                                            <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex flex-column align-items-start gap-1">
                                                 <span class="fw-bold fs-6 text-slate-800">
                                                     {{ $bill->name }}
-                                                </span>
-                                                <span class="badge badge-light-warning fs-9 fw-bolder">
-                                                    Cicilan Bebas
                                                 </span>
                                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                                     {{ $bill->academicYear?->name ?? ($billDetail->year ?? '-') }}
