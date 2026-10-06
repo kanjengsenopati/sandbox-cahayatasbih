@@ -130,7 +130,7 @@
                                     <th>UPT</th>
                                     <th>Saldo</th>
                                     <th>Status</th>
-                                    <th class="text-center min-w-100px">Aksi</th>
+                                    <th class="text-center min-w-70px" style="width: 70px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
