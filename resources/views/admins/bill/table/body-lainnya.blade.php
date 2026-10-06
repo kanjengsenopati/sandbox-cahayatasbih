@@ -297,7 +297,7 @@
                                                             name="bill_months[{{ $bill->id }}][]" 
                                                             value="{{ $month }}"
                                                             id="bill-other-{{ $bill->id }}-{{ $month }}"
-                                                            class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
+                                                            class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer border border-slate-500" 
                                                             data-bill-id="{{ $billDetail->id }}"
                                                             data-month="Cicilan Bebas" 
                                                             data-year="{{ $bill->academicYear?->name ?? ($billDetail->year ?? '') }}"
@@ -305,9 +305,6 @@
                                                             data-amount="{{ $remainingAmount }}"
                                                             data-payment-input-type="FREE"
                                                             onclick="event.stopPropagation()">
-                                                        <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
-                                                            Bayar Cicilan
-                                                        </label>
                                                     </div>
                                                     @else
                                                     <span class="badge badge-light-warning text-warning fw-bold fs-8">Belum Lunas</span>
@@ -368,23 +365,27 @@
                                                     $paidAmt = $detail->amount ?? $firstBillDetail->amount;
                                                     $runningRemaining -= $paidAmt;
                                                     $txDate = $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-';
+                                                    $isLatest = $loop->last;
+                                                    $rowClass = $isLatest ? 'text-slate-900 bg-light-primary' : 'text-slate-500';
+                                                    $paidClass = $isLatest ? 'text-emerald-600 fw-boldest fs-6' : 'text-emerald-500 fw-bold opacity-75';
+                                                    $sisaClass = $isLatest ? 'text-danger fw-boldest fs-6' : 'text-danger fw-bold opacity-75';
                                                 @endphp
-                                                <tr class="text-slate-600">
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $txDate }}</td>
-                                                    <td class="text-emerald-600 fw-boldest">Rp {{ number_format($paidAmt, 0, ',', '.') }}</td>
-                                                    <td>
+                                                <tr class="{{ $rowClass }}">
+                                                    <td class="{{ $isLatest ? 'fw-boldest' : 'opacity-75' }}">{{ $loop->iteration }}</td>
+                                                    <td class="{{ $isLatest ? 'fw-boldest' : 'opacity-75' }}">{{ $txDate }}</td>
+                                                    <td class="{{ $paidClass }}">Rp {{ number_format($paidAmt, 0, ',', '.') }}</td>
+                                                    <td class="{{ $isLatest ? 'fw-boldest' : 'opacity-75' }}">
                                                         @if($detail->transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id)
                                                             <span class="badge badge-light-primary fw-bolder px-2 py-0.5 fs-9">SALDO</span>
                                                         @else
                                                             {{ $detail->transaction->admin->name ?? 'Sistem / Admin' }}
                                                         @endif
                                                     </td>
-                                                    <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
+                                                    <td class="{{ $sisaClass }}">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
                                                     <td class="text-center">
                                                         @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Batal Angsuran Tagihan'))
                                                             <button type="button" 
-                                                                class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-transaction"
+                                                                class="btn btn-sm {{ $isLatest ? 'btn-light-danger fw-bold' : 'btn-light-danger opacity-75' }} py-1 px-2.5 fs-8 btn-cancel-transaction"
                                                                 title="Batalkan Angsuran Transaksi Ini"
                                                                 onclick="handleCancelTransactionDetail('{{ $detail->id }}', 'Rp {{ number_format($paidAmt, 0, ',', '.') }}', '{{ $txDate }}', event)">
                                                                 <i class="fas fa-undo me-1 fs-9"></i> Batal
