@@ -88,7 +88,7 @@
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
-                                            <input type="email" class="form-control form-control-solid" id="email" name="email"
+                                            <input type="text" class="form-control form-control-solid" id="email" name="email"
                                                 placeholder="Masukkan Email Wali Santri"
                                                 value="{{ @$user->email ?? old('email') }}" />
                                             <!--end::Input-->
@@ -249,7 +249,6 @@
         email: {
         required: false,
         maxlength: 255,
-        email : true,
         },
         gender: {
         required: true,
@@ -269,7 +268,6 @@
         },
         email: {
         maxlength: "Email maksimal 255 karakter",
-        email: "Email tidak valid",
         },
         password: {
         required: "Password harus diisi",
