@@ -1178,21 +1178,29 @@ class BillController extends Controller
     {
         $user = Auth::user();
         $isAuthorized = false;
+        $isDetailCancel = $request->filled('transaction_detail_id');
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Cancel Tagihan') || $user->can('Batal Transaksi Tagihan')) {
+            if ($user->hasRole('Super Admin')) {
                 $isAuthorized = true;
+            } elseif ($isDetailCancel) {
+                // Khusus wewenang pembatalan angsuran per record pembayaran
+                $isAuthorized = $user->can('Batal Angsuran Tagihan');
+            } else {
+                // Pembatalan keseluruhan pembayaran tagihan
+                $isAuthorized = $user->can('Cancel Tagihan') || $user->can('Batal Transaksi Tagihan') || $user->hasRole('Bendahara');
             }
         }
 
         if (!$isAuthorized) {
+            $requiredPerm = $isDetailCancel ? 'Batal Angsuran Tagihan' : 'Cancel Tagihan';
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Akses ditolak: Anda tidak memiliki wewenang khusus (Permission: Cancel Tagihan) untuk membatalkan pembayaran ini. Hubungi Administrator.'
+                    'message' => "Akses ditolak: Anda tidak memiliki wewenang khusus (Permission: {$requiredPerm}) untuk melakukan pembatalan ini. Hubungi Administrator."
                 ], 403);
             }
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki izin khusus untuk membatalkan pembayaran tagihan.');
+            return redirect()->back()->with('error', "Maaf, Anda tidak memiliki izin khusus (Permission: {$requiredPerm}) untuk melakukan pembatalan ini.");
         }
 
         $request->validate([
