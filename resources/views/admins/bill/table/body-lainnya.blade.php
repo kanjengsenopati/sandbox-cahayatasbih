@@ -237,11 +237,14 @@
                                 @php
                                     $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                                     $amount = $billDetail ? $billDetail->amount : 0;
-                                    $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
+                                    $paidAmountDetail = $billDetail ? $billDetail->paid_amount : 0;
+                                    $remainingAmount = $billDetail ? max(0, $amount - $paidAmountDetail) : 0;
                                     $status = $billDetail ? $billDetail->status : 'UNPAID';
-                                    $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                                    // Tagihan LUNAS HANYA JIKA sisa tagihan <= 0 dan total tagihan > 0
+                                    $isPaid = $billDetail && ($remainingAmount <= 0 && $amount > 0);
                                     
                                     $modalId = "bayarLainnya{$bill->id}_{$month}";
+                                    // Selama belum lunas (sisa > 0), modal/checkbox pembayaran WAJIB muncul
                                     $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
                                     
                                     $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
@@ -287,21 +290,9 @@
                                             <!-- Right side: Status / Checkbox -->
                                             <div>
                                                 @if($isPaid)
-                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                                        <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
-                                                            <i class="fas fa-check-circle me-1 text-white"></i> Lunas
-                                                        </span>
-                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
-                                                            @if(!empty($billDetail?->id))
-                                                            <button type="button" 
-                                                                class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-bill ms-1"
-                                                                title="Batalkan Seluruh Pembayaran Tagihan Ini"
-                                                                onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
-                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal Semua
-                                                            </button>
-                                                            @endif
-                                                        @endif
-                                                    </div>
+                                                    <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
+                                                        <i class="fas fa-check-circle me-1 text-white"></i> Lunas
+                                                    </span>
                                                 @elseif($showModal)
                                                     @if($canPayBill)
                                                     <div class="form-check form-check-custom form-check-solid form-check-sm">
@@ -431,9 +422,10 @@
                         @php
                             $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
                             $amount = $billDetail ? $billDetail->amount : 0;
-                            $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
+                            $paidAmountDetail = $billDetail ? $billDetail->paid_amount : 0;
+                            $remainingAmount = $billDetail ? max(0, $amount - $paidAmountDetail) : 0;
                             $status = $billDetail ? $billDetail->status : 'UNPAID';
-                            $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                            $isPaid = $billDetail && ($remainingAmount <= 0 && $amount > 0);
                             $detailPayment = $billDetail ? $billDetail->transactionDetails?->first()?->transaction : null;
                             
                             $modalId = "bayarLainnya{$bill->id}_{$month}";
