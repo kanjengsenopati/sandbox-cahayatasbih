@@ -175,17 +175,17 @@ class StudentController extends Controller
                     $actionDelete = route('student.destroy', $data->id);
                     $actionPrint = route('student.generate-student-card', $data->id);
 
-                    $html = "<div class='d-inline-grid' style='grid-template-columns: repeat(2, 28px); gap: 4px; justify-content: center; align-items: center;'>" .
-                        "<button type='button' class='btn btn-icon btn-light-info w-28px h-28px btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-7'></i></button>";
+                    $html = "<div style='display: grid !important; grid-template-columns: 28px 28px !important; gap: 4px; width: 60px; margin: 0 auto; justify-items: center; align-items: center;'>" .
+                        "<button type='button' class='btn btn-icon btn-light-info w-28px h-28px btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa' style='margin: 0 !important;'><i class='fa fa-info-circle fs-7'></i></button>";
 
                     if ($canEdit) {
-                        $html .= "<button type='button' class='btn btn-icon btn-light-warning w-28px h-28px btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit fs-8'></i></button>";
+                        $html .= "<button type='button' class='btn btn-icon btn-light-warning w-28px h-28px btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa' style='margin: 0 !important;'><i class='fas fa-edit fs-8'></i></button>";
                     }
 
-                    $html .= "<a href='{$actionPrint}' class='btn btn-icon btn-light-primary w-28px h-28px' title='Cetak Kartu'><i class='fas fa-id-card fs-8'></i></a>";
+                    $html .= "<a href='{$actionPrint}' class='btn btn-icon btn-light-primary w-28px h-28px' title='Cetak Kartu' style='margin: 0 !important;'><i class='fas fa-id-card fs-8'></i></a>";
 
                     if ($canDelete) {
-                        $html .= "<a data-id='form{$data->id}' type='button' id='btnDelete{$data->id}' class='btn-delete btn btn-icon btn-light-danger w-28px h-28px' title='Hapus Santri'><i class='fas fa-trash-alt fs-8' style='pointer-events: none;'></i></a>" .
+                        $html .= "<a data-id='form{$data->id}' type='button' id='btnDelete{$data->id}' class='btn-delete btn btn-icon btn-light-danger w-28px h-28px' title='Hapus Santri' style='margin: 0 !important;'><i class='fas fa-trash-alt fs-8' style='pointer-events: none;'></i></a>" .
                             "<form id='form{$data->id}' action='{$actionDelete}' method='post' class='d-none'><input type='hidden' name='_token' value='{$csrfToken}'><input type='hidden' name='_method' value='delete'></form>";
                     }
 
