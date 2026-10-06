@@ -596,7 +596,7 @@
                         url: '{{ route('user.bulk-delete') }}',
                         type: 'POST',
                         data: {
-                            _token: '{{ csrf_token() }}',
+                            _token: $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}',
                             ids: selectedIds
                         },
                         success: function(response) {
@@ -616,6 +616,7 @@
                             }
                         },
                         error: function(xhr) {
+                            if (xhr.status === 419) return;
                             var errMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan sistem.';
                             Swal.fire(
                                 'Gagal!',
@@ -773,7 +774,7 @@
                         url: '{{ route('user.bulk-update-status') }}',
                         type: 'POST',
                         data: {
-                            _token: '{{ csrf_token() }}',
+                            _token: $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}',
                             ids: selectedIds,
                             jamaah_status: targetStatus
                         },
@@ -806,6 +807,7 @@
                             }
                         },
                         error: function(xhr) {
+                            if (xhr.status === 419) return;
                             var errMsg = 'Terjadi kesalahan sistem.';
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errMsg = xhr.responseJSON.message;
@@ -846,7 +848,7 @@
                          url: url,
                          type: 'POST',
                          data: {
-                             _token: '{{ csrf_token() }}'
+                             _token: $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}'
                          },
                          success: function(response) {
                              if (response.status === 'success') {
@@ -872,6 +874,7 @@
                              }
                          },
                          error: function(xhr) {
+                             if (xhr.status === 419) return;
                              var errMsg = 'Terjadi kesalahan saat memproses verifikasi.';
                              if (xhr.responseJSON && xhr.responseJSON.message) {
                                  errMsg = xhr.responseJSON.message;
@@ -914,7 +917,7 @@
                          url: url,
                          type: 'POST',
                          data: {
-                             _token: '{{ csrf_token() }}'
+                             _token: $('meta[name="csrf-token"]').attr('content') || '{{ csrf_token() }}'
                          },
                          success: function(response) {
                              if (response.status === 'success') {
@@ -933,6 +936,7 @@
                              }
                          },
                          error: function(xhr) {
+                             if (xhr.status === 419) return;
                              var errMsg = 'Terjadi kesalahan saat mereset password.';
                              if (xhr.responseJSON && xhr.responseJSON.message) {
                                  errMsg = xhr.responseJSON.message;
@@ -1042,6 +1046,7 @@
                               refreshCounters();
                           },
                           error: function(xhr) {
+                              if (xhr.status === 419) return;
                               var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan saat memproses.';
                               Swal.fire('Gagal!', msg, 'error');
                           }

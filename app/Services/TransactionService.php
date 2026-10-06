@@ -74,7 +74,7 @@ class TransactionService
                         if ($bill->paid_amount >= $bill->amount) {
                             $bill->status = Bill::STATUS_PAID;
                         } else {
-                            $bill->status = Bill::STATUS_UNPAID;
+                            $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
                         }
                         $bill->save();
                     }
@@ -127,7 +127,7 @@ class TransactionService
                         if ($bill->paid_amount >= $bill->amount) {
                             $bill->status = Bill::STATUS_PAID;
                         } else {
-                            $bill->status = Bill::STATUS_UNPAID;
+                            $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
                         }
                         $bill->save();
                     }
@@ -672,7 +672,7 @@ class TransactionService
                             if ($bill->paid_amount >= $bill->amount) {
                                 $bill->status = Bill::STATUS_PAID;
                             } else {
-                                $bill->status = Bill::STATUS_UNPAID;
+                                $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
                             }
                             $bill->save();
                         }
