@@ -1323,7 +1323,8 @@ class TransactionService
         $rate = self::resolveActivePaymentRate($studentId, $billTypeId, $preloadedRates);
         if (!$rate) return null;
         
-        return $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+        return $rate->paymentRateItems->first(fn($i) => (int)$i->month === (int)$month && (int)$i->year === (int)$year)
+            ?? $rate->paymentRateItems->first(fn($i) => (int)$i->month === (int)$month);
     }
 
     public static function resolveStudentRateForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
@@ -1331,12 +1332,9 @@ class TransactionService
         $rate = self::resolveActivePaymentRate($studentId, $billTypeId, $preloadedRates);
         if (!$rate) return 0;
 
-        $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+        $item = $rate->paymentRateItems->first(fn($i) => (int)$i->month === (int)$month && (int)$i->year === (int)$year)
+            ?? $rate->paymentRateItems->first(fn($i) => (int)$i->month === (int)$month);
         if ($item) return (int) $item->amount;
-
-        if ($rate->type === \App\Models\PaymentRate::TYPE_TRANSFER && $rate->amount > 0) {
-            return (int) ($rate->amount / 12);
-        }
 
         return (int) $rate->amount;
     }
