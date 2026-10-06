@@ -258,56 +258,59 @@
                                                 <span class="fw-bold fs-6 text-slate-800">
                                                     {{ $bill->name }}
                                                 </span>
-                                                <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
-                                                    {{ $bill->academicYear?->name ?? ($billDetail->year ?? '-') }}
+                                                <span class="badge badge-secondary fs-9 text-slate-600 fw-bold px-2 py-0.5">
+                                                    {{ $billDetail->year ?? ($bill->academicYear?->start_year ?? $bill->academicYear?->name ?? '-') }}
                                                 </span>
                                             </div>
             
                                             <!-- Middle side: Nominal -->
-                                            <div class="d-flex align-items-center ms-auto me-3">
+                                            <div class="d-flex align-items-center ms-auto me-3 text-nowrap">
                                                 @if($billDetail->paid_amount > 0 && !$isPaid)
-                                                    <div class="d-flex flex-column text-end">
-                                                        <span class="fw-bolder fs-5 text-amber-600">
+                                                    <div class="d-flex flex-column text-end text-nowrap">
+                                                        <span class="fw-bolder fs-5 text-amber-600 text-nowrap">
                                                             Rp {{ number_format($remainingAmount, 0, ',', '.') }}
                                                         </span>
-                                                        <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
+                                                        <span class="fs-9 text-slate-400 text-nowrap">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
                                                     </div>
                                                 @else
-                                                    <div class="d-flex flex-column text-end">
-                                                        <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                                    <div class="d-flex flex-column text-end text-nowrap">
+                                                        <span class="fw-bolder fs-5 text-nowrap {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
                                                             Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
                                                         </span>
                                                         @if(!$isPaid)
-                                                        <span class="fs-9 text-slate-400">Total Tagihan</span>
+                                                        <span class="fs-9 text-slate-400 text-nowrap">Total Tagihan</span>
                                                         @endif
                                                     </div>
                                                 @endif
                                             </div>
             
                                             <!-- Right side: Status / Checkbox -->
-                                            <div>
+                                            <div class="d-flex flex-column align-items-center justify-content-center text-center">
                                                 @if($isPaid)
-                                                    <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
+                                                    <span class="badge badge-success fw-bolder px-2.5 py-1 text-white text-nowrap">
                                                         <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                                     </span>
                                                 @elseif($showModal)
                                                     @if($canPayBill)
-                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                    <div class="form-check form-check-custom form-check-solid form-check-sm d-flex flex-column align-items-center m-0 p-0">
                                                         <input type="checkbox" 
                                                             name="bill_months[{{ $bill->id }}][]" 
                                                             value="{{ $month }}"
                                                             id="bill-other-{{ $bill->id }}-{{ $month }}"
-                                                            class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer border border-slate-500" 
+                                                            class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer border border-slate-500 m-0" 
                                                             data-bill-id="{{ $billDetail->id }}"
                                                             data-month="Cicilan Bebas" 
-                                                            data-year="{{ $bill->academicYear?->name ?? ($billDetail->year ?? '') }}"
+                                                            data-year="{{ $billDetail->year ?? ($bill->academicYear?->start_year ?? $bill->academicYear?->name ?? '') }}"
                                                             data-bill-name="{{ $bill->name }}" 
                                                             data-amount="{{ $remainingAmount }}"
                                                             data-payment-input-type="FREE"
                                                             onclick="event.stopPropagation()">
+                                                        <label class="form-check-label fw-bold text-slate-700 fs-9 cursor-pointer mt-1 text-center" style="margin-left: 0 !important;" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
+                                                            Bayar
+                                                        </label>
                                                     </div>
                                                     @else
-                                                    <span class="badge badge-light-warning text-warning fw-bold fs-8">Belum Lunas</span>
+                                                    <span class="badge badge-light-warning text-warning fw-bold fs-8 text-nowrap">Belum Lunas</span>
                                                     @endif
                                                 @else
                                                     <span class="badge badge-light text-slate-400 fs-8">-</span>
