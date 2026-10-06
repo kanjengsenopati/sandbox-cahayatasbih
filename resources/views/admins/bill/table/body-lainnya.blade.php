@@ -389,7 +389,7 @@
                                                     </td>
                                                     <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
                                                     <td class="text-center">
-                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->hasRole('Bendahara') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Batal Angsuran Tagihan'))
                                                             <button type="button" 
                                                                 class="btn btn-sm btn-light-danger fw-bold py-1 px-2.5 fs-8 btn-cancel-transaction"
                                                                 title="Batalkan Angsuran Transaksi Ini"

@@ -694,6 +694,12 @@
                 }
             });
         });
+
+        // Handler loading state submit pembayaran tagihan (cegah double click & status menggantung)
+        $('#form-multi-payment').on('submit', function() {
+            var $btn = $(this).find('button[type="submit"]');
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses Pembayaran...');
+        });
     });
 </script>
 <script>
