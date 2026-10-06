@@ -12,6 +12,66 @@
 <script src="{{ url('https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js') }}"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    // Global CSRF configuration & Session/419 error handling
+    if (typeof jQuery !== 'undefined') {
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        $(document).ajaxError(function(event, jqXHR, ajaxSettings, thrownError) {
+            if (jqXHR.status === 419) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sesi Telah Berakhir',
+                        text: 'Sesi Anda telah kedaluwarsa untuk alasan keamanan. Halaman akan dimuat ulang...',
+                        confirmButtonText: 'Muat Ulang',
+                        allowOutsideClick: false,
+                        customClass: {
+                            confirmButton: 'btn btn-primary'
+                        }
+                    }).then(function() {
+                        window.location.reload();
+                    });
+                } else {
+                    alert('Sesi Anda telah kedaluwarsa. Halaman akan dimuat ulang.');
+                    window.location.reload();
+                }
+            }
+        });
+    }
+
+    if (typeof axios !== 'undefined') {
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = $('meta[name="csrf-token"]').attr('content');
+        axios.interceptors.response.use(
+            function(response) { return response; },
+            function(error) {
+                if (error.response && error.response.status === 419) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesi Telah Berakhir',
+                            text: 'Sesi Anda telah kedaluwarsa untuk alasan keamanan. Halaman akan dimuat ulang...',
+                            confirmButtonText: 'Muat Ulang',
+                            allowOutsideClick: false,
+                            customClass: { confirmButton: 'btn btn-primary' }
+                        }).then(function() {
+                            window.location.reload();
+                        });
+                    } else {
+                        window.location.reload();
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+    }
+</script>
 @include('layouts.partials.swr-datatables')
 @livewireScripts
 @stack('js')

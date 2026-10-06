@@ -210,6 +210,9 @@ Route::post('translate_post', [TranslateController::class, 'translatePost'])->na
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('refresh-csrf', function () {
+        return response()->json(['token' => csrf_token()]);
+    })->name('refresh-csrf');
     Route::get('academic', [App\Http\Controllers\Admin\AcademicController::class, 'index'])->name('academic.index');
     Route::get('school', function (\Illuminate\Http\Request $request) {
         if ($request->ajax()) {
