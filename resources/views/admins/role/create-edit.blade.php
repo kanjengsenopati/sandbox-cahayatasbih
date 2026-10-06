@@ -330,6 +330,38 @@
                                                                 <label class="form-check-label text-gray-600 fs-7" for="permission{{ $deleteKey }}">Delete</label>
                                                             </div>
                                                         @endif
+
+                                                        <!-- Extra Permissions Khusus Tagihan -->
+                                                        @if ($module === 'Tagihan')
+                                                            @foreach(['Batal Angsuran Tagihan', 'Cancel Tagihan'] as $extraPerm)
+                                                                @if (in_array($extraPerm, (array) $permissions))
+                                                                    @php $extraKey = array_search($extraPerm, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm mt-1">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                            value="{{ $extraKey }}" id="permission{{ $extraKey }}"
+                                                                            @if(in_array($extraKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-danger fw-bold fs-7" for="permission{{ $extraKey }}">{{ $extraPerm }}</label>
+                                                                    </div>
+                                                                @endif
+                                                            @endforeach
+                                                        @endif
+
+                                                        <!-- Extra Permissions Khusus Transaksi -->
+                                                        @if ($module === 'Transaksi')
+                                                            @foreach(['Batal Transaksi Tagihan'] as $extraPerm)
+                                                                @if (in_array($extraPerm, (array) $permissions))
+                                                                    @php $extraKey = array_search($extraPerm, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm mt-1">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                            value="{{ $extraKey }}" id="permission{{ $extraKey }}"
+                                                                            @if(in_array($extraKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-danger fw-bold fs-7" for="permission{{ $extraKey }}">{{ $extraPerm }}</label>
+                                                                    </div>
+                                                                @endif
+                                                            @endforeach
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
