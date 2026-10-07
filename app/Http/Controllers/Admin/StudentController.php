@@ -51,10 +51,30 @@ class StudentController extends Controller
                 })
                 ->when(request('search_name'), function ($query) {
                     $search = strtolower(trim(request('search_name')));
-                    $query->where(function ($q) use ($search) {
-                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
-                          ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $search . '%'])
-                          ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
+                    $cleanDigits = preg_replace('/\D/', '', $search);
+
+                    $query->where(function ($q) use ($search, $cleanDigits) {
+                        $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(students.nisn) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(COALESCE(students.nickname, \'\')) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereHas('user', function ($uq) use ($search, $cleanDigits) {
+                              $uq->where(function ($userQuery) use ($search, $cleanDigits) {
+                                  $userQuery->whereRaw('LOWER(users.name) LIKE ?', ['%' . $search . '%'])
+                                            ->orWhereRaw('LOWER(users.phone) LIKE ?', ['%' . $search . '%']);
+
+                                  if (!empty($cleanDigits) && strlen($cleanDigits) >= 3) {
+                                      $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $cleanDigits . '%']);
+                                      if (str_starts_with($cleanDigits, '0')) {
+                                          $converted62 = '62' . substr($cleanDigits, 1);
+                                          $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $converted62 . '%']);
+                                      } elseif (str_starts_with($cleanDigits, '62')) {
+                                          $converted0 = '0' . substr($cleanDigits, 2);
+                                          $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $converted0 . '%']);
+                                      }
+                                  }
+                              });
+                          });
                     });
                 })
                 ->orderBy('students.id', 'desc');
@@ -67,9 +87,31 @@ class StudentController extends Controller
                 ->filterColumn('student', function($query, $keyword) {
                     $search = strtolower(trim($keyword));
                     $query->where(function($q) use ($search) {
-                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
-                          ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $search . '%'])
-                          ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
+                        $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(students.nisn) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(COALESCE(students.nickname, \'\')) LIKE ?', ['%' . $search . '%']);
+                    });
+                })
+                ->filterColumn('parent', function($query, $keyword) {
+                    $search = strtolower(trim($keyword));
+                    $cleanDigits = preg_replace('/\D/', '', $search);
+                    $query->whereHas('user', function ($uq) use ($search, $cleanDigits) {
+                        $uq->where(function ($userQuery) use ($search, $cleanDigits) {
+                            $userQuery->whereRaw('LOWER(users.name) LIKE ?', ['%' . $search . '%'])
+                                      ->orWhereRaw('LOWER(users.phone) LIKE ?', ['%' . $search . '%']);
+
+                            if (!empty($cleanDigits) && strlen($cleanDigits) >= 3) {
+                                $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $cleanDigits . '%']);
+                                if (str_starts_with($cleanDigits, '0')) {
+                                    $converted62 = '62' . substr($cleanDigits, 1);
+                                    $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $converted62 . '%']);
+                                } elseif (str_starts_with($cleanDigits, '62')) {
+                                    $converted0 = '0' . substr($cleanDigits, 2);
+                                    $userQuery->orWhereRaw("REPLACE(REPLACE(REPLACE(users.phone, '-', ''), ' ', ''), '+', '') LIKE ?", ['%' . $converted0 . '%']);
+                                }
+                            }
+                        });
                     });
                 })
                 ->editColumn('saldo', function ($data) {
