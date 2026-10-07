@@ -203,9 +203,9 @@ class PaymentRateController extends Controller
                     // Create Items
                     foreach ($months as $month) {
                         if ($billType->type == BillType::TYPE_MONTHLY) {
-                            $itemYear = $request->{"tahun_$month"} ?? ($billType->academicYear->start_year ?? date('Y'));
+                            $itemYear = $request->{"tahun_$month"} ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'));
                         } else {
-                            $itemYear = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
+                            $itemYear = $request->year ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'));
                         }
                         $paymentRate->paymentRateItems()->create([
                             'month'  => $month,
@@ -311,9 +311,9 @@ class PaymentRateController extends Controller
                         // Create Items
                         foreach ($months as $month) {
                             if ($billType->type == BillType::TYPE_MONTHLY) {
-                                $itemYear = $request->{"tahun_$month"} ?? ($billType->academicYear->start_year ?? date('Y'));
+                                $itemYear = $request->{"tahun_$month"} ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'));
                             } else {
-                                $itemYear = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
+                                $itemYear = $request->year ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'));
                             }
                             $paymentRate->paymentRateItems()->create([
                                 'month'  => $month,
@@ -423,7 +423,9 @@ class PaymentRateController extends Controller
                 $months = ($billType->type == BillType::TYPE_MONTHLY) ? ($request->active_months ?? []) : ($request->months ?? [7]);
                 
                 foreach ($months as $month) {
-                    $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : ($request->year ?? ($billType->academicYear->start_year ?? date('Y')));
+                    $year = ($billType->type == BillType::TYPE_MONTHLY) 
+                        ? ($request->{"tahun_$month"} ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'))) 
+                        : ($request->year ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y')));
                     
                     $itemPrice = ($billType->type == BillType::TYPE_MONTHLY && $request->has("bulan_$month"))
                         ? (int) preg_replace('/[^0-9]/', '', (string)$request->{"bulan_$month"})
@@ -468,7 +470,9 @@ class PaymentRateController extends Controller
                     
                     // Create Payment Rate Items
                     foreach ($months as $month) {
-                        $year = ($billType->type == BillType::TYPE_MONTHLY) ? ($request->{"tahun_$month"} ?? ($billType->academicYear->start_year ?? date('Y'))) : ($request->year ?? ($billType->academicYear->start_year ?? date('Y')));
+                        $year = ($billType->type == BillType::TYPE_MONTHLY) 
+                            ? ($request->{"tahun_$month"} ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'))) 
+                            : ($request->year ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y')));
                         
                         // Handle checkboxes correctly for Monthly type. The active_months[] array from frontend is global!
                         if ($billType->type == BillType::TYPE_MONTHLY) {
@@ -1095,7 +1099,7 @@ class PaymentRateController extends Controller
                 $globalPrice = (int) preg_replace('/[^0-9]/', '', (string)$request->price);
                 
                 for ($month = 1; $month <= 12; $month++) {
-                    $year = $request->input("tahun_$month") ?? ($billType->academicYear->start_year ?? date('Y'));
+                    $year = $request->input("tahun_$month") ?? ($billType->academicYear?->getYearForMonth((int)$month) ?? date('Y'));
                     
                     // If month-specific price is provided (bulan_1, etc.) and it's NOT a transfer rate, use it; otherwise use globalPrice if month is active
                     if ($request->type !== 'TRANSFER' && $request->has("bulan_$month") && $request->input("bulan_$month") !== null && $request->input("bulan_$month") !== '') {
@@ -1128,7 +1132,7 @@ class PaymentRateController extends Controller
             } else {
                 // LOGIC FOR FREE / NON-MONTHLY TYPE
                 $cleanPrice = (int) preg_replace('/[^0-9]/', '', (string)($request->price ?? 0));
-                $year = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
+                $year = $request->year ?? ($billType->academicYear?->getStartYearSafe() ?? date('Y'));
                 
                 if (!empty($request->months)) {
                     $existingItemWithoutMonth = $paymentRate->paymentRateItems()->whereNotIn('month', $request->months)->first();
