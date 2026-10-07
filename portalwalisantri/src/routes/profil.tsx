@@ -14,6 +14,7 @@ export const Route = createFileRoute("/profil")({
 function Profil() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -52,8 +53,6 @@ function Profil() {
   const user = profileData?.user;
   const students = profileData?.students || [];
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "W";
-
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
