@@ -43,8 +43,13 @@ export const getDeviceToken = async () => {
     const win = isBrowser ? (window as any) : null;
     const vapidKey = win?.firebaseConfig?.vapidKey || import.meta.env.VITE_FIREBASE_VAPID_PUBLIC_KEY;
     
+    const swReg = typeof navigator !== 'undefined' && 'serviceWorker' in navigator 
+      ? await navigator.serviceWorker.getRegistration() 
+      : undefined;
+
     const token = await getToken(messaging, {
-      vapidKey: vapidKey
+      vapidKey: vapidKey,
+      serviceWorkerRegistration: swReg || undefined
     });
     return token;
   } catch (error) {
