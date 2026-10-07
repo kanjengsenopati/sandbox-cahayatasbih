@@ -734,9 +734,19 @@ class BillController extends Controller
             $paymentMethodType = $request->payment_method;
 
             // Validasi Logika Bisnis Tambahan: 1 Query Batching (Mencegah N+1 Loop)
-            $alreadyPaidCount = Bill::whereIn('id', $request->bill_ids)->where('status', Bill::STATUS_PAID)->count();
-            if ($alreadyPaidCount > 0) {
-                throw new Exception("Sebagian tagihan yang dipilih sudah berstatus lunas. Silakan muat ulang halaman.");
+            // Validasi tagihan yang benar-benar lunas (mencegah false-positive pada tagihan angsuran/cicilan yang status DB-nya inkonsisten)
+            $targetBills = Bill::whereIn('id', $request->bill_ids)->get();
+            foreach ($targetBills as $tBill) {
+                $isTrulyPaid = ($tBill->status === Bill::STATUS_PAID && (int)$tBill->paid_amount >= (int)$tBill->amount && (int)$tBill->amount > 0);
+                if ($isTrulyPaid) {
+                    throw new Exception("Sebagian tagihan yang dipilih sudah berstatus lunas. Silakan muat ulang halaman.");
+                }
+
+                // Self-healing: jika status fisik di database 'PAID' tapi sisa hutang masih ada (paid_amount < amount), pulihkan status ke PARTIAL / UNPAID
+                if ($tBill->status === Bill::STATUS_PAID && (int)$tBill->paid_amount < (int)$tBill->amount) {
+                    $tBill->status = (int)$tBill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
+                    $tBill->save();
+                }
             }
 
             // createTransaction menggunakan DB::transaction internal — ACID terjaga

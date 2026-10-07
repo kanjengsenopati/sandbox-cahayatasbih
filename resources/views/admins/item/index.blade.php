@@ -99,7 +99,10 @@
                         <!--begin::Tab Pane Data Barang-->
                         <div class="tab-pane fade show active" id="tab_barang" role="tabpanel">
                             <div class="d-flex align-items-center justify-content-between mb-5">
-                                <div class="mb-0"></div>
+                                <div class="d-flex align-items-center position-relative my-1">
+                                    <i class="fa fa-search fs-4 position-absolute ms-3"></i>
+                                    <input type="text" id="search-data-barang" class="form-control form-control-solid form-control-sm w-250px ps-10" placeholder="Cari Nama / Kode Barang" />
+                                </div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @if(auth()->user()->can('Create Barang') || auth()->user()->can('Manage Barang') || auth()->user()->isKasirOutlet())
                                     <button type="button" class="btn btn-primary btn-sm btn-add-item">
@@ -159,7 +162,10 @@
                         <!--begin::Tab Pane Stok-->
                         <div class="tab-pane fade" id="tab_stok" role="tabpanel">
                             <div class="d-flex align-items-center justify-content-between mb-5">
-                                <div></div>
+                                <div class="d-flex align-items-center position-relative my-1">
+                                    <i class="fa fa-search fs-4 position-absolute ms-3"></i>
+                                    <input type="text" id="search-inventori-barang" class="form-control form-control-solid form-control-sm w-250px ps-10" placeholder="Cari Nama / Kode Barang" />
+                                </div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @if(auth()->user()->can('Create Barang') || auth()->user()->can('Manage Barang') || auth()->user()->isKasirOutlet())
                                     <button type="button" class="btn btn-primary btn-sm btn-add-stock">
@@ -682,6 +688,11 @@
             ]
         });
 
+        // Trigger Search Data Barang
+        $('#search-data-barang').on('keyup', function () {
+            tableItem.search(this.value).draw();
+        });
+
         // Init DataTable Kategori
         var tableCategory = $('#table-category-item').DataTable({
             ordering: false,
@@ -816,6 +827,11 @@
                     searchable: false
                 },
             ]
+        });
+
+        // Trigger Search Inventori Barang
+        $('#search-inventori-barang').on('keyup', function () {
+            tableStock.search(this.value).draw();
         });
 
         // Refresh DataTables when clicking tabs to ensure correct formatting and sizing
