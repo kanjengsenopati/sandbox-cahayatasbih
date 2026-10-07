@@ -1220,10 +1220,16 @@ class TransactionService
 
                     $realPaid  = (int)($paidSums[$bid] ?? 0);
                     $newPaid   = min((int)$bill->amount, $realPaid);
-                    $newStatus = ($newPaid >= (int)$bill->amount && $bill->amount > 0) ? Bill::STATUS_PAID : $bill->status;
+                    if ($newPaid >= (int)$bill->amount && (int)$bill->amount > 0) {
+                        $newStatus = Bill::STATUS_PAID;
+                    } elseif ($newPaid > 0) {
+                        $newStatus = Bill::STATUS_PARTIAL;
+                    } else {
+                        $newStatus = Bill::STATUS_UNPAID;
+                    }
 
                     if ((int)$bill->getRawOriginal('paid_amount') !== $newPaid ||
-                        ($newStatus === Bill::STATUS_PAID && $bill->status !== Bill::STATUS_PAID)) {
+                        $bill->status !== $newStatus) {
                         $bill->paid_amount = $newPaid;
                         $bill->status      = $newStatus;
                         $bill->save();
