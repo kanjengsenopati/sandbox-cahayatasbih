@@ -82,12 +82,12 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="filter_name" class="form-label fw-bold">Cari Nama / NIS</label>
+                            <label for="filter_name" class="form-label fw-bold">Cari Siswa / Wali / No HP</label>
                             <div class="d-flex align-items-center position-relative">
                                 <span class="svg-icon svg-icon-1 position-absolute ms-3">
                                     <i class="fas fa-search text-gray-400"></i>
                                 </span>
-                                <input type="text" id="filter_name" class="form-control form-control-solid ps-9" placeholder="Cari Nama / NIS..." style="width: 200px;" />
+                                <input type="text" id="filter_name" class="form-control form-control-solid ps-9" placeholder="Cari NIS, Nama, Wali, HP..." style="width: 240px;" />
                             </div>
                         </div>
                     </div>
