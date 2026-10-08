@@ -35,6 +35,19 @@ class DashboardController extends BaseWaliApiController
         $tahfidzCount = 0;
         $studyCount = 0;
         if ($activeStudent) {
+            // Bersihkan transaksi tagihan expired (> 2 jam tanpa bukti bayar)
+            \App\Models\Transaction::where('student_id', $activeStudent->id)
+                ->where('type', \App\Models\Transaction::TYPE_BILL)
+                ->whereIn('status', [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])
+                ->whereDoesntHave('activeProof')
+                ->where(function($q) {
+                    $q->where('created_at', '<=', \Carbon\Carbon::now()->subHours(2))
+                      ->orWhere(function($sub) {
+                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', \Carbon::now());
+                      });
+                })
+                ->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
+
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
@@ -101,19 +114,18 @@ class DashboardController extends BaseWaliApiController
                     ];
                 });
 
-            $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType'])
+            $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'activeProof'])
                 ->where('student_id', $activeStudent->id)
                 ->where('type', \App\Models\Transaction::TYPE_BILL)
                 ->whereNotIn('status', [
                     \App\Models\Transaction::STATUS_CANCELLED,
-                    \App\Models\Transaction::STATUS_REJECTED,
                     \App\Models\Transaction::STATUS_EXPIRED
                 ])
                 ->whereHas('transactionDetails', function ($q) {
                     $q->whereNull('deleted_at');
                 })
                 ->latest()
-                ->take(3)
+                ->take(5)
                 ->get()
                 ->map(function($item) {
                     $billNames = $item->transactionDetails
@@ -130,7 +142,8 @@ class DashboardController extends BaseWaliApiController
                         'merchant' => $item->getTranslatedPaymentMethod(),
                         'created_at' => $item->paid_at ?? $item->created_at,
                         'category' => 'BILL',
-                        'status' => $item->status
+                        'status' => $item->status,
+                        'rejection_note' => ($item->status === \App\Models\Transaction::STATUS_REJECTED) ? ($item->activeProof?->note ?? 'Bukti pembayaran ditolak oleh bendahara') : null,
                     ];
                 });
 

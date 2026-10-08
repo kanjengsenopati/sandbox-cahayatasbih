@@ -270,7 +270,9 @@ class TransactionService
             try {
                 return DB::transaction(function () use ($request, $paymentMethodType, $type) {
                     $appSetting = ApplicationSetting::latest()->first();
-                    $expiryTimeInMinutes = $appSetting ? $appSetting->getPaymentExpireTimeInMinutesAttribute() : 1440; // Default to 24 hours (1440 minutes)
+                    $expiryTimeInMinutes = (($type ?? Transaction::TYPE_BILL) === Transaction::TYPE_BILL)
+                        ? 120
+                        : ($appSetting ? $appSetting->getPaymentExpireTimeInMinutesAttribute() : 1440);
 
                     // Menghitung jumlah transaksi yang ada
                     $transactionCount = Transaction::whereDate('created_at', now())->count();
@@ -302,24 +304,43 @@ class TransactionService
                         ? $request->validated()
                         : $request->only(['student_id', 'payment_method_id', 'amount', 'bill_ids', 'pay_amount']);
                     
-                    // Auto-cancel previous pending transactions of the same type
-                    $pendingTransactions = Transaction::where('student_id', $request->student_id)
-                        ->where('type', $type ?? Transaction::TYPE_BILL)
-                        ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
-                        ->get();
+                    // Auto-cancel logic
+                    if (($type ?? Transaction::TYPE_BILL) === Transaction::TYPE_BILL) {
+                        // For BILL: Only auto-cancel transactions that have expired (> 2 hours without proof or passed expiry_time)
+                        $expiredPendingTxs = Transaction::where('student_id', $request->student_id)
+                            ->where('type', Transaction::TYPE_BILL)
+                            ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
+                            ->whereDoesntHave('activeProof')
+                            ->where(function($q) {
+                                $q->where('created_at', '<=', Carbon::now()->subHours(2))
+                                  ->orWhere(function($sub) {
+                                      $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', Carbon::now());
+                                  });
+                            })
+                            ->get();
 
-                    foreach ($pendingTransactions as $pendingTx) {
-                        $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
+                        foreach ($expiredPendingTxs as $expTx) {
+                            $expTx->update(['status' => Transaction::STATUS_CANCELLED]);
+                        }
+                    } else {
+                        // For SALDO/SAVING: Auto-cancel previous pending transactions of the same type
+                        $pendingTransactions = Transaction::where('student_id', $request->student_id)
+                            ->where('type', $type)
+                            ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
+                            ->get();
 
-                        // Cancel related Saldo/Saving History by deleting them
-                        if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
-                            $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
-                            foreach ($details as $detail) {
-                                if ($detail->saldo_history_id) {
-                                    \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
-                                }
-                                if ($detail->saving_history_id) {
-                                    \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
+                        foreach ($pendingTransactions as $pendingTx) {
+                            $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
+
+                            if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
+                                $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
+                                foreach ($details as $detail) {
+                                    if ($detail->saldo_history_id) {
+                                        \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
+                                    }
+                                    if ($detail->saving_history_id) {
+                                        \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
+                                    }
                                 }
                             }
                         }
