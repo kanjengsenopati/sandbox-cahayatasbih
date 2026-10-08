@@ -64,12 +64,15 @@ function TopupPage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [dailyLimit, setDailyLimit] = useState(0);
   const [limitEnabled, setLimitEnabled] = useState(false);
+  const [customLimitInput, setCustomLimitInput] = useState("");
 
   // Synchronize dailyLimit with active student
   useEffect(() => {
     if (active) {
-      setDailyLimit(active.daily_limit || 0);
-      setLimitEnabled((active.daily_limit || 0) > 0);
+      const lim = active.daily_limit || 0;
+      setDailyLimit(lim);
+      setLimitEnabled(lim > 0);
+      setCustomLimitInput(lim > 0 ? new Intl.NumberFormat("id-ID").format(lim) : "");
     }
   }, [active]);
 
@@ -332,6 +335,7 @@ function TopupPage() {
                   }
                   setDailyLimit(limit);
                   setLimitEnabled(enabled);
+                  setCustomLimitInput(limit > 0 ? new Intl.NumberFormat("id-ID").format(limit) : "");
                   setShowLimitModal(true);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-[10px] font-extrabold text-white active:scale-95 transition"
@@ -532,8 +536,16 @@ function TopupPage() {
                 </div>
                 <button
                   onClick={() => {
-                    setLimitEnabled(!limitEnabled);
-                    if (limitEnabled) setDailyLimit(0);
+                    const next = !limitEnabled;
+                    setLimitEnabled(next);
+                    if (!next) {
+                      setDailyLimit(0);
+                      setCustomLimitInput("");
+                    } else {
+                      const defVal = (active?.daily_limit && active.daily_limit > 0) ? active.daily_limit : (active?.effective_daily_limit || 50_000);
+                      setDailyLimit(defVal);
+                      setCustomLimitInput(new Intl.NumberFormat("id-ID").format(defVal));
+                    }
                   }}
                   className={`relative w-11 h-6 rounded-full transition ${
                     limitEnabled ? "bg-primary" : "bg-muted"
@@ -547,7 +559,7 @@ function TopupPage() {
                 </button>
               </div>
 
-              {/* Slider Controls */}
+              {/* Slider & Custom Controls */}
               {limitEnabled && (
                 <div className="mt-5 space-y-4">
                   <div className="flex items-center justify-between">
@@ -560,10 +572,11 @@ function TopupPage() {
                     min={10_000}
                     max={500_000}
                     step={10_000}
-                    value={dailyLimit || 50_000}
+                    value={Math.min(dailyLimit || 50_000, 500_000)}
                     onChange={(e) => {
                       const val = parseInt(e.target.value, 10);
                       setDailyLimit(val);
+                      setCustomLimitInput(new Intl.NumberFormat("id-ID").format(val));
                     }}
                     className="w-full h-2 rounded-lg bg-secondary accent-primary appearance-none cursor-pointer"
                   />
@@ -580,7 +593,10 @@ function TopupPage() {
                       return (
                         <button
                           key={p}
-                          onClick={() => setDailyLimit(p)}
+                          onClick={() => {
+                            setDailyLimit(p);
+                            setCustomLimitInput(new Intl.NumberFormat("id-ID").format(p));
+                          }}
                           className={`py-2 rounded-xl text-[10px] font-extrabold border transition ${
                             active
                               ? "bg-[var(--gradient-card)] text-primary-foreground border-transparent shadow-sm"
@@ -591,6 +607,52 @@ function TopupPage() {
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Input Custom Nominal */}
+                  <div className="pt-1">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                        Atau Masukkan Nominal Sendiri
+                      </span>
+                      {customLimitInput && (
+                        <span className="text-[10px] text-primary font-bold">Kustom</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 bg-secondary/80 rounded-2xl px-3.5 py-2.5 border border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition">
+                      <span className="text-xs font-bold text-primary">Rp</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={customLimitInput}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/\D/g, "");
+                          if (!raw) {
+                            setCustomLimitInput("");
+                            setDailyLimit(0);
+                            return;
+                          }
+                          const val = parseInt(raw, 10);
+                          setCustomLimitInput(new Intl.NumberFormat("id-ID").format(val));
+                          setDailyLimit(val);
+                        }}
+                        placeholder="Contoh: 35.000"
+                        className="bg-transparent flex-1 outline-none text-foreground text-xs font-bold placeholder:text-muted-foreground/60 placeholder:font-normal"
+                      />
+                      {customLimitInput && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomLimitInput("");
+                            setDailyLimit(50_000);
+                          }}
+                          className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground text-[10px] transition"
+                          title="Hapus nominal custom"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

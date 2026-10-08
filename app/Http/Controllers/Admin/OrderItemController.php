@@ -195,13 +195,19 @@ class OrderItemController extends Controller
         ]);
 
         $adminId = auth()->id();
+        $barcodeInput = $request->barcode;
 
         // 3. IDEMPOTENCY CHECK (Atomic Lock)
-        // Untuk pembayaran SALDO: kunci berdasarkan BARCODE SANTRI (bukan admin),
+        // Untuk pembayaran SALDO: kunci berdasarkan ID/Barcode SANTRI (bukan admin),
         // karena yang perlu dilindungi adalah data saldo santri dari concurrent kasir.
         // Untuk pembayaran TUNAI: kunci berdasarkan admin ID (mencegah double-submit kasir).
-        if ($request->payment_method === PointOfSaleTransaction::PAYMENT_SALDO && $request->barcode) {
-            $lockKey = 'pos_student_saldo_lock_' . $request->barcode;
+        if ($request->payment_method === PointOfSaleTransaction::PAYMENT_SALDO && $barcodeInput) {
+            $preStudent = Student::where('barcode', $barcodeInput)
+                ->orWhere('nis', $barcodeInput)
+                ->orWhere('nisn', $barcodeInput)
+                ->first(['id']);
+            $studentLockId = $preStudent ? $preStudent->id : $barcodeInput;
+            $lockKey = 'pos_student_saldo_lock_' . $studentLockId;
         } else {
             $lockKey = 'pos_submit_lock_' . $adminId;
         }
@@ -214,7 +220,7 @@ class OrderItemController extends Controller
         DB::beginTransaction();
 
         try {
-            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->barcode) {
+            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$barcodeInput) {
                 throw new \Exception('Pembayaran Saldo harus scan barcode siswa');
             }
 
@@ -242,9 +248,17 @@ class OrderItemController extends Controller
 
             // Process Payment
             if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
-                // 5. DATA CONSISTENCY: Gunakan lockForUpdate()
+                // 5. DATA CONSISTENCY: Gunakan lockForUpdate() dengan pencarian barcode, nis, atau nisn
                 // Ini mencegah saldo dipotong ganda jika ada race condition database
-                $student = Student::where('barcode', $request->barcode)->lockForUpdate()->first();
+                $student = Student::where(function ($query) use ($barcodeInput) {
+                    $query->where('barcode', $barcodeInput)
+                          ->orWhere('nis', $barcodeInput)
+                          ->orWhere('nisn', $barcodeInput);
+                })->lockForUpdate()->first();
+
+                if (!$student) {
+                    throw new \Exception('Santri dengan identitas kartu tersebut tidak ditemukan.');
+                }
 
                 // Pindahkan validasi ke dalam try-catch agar pesan error tertangkap rapi
                 if (!$this->validateStudentForTransaction($student, $total)) {
@@ -376,12 +390,12 @@ class OrderItemController extends Controller
         }
 
         if ($student->saldo < $total) {
-            session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi.');
+            session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi (Saldo: Rp ' . number_format($student->saldo, 0, ',', '.') . ', Total Belanja: Rp ' . number_format($total, 0, ',', '.') . ').');
             return false;
         }
 
         if ($student->is_blocked) {
-            session()->flash('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri.');
+            session()->flash('error', 'Maaf, Kartu Santri sedang diblokir oleh Wali Santri.');
             return false;
         }
 
@@ -397,7 +411,8 @@ class OrderItemController extends Controller
                 ->sum('pay_amount');
 
             if ($effectiveLimit < ($totalThisDay + $total)) {
-                session()->flash('error', 'Maaf, Siswa telah mencapai batas transaksi harian.');
+                $sisa = max(0, $effectiveLimit - $totalThisDay);
+                session()->flash('error', 'Maaf, transaksi melebihi batas limit jajan harian santri (Limit: Rp ' . number_format($effectiveLimit, 0, ',', '.') . ', Terpakai hari ini: Rp ' . number_format($totalThisDay, 0, ',', '.') . ', Sisa kuota: Rp ' . number_format($sisa, 0, ',', '.') . ').');
                 return false;
             }
         }
