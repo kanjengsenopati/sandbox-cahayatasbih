@@ -402,15 +402,12 @@ function Dashboard() {
         </section>
       )}
 
-      {/* Transaksi Hari Ini */}
+      {/* Transaksi Terkini */}
       <section className="px-6 mt-7 mb-10">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-base font-bold text-foreground">Transaksi Hari Ini</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-bold text-foreground">Transaksi Terkini</h3>
           <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary bg-transparent shadow-none">Lihat Semua</button>
         </div>
-        <p className="text-[11px] text-muted-foreground mb-3">
-          {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
 
         {/* Summary chips */}
         {dashboard?.todaySummary && dashboard.todaySummary.count > 0 && (
@@ -529,7 +526,7 @@ function Dashboard() {
               <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
                 <Wallet size={20} className="text-muted-foreground" />
               </div>
-              <p className="text-xs font-semibold text-muted-foreground">Belum ada transaksi hari ini</p>
+              <p className="text-xs font-semibold text-muted-foreground">Belum ada transaksi</p>
               <p className="text-[10px] text-muted-foreground/70 mt-0.5">Transaksi belanja & topup akan muncul di sini</p>
             </div>
           )}
