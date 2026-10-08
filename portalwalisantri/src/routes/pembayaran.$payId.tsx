@@ -11,12 +11,14 @@ import {
   XCircle,
   Image as ImageIcon,
   Loader2,
+  UploadCloud,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPaymentDetail, uploadPaymentProof, cancelPaymentProof } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
 import { compressImage } from "@/lib/image-compress";
 import { toast } from "sonner";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/pembayaran/$payId")({
   component: PembayaranPage,
@@ -180,7 +182,7 @@ function PembayaranPage() {
 
         {/* Status banner */}
         <div className="px-5 pt-3">
-          <StatusBanner status={tx.status} />
+          <StatusBanner status={tx.status} hasProof={!!tx.proofUrl} />
         </div>
 
         {/* Nominal card */}
@@ -458,43 +460,100 @@ function StickyAction({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StatusBanner({ status }: { status: PendingTx["status"] }) {
+function StatusBanner({
+  status,
+  hasProof,
+}: {
+  status: "approved" | "rejected" | "pending";
+  hasProof?: boolean;
+}) {
   if (status === "approved") {
     return (
-      <div className="rounded-xl border border-success/30 bg-success/10 px-3 py-2.5 flex items-center gap-2">
-        <CheckCircle2 size={16} className="text-success" />
-        <div className="flex-1">
-          <p className="text-xs font-bold text-success">Pembayaran Disetujui</p>
-          <p className="text-[11px] text-success/80">
-            Transaksi sudah diverifikasi petugas.
-          </p>
+      <div className="rounded-[24px] border border-emerald-200/80 bg-gradient-to-r from-emerald-50 to-teal-50/60 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-start gap-3.5">
+        <div className="w-11 h-11 rounded-[16px] bg-emerald-600/15 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-600/20 shadow-xs">
+          <CheckCircle2 size={22} strokeWidth={2.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-600/15 border border-emerald-600/20 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
+              Lunas
+            </span>
+          </div>
+          <Text.H2 className="text-[15px] font-extrabold text-emerald-950 leading-tight">
+            Pembayaran Disetujui
+          </Text.H2>
+          <Text.Body className="text-[12px] text-emerald-900/80 mt-1 leading-snug">
+            Transaksi sudah diverifikasi dan disetujui oleh bendahara.
+          </Text.Body>
         </div>
       </div>
     );
   }
+
   if (status === "rejected") {
     return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 flex items-center gap-2">
-        <XCircle size={16} className="text-destructive" />
-        <div className="flex-1">
-          <p className="text-xs font-bold text-destructive">Pembayaran Ditolak</p>
-          <p className="text-[11px] text-destructive/80">
-            Bukti tidak valid, silakan ulangi.
-          </p>
+      <div className="rounded-[24px] border border-red-200/80 bg-gradient-to-r from-red-50 to-rose-50/60 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-start gap-3.5">
+        <div className="w-11 h-11 rounded-[16px] bg-red-600/15 text-red-600 flex items-center justify-center shrink-0 border border-red-600/20 shadow-xs">
+          <XCircle size={22} strokeWidth={2.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-red-600/15 border border-red-600/20 text-red-700 text-[10px] font-black uppercase tracking-wider">
+              Ditolak
+            </span>
+          </div>
+          <Text.H2 className="text-[15px] font-extrabold text-red-950 leading-tight">
+            Pembayaran Ditolak
+          </Text.H2>
+          <Text.Body className="text-[12px] text-red-900/80 mt-1 leading-snug">
+            Bukti transfer tidak valid. Silakan tarik atau unggah ulang bukti yang benar.
+          </Text.Body>
         </div>
       </div>
     );
   }
+
+  // Pending status
+  if (!hasProof) {
+    return (
+      <div className="rounded-[24px] border border-amber-300/80 bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50/70 p-4 shadow-[0_8px_30px_rgb(245,158,11,0.08)] flex items-start gap-3.5">
+        <div className="w-11 h-11 rounded-[16px] bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 border border-amber-500/30 shadow-xs">
+          <UploadCloud size={22} strokeWidth={2.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-800 text-[10px] font-black uppercase tracking-wider">
+              Perlu Bukti Bayar
+            </span>
+          </div>
+          <Text.H2 className="text-[15px] font-extrabold text-amber-950 leading-tight">
+            Menunggu Unggah Bukti Bayar
+          </Text.H2>
+          <Text.Body className="text-[12px] text-amber-900/85 mt-1 leading-snug">
+            Transfer sesuai nominal lalu segera unggah foto bukti transfer di bawah.
+          </Text.Body>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-[oklch(0.78_0.16_75)]/40 bg-[oklch(0.78_0.16_75)]/10 px-3 py-2.5 flex items-center gap-2">
-      <Clock size={16} className="text-[oklch(0.62_0.18_75)]" />
-      <div className="flex-1">
-        <p className="text-xs font-bold text-[oklch(0.55_0.18_75)]">
-          Menunggu Verifikasi
-        </p>
-        <p className="text-[11px] text-[oklch(0.55_0.18_75)]/80">
-          Transfer sesuai nominal lalu unggah bukti.
-        </p>
+    <div className="rounded-[24px] border border-blue-200/80 bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50/40 p-4 shadow-[0_8px_30px_rgb(37,99,235,0.06)] flex items-start gap-3.5">
+      <div className="w-11 h-11 rounded-[16px] bg-blue-600/15 text-blue-600 flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
+        <Clock size={22} strokeWidth={2.5} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-600/15 border border-blue-600/20 text-blue-700 text-[10px] font-black uppercase tracking-wider">
+            Menunggu Verifikasi
+          </span>
+        </div>
+        <Text.H2 className="text-[15px] font-extrabold text-blue-950 leading-tight">
+          Menunggu Verifikasi Bendahara
+        </Text.H2>
+        <Text.Body className="text-[12px] text-blue-900/80 mt-1 leading-snug">
+          Bukti transfer telah diterima. Mohon menunggu konfirmasi dan verifikasi oleh bendahara sekolah.
+        </Text.Body>
       </div>
     </div>
   );

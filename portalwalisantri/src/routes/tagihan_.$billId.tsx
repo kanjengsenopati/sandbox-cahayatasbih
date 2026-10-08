@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2, Building2, CreditCard, Smartphone, ShieldCheck, Download, X, Receipt } from "lucide-react";
+import { toast } from "sonner";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchBillDetail, postCheckout, fetchPaymentMethods } from "@/lib/api";
-import { Building2, CreditCard, Smartphone, ShieldCheck, Download } from "lucide-react";
 import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/tagihan_/$billId")({
@@ -35,6 +35,8 @@ function BillDetail() {
   const { active, isLoading: isLoadingSantri } = useSantri();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [highlightedRowId, setHighlightedRowId] = useState<string | null>(null);
 
   const { data: detailData, isLoading: isLoadingDetail } = useQuery({
     queryKey: ["bill-detail", billId],
@@ -247,6 +249,68 @@ function BillDetail() {
   const togglePickAll = () =>
     setPicked(allUnpaidPicked ? new Set() : new Set(unpaid.map((i) => i.id)));
 
+  const handleOpenCheckoutModal = (clickedInstallmentId?: string) => {
+    if (clickedInstallmentId) {
+      const idx = unpaid.findIndex((item: any) => item.id === clickedInstallmentId);
+      const isOrderDisabled = idx !== -1 && idx > 0 && !picked.has(unpaid[idx - 1].id);
+
+      if (isOrderDisabled) {
+        const prevItem = idx > 0 ? unpaid[idx - 1] : null;
+        toast.warning(`Harap pilih tagihan ${prevItem?.label || "sebelumnya"} terlebih dahulu.`);
+        return;
+      }
+
+      if (!picked.has(clickedInstallmentId)) {
+        setHighlightedRowId(clickedInstallmentId);
+        setTimeout(() => setHighlightedRowId(null), 1600);
+        toast.warning("Silakan centang tagihan terlebih dahulu sebelum melanjutkan pembayaran.");
+        return;
+      }
+    } else {
+      if (picked.size === 0) {
+        if (unpaid.length > 0) {
+          setHighlightedRowId(unpaid[0].id);
+          setTimeout(() => setHighlightedRowId(null), 1600);
+        }
+        toast.warning("Silakan centang tagihan terlebih dahulu sebelum melanjutkan pembayaran.");
+        return;
+      }
+    }
+
+    if (!selectedMethod) {
+      toast.warning("Silakan pilih metode pembayaran terlebih dahulu.");
+      return;
+    }
+
+    if (detailData?.billType?.payment_input_type === 'FREE') {
+      const invalid = Array.from(picked).some((id) => (customAmounts[id] ?? 0) <= 0);
+      if (invalid) {
+        toast.warning("Nominal pembayaran harus lebih dari Rp 0.");
+        return;
+      }
+    }
+
+    setShowConfirmModal(true);
+  };
+
+  const handleExecuteCheckout = () => {
+    const items = Array.from(picked);
+    if (items.length === 0 || !selectedMethod) return;
+
+    const reqCustomAmounts: Record<string, number> = {};
+    if (detailData?.billType?.payment_input_type === 'FREE') {
+      items.forEach((id) => {
+        reqCustomAmounts[id] = customAmounts[id] ?? 0;
+      });
+    }
+
+    checkoutMutation.mutate({ 
+      installmentIds: items, 
+      methodId: selectedMethod.payment_method_id,
+      customAmounts: detailData?.billType?.payment_input_type === 'FREE' ? reqCustomAmounts : undefined
+    });
+  };
+
 
 
   if (isLoadingSantri || isLoadingDetail) {
@@ -443,14 +507,26 @@ function BillDetail() {
                 const idx = unpaid.findIndex((item: any) => item.id === it.id);
                 const isOrderDisabled = idx !== -1 && idx > 0 && !picked.has(unpaid[idx - 1].id);
                 const isRowDisabled = isInstallmentPaid || isInstallmentPending || isOrderDisabled;
+                const isHighlighted = highlightedRowId === it.id;
 
                 return (
                   <div
                     key={it.id}
-                    onClick={() => !isRowDisabled && togglePick(it.id)}
+                    onClick={() => {
+                      if (isRowDisabled) {
+                        if (isOrderDisabled) {
+                          const prevItem = idx > 0 ? unpaid[idx - 1] : null;
+                          toast.warning(`Harap pilih tagihan ${prevItem?.label || "sebelumnya"} terlebih dahulu.`);
+                        }
+                        return;
+                      }
+                      togglePick(it.id);
+                    }}
                     role={isRowDisabled ? undefined : "button"}
                     className={`relative flex flex-col pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
-                      !it.paid && !it.isPendingConfirmation && checked
+                      isHighlighted
+                        ? "border-primary ring-2 ring-primary/60 shadow-[0_0_15px_rgba(37,99,235,0.25)]"
+                        : !it.paid && !it.isPendingConfirmation && checked
                         ? "border-primary ring-1 ring-primary/40"
                         : "border-border"
                     } ${isRowDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-[0.99]"}`}
@@ -463,7 +539,7 @@ function BillDetail() {
 
                     <div className="flex items-center gap-3 w-full">
                       <span className="shrink-0">
-                        <CheckBox checked={it.paid || checked} disabled={isRowDisabled} />
+                        <CheckBox checked={it.paid || checked} disabled={isRowDisabled} isHighlighted={isHighlighted} />
                       </span>
 
                       <div className="flex-1 min-w-0">
@@ -500,18 +576,14 @@ function BillDetail() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (isRowDisabled) return;
-                            if (!selectedMethod) {
-                              togglePick(it.id);
+                            if (isRowDisabled) {
+                              if (isOrderDisabled) {
+                                const prevItem = idx > 0 ? unpaid[idx - 1] : null;
+                                toast.warning(`Harap pilih tagihan ${prevItem?.label || "sebelumnya"} terlebih dahulu.`);
+                              }
                               return;
                             }
-                            const amt = customAmounts[it.id] ?? it.amount;
-                            if (amt <= 0) return;
-                            checkoutMutation.mutate({ 
-                              installmentIds: [it.id], 
-                              methodId: selectedMethod.payment_method_id,
-                              customAmounts: detailData?.billType?.payment_input_type === 'FREE' ? { [it.id]: amt } : undefined
-                            });
+                            handleOpenCheckoutModal(it.id);
                           }}
                           disabled={isRowDisabled || checkoutMutation.isPending || (checked && (customAmounts[it.id] ?? 0) <= 0)}
                           className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 transition flex items-center justify-center min-w-[100px]"
@@ -611,31 +683,8 @@ function BillDetail() {
                 </p>
               </div>
               <button
-                onClick={() => {
-                  const items = Array.from(picked);
-                  if (items.length === 0 || !selectedMethod) return;
-
-                  // Construct custom amounts payload if payment_input_type is FREE
-                  const reqCustomAmounts: Record<string, number> = {};
-                  if (detailData?.billType?.payment_input_type === 'FREE') {
-                    items.forEach((id) => {
-                      reqCustomAmounts[id] = customAmounts[id] ?? 0;
-                    });
-                  }
-
-                  checkoutMutation.mutate({ 
-                    installmentIds: items, 
-                    methodId: selectedMethod.payment_method_id,
-                    customAmounts: detailData?.billType?.payment_input_type === 'FREE' ? reqCustomAmounts : undefined
-                  });
-                }}
-                disabled={
-                  picked.size === 0 || 
-                  !method || 
-                  checkoutMutation.isPending ||
-                  (detailData?.billType?.payment_input_type === 'FREE' && 
-                    Array.from(picked).some((id) => (customAmounts[id] ?? 0) <= 0))
-                }
+                onClick={() => handleOpenCheckoutModal()}
+                disabled={checkoutMutation.isPending}
                 className="shrink-0 px-5 py-2.5 rounded-xl text-primary-foreground font-bold text-sm shadow-[var(--shadow-glow)] disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center min-w-[120px]"
                 style={{ background: "var(--gradient-card)" }}
               >
@@ -644,16 +693,117 @@ function BillDetail() {
             </div>
           </div>
         )}
+
+        {/* Modal Konfirmasi Pembayaran */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in">
+            <div className="bg-background rounded-[24px] border border-border shadow-[0_8px_30px_rgb(0,0,0,0.08)] w-full max-w-sm p-6 flex flex-col animate-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Receipt size={20} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <Text.H2 className="text-base font-extrabold text-foreground leading-tight">Konfirmasi Pembayaran</Text.H2>
+                    <Text.Caption className="text-muted-foreground not-italic text-[11px]">Rincian tagihan terpilih</Text.Caption>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-90 transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Selected Items List */}
+              <div className="mt-4 max-h-56 overflow-y-auto space-y-2 pr-1">
+                <Text.Label className="block text-slate-400 mb-1">ITEM TAGIHAN ({picked.size})</Text.Label>
+                {bill.installments
+                  .filter((it: any) => picked.has(it.id))
+                  .map((it: any) => {
+                    const amt = detailData?.billType?.payment_input_type === 'FREE'
+                      ? (customAmounts[it.id] ?? it.amount)
+                      : it.amount;
+                    return (
+                      <div key={it.id} className="p-3 rounded-2xl bg-secondary/60 border border-border flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-foreground truncate">{it.label || bill.name}</p>
+                          <p className="text-[10px] text-muted-foreground">Tahun Ajaran {bill.academicYear}</p>
+                        </div>
+                        <p className="text-xs font-extrabold text-foreground tabular-nums shrink-0">{fmt(amt)}</p>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Selected Payment Method */}
+              {selectedMethod && (
+                <div className="mt-4 p-3 rounded-2xl bg-blue-50/50 border border-blue-100 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <Text.Label className="text-blue-600 font-bold text-[10px]">METODE PEMBAYARAN</Text.Label>
+                    <p className="text-xs font-bold text-slate-800 truncate mt-0.5">{selectedMethod.label}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 shrink-0">
+                    {selectedMethod.fee === 0 ? "Gratis" : fmt(selectedMethod.fee)}
+                  </span>
+                </div>
+              )}
+
+              {/* Total Amount */}
+              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                <div>
+                  <Text.Label className="text-slate-400">TOTAL BAYAR</Text.Label>
+                  <Text.Caption className="text-muted-foreground not-italic text-[10px]">Termasuk semua item</Text.Caption>
+                </div>
+                <Text.Amount className="text-xl font-extrabold text-emerald-600 tabular-nums">
+                  {fmt(pickedTotal)}
+                </Text.Amount>
+              </div>
+
+              {/* Actions: Batal & Lanjutkan */}
+              <div className="mt-6 grid grid-cols-2 gap-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="py-3 px-4 rounded-[24px] border border-border text-slate-700 font-bold text-sm hover:bg-slate-50 active:scale-95 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteCheckout}
+                  disabled={checkoutMutation.isPending}
+                  className="py-3 px-4 rounded-[24px] text-white font-bold text-sm shadow-[0_8px_30px_rgb(37,99,235,0.25)] active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  {checkoutMutation.isPending ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <span>Lanjutkan</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function CheckBox({ checked, disabled }: { checked: boolean; disabled?: boolean }) {
+function CheckBox({ checked, disabled, isHighlighted }: { checked: boolean; disabled?: boolean; isHighlighted?: boolean }) {
   return (
     <span
-      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition ${
-        checked
+      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-300 ${
+        isHighlighted
+          ? "ring-4 ring-primary/50 border-primary scale-110 animate-pulse bg-primary/20"
+          : checked
           ? disabled
             ? "bg-success border-success"
             : "bg-primary border-primary"
