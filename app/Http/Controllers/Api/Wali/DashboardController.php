@@ -44,8 +44,8 @@ class DashboardController extends BaseWaliApiController
                       ->orWhereDoesntHave('pointOfSaleTransaction');
                 })
                 ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
-                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
+                ->take(3)
                 ->get()
                 ->reject(function($item) {
                     // Lewati SaldoHistory Kode Unik yang orphaned (tidak punya transaction_detail).
@@ -75,8 +75,8 @@ class DashboardController extends BaseWaliApiController
             $posTransactions = \App\Models\PointOfSaleTransaction::with(['pointOfSaleTransactionDetails.item', 'admins'])
                 ->where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
-                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
+                ->take(3)
                 ->get()
                 ->map(function($item) {
                     // Build item names from details
@@ -112,8 +112,8 @@ class DashboardController extends BaseWaliApiController
                 ->whereHas('transactionDetails', function ($q) {
                     $q->whereNull('deleted_at');
                 })
-                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
+                ->take(3)
                 ->get()
                 ->map(function($item) {
                     $billNames = $item->transactionDetails
@@ -136,20 +136,18 @@ class DashboardController extends BaseWaliApiController
 
             $showSaldo = $activeStudent->isPwaSaldoVisible();
             if ($showSaldo) {
-                $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->values();
+                $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->take(3)->values();
                 $todaySummary = [
-                    'count' => $recentTransactions->count(),
-                    'in' => $saldoHistories->where('type', 'IN')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount'),
-                    'out' => $saldoHistories->where('type', 'OUT')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount') 
-                        + $posTransactions->sum('amount') 
-                        + $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
+                    'count' => 0,
+                    'in' => 0,
+                    'out' => 0,
                 ];
             } else {
-                $recentTransactions = $billTransactions->sortByDesc('created_at')->values();
+                $recentTransactions = $billTransactions->sortByDesc('created_at')->take(3)->values();
                 $todaySummary = [
-                    'count' => $billTransactions->count(),
+                    'count' => 0,
                     'in' => 0,
-                    'out' => $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
+                    'out' => 0,
                 ];
             }
         }
