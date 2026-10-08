@@ -292,9 +292,12 @@ function Dashboard() {
                     {hide ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
+                <div 
+                  onClick={() => navigate({ to: "/limit" })}
+                  className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0 cursor-pointer active:scale-95 transition-all hover:bg-white/20"
+                >
                   <Text.Label className="text-white/85 block text-[10px]">Limit Harian</Text.Label>
-                  <Text.Caption className={`not-italic font-bold mt-0.5 block leading-none ${active.is_custom_limit ? 'text-yellow-400' : 'text-white'}`}>{fmt(active.effective_daily_limit)}</Text.Caption>
+                  <Text.Caption className="not-italic font-extrabold mt-0.5 block leading-none text-white">{fmt(active.effective_daily_limit)}</Text.Caption>
                 </div>
               </div>
             ) : (
