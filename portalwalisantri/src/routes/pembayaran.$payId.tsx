@@ -113,6 +113,7 @@ function PembayaranPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payment", payId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setSelectedFile(null);
       setSelectedFileUrl("");
       toast.success("Bukti transfer berhasil diunggah.");
@@ -128,6 +129,7 @@ function PembayaranPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payment", payId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setSelectedFile(null);
       setSelectedFileUrl("");
       toast.success("Bukti transfer berhasil ditarik.");
@@ -416,7 +418,11 @@ function PembayaranPage() {
               <StickyAction>
                 <div className="flex flex-col gap-2 w-full">
                   <button
-                    onClick={() => navigate({ to: "/dashboard", hash: "transaksi-terkini" })}
+                    onClick={() => {
+                      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+                      queryClient.refetchQueries({ queryKey: ["dashboard"] });
+                      navigate({ to: "/dashboard", hash: "transaksi-terkini" });
+                    }}
                     className="w-full py-3.5 rounded-[24px] text-white font-bold text-sm shadow-[var(--shadow-glow)] active:scale-[0.98] bg-primary"
                     style={{ background: "var(--gradient-card)" }}
                   >
