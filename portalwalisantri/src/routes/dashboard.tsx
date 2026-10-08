@@ -490,7 +490,15 @@ function Dashboard() {
                             {STATUS_MAP[t.status] || t.status}
                           </span>
                         )}
-                        <span>{t.created_at ? safeParseDate(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
+                        <span>
+                          {t.created_at ? (
+                            <>
+                              {safeParseDate(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' · '}
+                              {safeParseDate(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </>
+                          ) : "-"}
+                        </span>
                         {t.merchant && (
                           <>
                             <span className="text-border">·</span>
