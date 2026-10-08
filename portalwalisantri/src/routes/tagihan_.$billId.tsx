@@ -38,7 +38,7 @@ function BillDetail() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [highlightedRowId, setHighlightedRowId] = useState<string | null>(null);
 
-  const { data: detailData, isLoading: isLoadingDetail } = useQuery({
+  const { data: detailData, isLoading: isLoadingDetail, isError, refetch } = useQuery({
     queryKey: ["bill-detail", billId],
     queryFn: async () => {
       const res = await fetchBillDetail(billId);
@@ -323,7 +323,39 @@ function BillDetail() {
     );
   }
 
-  if (!bill) return null;
+  if (isError || !bill) {
+    return (
+      <div className="min-h-screen w-full flex justify-center bg-slate-50 px-5">
+        <div className="relative w-full max-w-md min-h-screen bg-slate-50 flex flex-col justify-center items-center py-12">
+          <div className="w-full bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 text-center flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4">
+              <Receipt size={28} />
+            </div>
+            <Text.H2>Detail Tagihan Tidak Ditemukan</Text.H2>
+            <Text.Body className="mt-2 text-slate-500 text-center">
+              Gagal memuat rincian tagihan atau data belum tersedia di sistem.
+            </Text.Body>
+            <div className="w-full mt-6 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="w-full py-3 px-4 rounded-xl bg-blue-600 text-white font-semibold text-sm active:scale-95 transition shadow-sm"
+              >
+                Coba Muat Ulang
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/tagihan" })}
+                className="w-full py-3 px-4 rounded-xl bg-slate-100 text-slate-700 font-semibold text-sm active:scale-95 transition"
+              >
+                Kembali ke Tagihan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const remaining = Math.max(0, bill.total - bill.paid);
   const isFullyPaid = remaining === 0;

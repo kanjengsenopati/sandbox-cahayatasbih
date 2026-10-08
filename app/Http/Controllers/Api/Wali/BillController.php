@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Wali;
 
 use App\Models\Bill;
 use App\Models\BillType;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class BillController extends BaseWaliApiController
@@ -167,9 +168,9 @@ class BillController extends BaseWaliApiController
             ->whereIn('status', [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])
             ->whereDoesntHave('activeProof')
             ->where(function($q) {
-                $q->where('created_at', '<=', \Carbon\Carbon::now()->subHours(2))
+                $q->where('created_at', '<=', now()->subHours(2))
                   ->orWhere(function($sub) {
-                      $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', \Carbon::now());
+                      $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
                   });
             })
             ->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
