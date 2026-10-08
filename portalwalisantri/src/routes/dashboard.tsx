@@ -26,6 +26,7 @@ import {
   Receipt,
   X,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MobileShell } from "@/components/MobileShell";
@@ -63,11 +64,11 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
 
 const STATUS_MAP: Record<string, string> = {
   SUCCESS: "Sukses",
-  approved: "Sukses",
+  approved: "Lunas",
   PAID: "Lunas",
-  PENDING: "Menunggu",
-  PENDING_PAYMENT: "Belum Bayar",
-  PENDING_CONFIRMATION: "Menunggu Konfirmasi",
+  PENDING: "Menunggu Bukti Bayar",
+  PENDING_PAYMENT: "Menunggu Bukti Bayar",
+  PENDING_CONFIRMATION: "Menunggu Verifikasi",
   CANCELLED: "Dibatalkan",
   cancelled: "Dibatalkan",
   rejected: "Ditolak",
@@ -87,6 +88,18 @@ function Dashboard() {
   const [limitCustomInput, setLimitCustomInput] = useState<string>("");
   const [limitEnabled, setLimitEnabled] = useState<boolean>(true);
   const { active, isLoading: isLoadingSantri } = useSantri();
+
+  useEffect(() => {
+    if (window.location.hash === "#transaksi-terkini") {
+      const scrollTimer = setTimeout(() => {
+        const el = document.getElementById("transaksi-terkini");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 250);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, []);
   
   const { data: limitData, isLoading: isLoadingLimit } = useQuery({
     queryKey: ["limit", active?.id],
@@ -474,7 +487,7 @@ function Dashboard() {
       )}
 
       {/* Transaksi Terkini */}
-      <section className="px-6 mt-7 mb-10">
+      <section id="transaksi-terkini" className="px-6 mt-7 mb-10 scroll-mt-20">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-bold text-foreground">Transaksi Terkini</h3>
           <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary bg-transparent shadow-none">Lihat Semua</button>
@@ -515,24 +528,29 @@ function Dashboard() {
             </div>
           ) : (dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
             dashboard.recentTransactions
-              .filter((t: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status))
+              .filter((t: any) => !["CANCELLED", "cancelled", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status))
               .map((t: any, i: number) => {
                 const isIn = t.type === "IN";
                 const isBill = t.category === "BILL";
                 const isPending = t.id && ["PENDING", "PENDING_PAYMENT", "PENDING_CONFIRMATION"].includes(t.status);
+                const isRejected = t.status === "REJECTED" || t.status === "rejected";
+                const isClickable = Boolean(t.id && (isBill || isPending || isRejected));
+
                 return (
                   <div
                     key={i}
-                    onClick={isPending ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
-                    className={`flex items-center gap-3 p-4 transition-all ${
-                      isPending 
+                    onClick={isClickable ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
+                    className={`flex items-start gap-3 p-4 transition-all ${
+                      isClickable 
                         ? "cursor-pointer hover:bg-slate-50 active:bg-slate-100/80" 
                         : ""
                     }`}
                   >
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                        isIn 
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
+                        isRejected
+                          ? "bg-red-50 text-red-600"
+                          : isIn 
                           ? "bg-emerald-50 text-emerald-600" 
                           : isBill 
                           ? "bg-purple-50 text-purple-600" 
@@ -551,12 +569,14 @@ function Dashboard() {
                       <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
                       <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                         {t.status && (
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                             t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID"
-                              ? "bg-emerald-500/15 text-emerald-700"
-                              : t.status === "FAILED" || t.status === "rejected" || t.status === "REJECTED"
-                              ? "bg-destructive text-white"
-                              : "bg-[oklch(0.78_0.16_75)] text-white"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : t.status === "FAILED" || isRejected
+                              ? "bg-red-100 text-red-700"
+                              : t.status === "PENDING_CONFIRMATION"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-amber-100 text-amber-800"
                           }`}>
                             {STATUS_MAP[t.status] || t.status}
                           </span>
@@ -583,8 +603,16 @@ function Dashboard() {
                           </>
                         )}
                       </p>
+                      {isRejected && t.rejection_note && (
+                        <div className="mt-2 flex items-start gap-1.5 p-2 rounded-xl bg-red-50 border border-red-200/80 text-[11px] text-red-900 leading-tight w-full">
+                          <AlertCircle size={13} className="shrink-0 text-red-600 mt-0.5" />
+                          <span>
+                            <span className="font-bold text-red-950">Alasan Penolakan:</span> {t.rejection_note}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-0.5">
                       <span
                         className={`text-sm font-bold tabular-nums whitespace-nowrap ${
                           isIn ? "text-emerald-600" : "text-red-600"
@@ -593,7 +621,7 @@ function Dashboard() {
                         {isIn ? "+" : "-"}
                         {fmt(t.amount || 0)}
                       </span>
-                      {isPending && (
+                      {isClickable && (
                         <ChevronRight size={14} className="text-slate-400 shrink-0" />
                       )}
                     </div>

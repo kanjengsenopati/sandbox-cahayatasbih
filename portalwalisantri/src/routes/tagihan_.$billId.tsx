@@ -62,6 +62,8 @@ function BillDetail() {
       paidAmount: Number(d.paid_amount ?? 0),
       paid: d.status === "PAID",
       isPendingConfirmation: !!d.is_pending_confirmation,
+      isPendingPayment: !!d.is_pending_payment,
+      pendingTransactionId: d.pending_transaction_id,
     }));
 
     // Sort installments in academic year order: July (7) to June (6)
@@ -102,7 +104,7 @@ function BillDetail() {
       const initialAmounts: Record<string, number> = {};
       const initialOptions: Record<string, "LUNAS" | "ANGSUR"> = {};
       bill.installments.forEach((it) => {
-        if (!it.paid && !it.isPendingConfirmation) {
+        if (!it.paid && !it.isPendingConfirmation && !it.isPendingPayment) {
           initialAmounts[it.id] = it.amount;
           initialOptions[it.id] = "LUNAS";
         }
@@ -227,7 +229,7 @@ function BillDetail() {
     },
   });
 
-  const unpaid = useMemo(() => bill?.installments.filter((i: any) => !i.paid && !i.isPendingConfirmation) || [], [bill]);
+  const unpaid = useMemo(() => bill?.installments.filter((i: any) => !i.paid && !i.isPendingConfirmation && !i.isPendingPayment) || [], [bill]);
   const allUnpaidPicked = unpaid.length > 0 && unpaid.every((i: any) => picked.has(i.id));
 
   const togglePick = (id: string) =>
@@ -502,7 +504,7 @@ function BillDetail() {
               {bill.installments.map((it) => {
                 const checked = picked.has(it.id);
                 const isInstallmentPaid = it.paid;
-                const isInstallmentPending = it.isPendingConfirmation;
+                const isInstallmentPending = it.isPendingConfirmation || it.isPendingPayment;
                 
                 const idx = unpaid.findIndex((item: any) => item.id === it.id);
                 const isOrderDisabled = idx !== -1 && idx > 0 && !picked.has(unpaid[idx - 1].id);
@@ -513,6 +515,12 @@ function BillDetail() {
                   <div
                     key={it.id}
                     onClick={() => {
+                      if (isInstallmentPending) {
+                        if (it.pendingTransactionId) {
+                          navigate({ to: "/pembayaran/$payId", params: { payId: String(it.pendingTransactionId) } });
+                        }
+                        return;
+                      }
                       if (isRowDisabled) {
                         if (isOrderDisabled) {
                           const prevItem = idx > 0 ? unpaid[idx - 1] : null;
@@ -526,14 +534,20 @@ function BillDetail() {
                     className={`relative flex flex-col pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
                       isHighlighted
                         ? "border-primary ring-2 ring-primary/60 shadow-[0_0_15px_rgba(37,99,235,0.25)]"
-                        : !it.paid && !it.isPendingConfirmation && checked
+                        : !it.paid && !isInstallmentPending && checked
                         ? "border-primary ring-1 ring-primary/40"
                         : "border-border"
-                    } ${isRowDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-[0.99]"}`}
+                    } ${isRowDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer active:scale-[0.99]"}`}
                   >
                     <span
                       className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
-                        it.paid ? "bg-success" : it.isPendingConfirmation ? "bg-[oklch(0.78_0.16_75)]" : "bg-primary"
+                        it.paid 
+                          ? "bg-success" 
+                          : it.isPendingConfirmation 
+                          ? "bg-blue-600" 
+                          : it.isPendingPayment
+                          ? "bg-amber-500"
+                          : "bg-primary"
                       }`}
                     />
 
@@ -569,9 +583,33 @@ function BillDetail() {
                           </span>
                         </div>
                       ) : it.isPendingConfirmation ? (
-                        <span className="shrink-0 px-3 py-2.5 rounded-xl bg-[oklch(0.78_0.16_75)] text-white text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (it.pendingTransactionId) {
+                              navigate({ to: "/pembayaran/$payId", params: { payId: String(it.pendingTransactionId) } });
+                            }
+                          }}
+                          className="shrink-0 px-3 py-2 rounded-xl bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 active:scale-95 transition"
+                          title="Klik untuk melihat transaksi verifikasi"
+                        >
                           Menunggu Verifikasi
-                        </span>
+                        </button>
+                      ) : it.isPendingPayment ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (it.pendingTransactionId) {
+                              navigate({ to: "/pembayaran/$payId", params: { payId: String(it.pendingTransactionId) } });
+                            }
+                          }}
+                          className="shrink-0 px-3 py-2 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 active:scale-95 transition"
+                          title="Klik untuk mengunggah bukti bayar"
+                        >
+                          Menunggu Bukti Bayar
+                        </button>
                       ) : (
                         <button
                           onClick={(e) => {
