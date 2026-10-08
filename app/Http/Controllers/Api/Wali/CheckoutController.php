@@ -63,9 +63,9 @@ class CheckoutController extends BaseWaliApiController
                 ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
                 ->whereDoesntHave('activeProof')
                 ->where(function($q) {
-                    $q->where('created_at', '<=', Carbon::now()->subHours(2))
+                    $q->where('created_at', '<=', now()->subHours(2))
                       ->orWhere(function($sub) {
-                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', Carbon::now());
+                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
                       });
                 })
                 ->update(['status' => Transaction::STATUS_CANCELLED]);

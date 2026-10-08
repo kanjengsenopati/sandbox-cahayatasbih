@@ -6,6 +6,7 @@ use App\Models\Information;
 use App\Models\Student;
 use App\Models\Tahfidz;
 use App\Models\StudyGrade;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -41,9 +42,9 @@ class DashboardController extends BaseWaliApiController
                 ->whereIn('status', [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])
                 ->whereDoesntHave('activeProof')
                 ->where(function($q) {
-                    $q->where('created_at', '<=', \Carbon\Carbon::now()->subHours(2))
+                    $q->where('created_at', '<=', now()->subHours(2))
                       ->orWhere(function($sub) {
-                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', \Carbon::now());
+                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
                       });
                 })
                 ->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
