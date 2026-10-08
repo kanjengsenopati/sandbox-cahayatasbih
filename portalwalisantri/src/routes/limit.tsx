@@ -7,6 +7,7 @@ import {
   Sparkles,
   Loader2,
   ShieldOff,
+  X,
 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ function LimitPage() {
   const { active, isLoading: isLoadingSantri } = useSantri();
   const queryClient = useQueryClient();
   const [daily, setDaily] = useState(0);
+  const [customInput, setCustomInput] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -45,18 +47,22 @@ function LimitPage() {
       if (limitData.daily_limit > 0) {
         // Limit kustom Wali aktif
         setDaily(limitData.daily_limit);
+        setCustomInput(new Intl.NumberFormat("id-ID").format(limitData.daily_limit));
         setEnabled(true);
       } else if (limitData.daily_limit === -1) {
         // Wali secara eksplisit minta No Limit
         setDaily(0);
+        setCustomInput("");
         setEnabled(false);
       } else {
         // Wali belum set apapun, ikuti backoffice
         if (limitData.effective_limit > 0) {
           setDaily(limitData.effective_limit);
+          setCustomInput(new Intl.NumberFormat("id-ID").format(limitData.effective_limit));
           setEnabled(true);
         } else {
           setDaily(0);
+          setCustomInput("");
           setEnabled(false);
         }
       }
@@ -160,8 +166,16 @@ function LimitPage() {
             </div>
             <button
               onClick={() => {
-                setEnabled(!enabled);
-                if (enabled) setDaily(0);
+                const next = !enabled;
+                setEnabled(next);
+                if (!next) {
+                  setDaily(0);
+                  setCustomInput("");
+                } else {
+                  const defVal = (limitData?.daily_limit && limitData.daily_limit > 0) ? limitData.daily_limit : (limitData?.effective_limit || 50_000);
+                  setDaily(defVal);
+                  setCustomInput(new Intl.NumberFormat("id-ID").format(defVal));
+                }
               }}
               className={`relative w-12 h-7 rounded-full transition ${
                 enabled ? "bg-primary" : "bg-muted"
@@ -176,12 +190,12 @@ function LimitPage() {
           </div>
         </div>
 
-        {/* Slider */}
+        {/* Slider & Custom Controls */}
         <section className="px-6 mt-5">
           <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Slider Limit
+                Pilih Nominal Limit
               </p>
               <span className="text-sm font-bold text-primary">{fmt(daily)}</span>
             </div>
@@ -191,10 +205,11 @@ function LimitPage() {
               min={0}
               max={500_000}
               step={10_000}
-              value={daily}
+              value={Math.min(daily, 500_000)}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
                 setDaily(val);
+                setCustomInput(val > 0 ? new Intl.NumberFormat("id-ID").format(val) : "");
                 setEnabled(val > 0);
               }}
               className="w-full mt-4 accent-primary disabled:opacity-40"
@@ -213,18 +228,66 @@ function LimitPage() {
                     key={p}
                     onClick={() => {
                       setDaily(p);
+                      setCustomInput(new Intl.NumberFormat("id-ID").format(p));
                       setEnabled(true);
                     }}
                     className={`py-2.5 rounded-xl text-[11px] font-bold border transition ${
                       active
                         ? "bg-[var(--gradient-card)] text-primary-foreground border-transparent"
-                        : "bg-secondary text-foreground border-transparent"
+                        : "bg-secondary text-foreground border-transparent hover:border-primary/20"
                     }`}
                   >
                     {p / 1000}rb
                   </button>
                 );
               })}
+            </div>
+
+            {/* Input Custom Nominal */}
+            <div className="pt-4 border-t border-border mt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  Atau Masukkan Nominal Sendiri
+                </span>
+                {customInput && (
+                  <span className="text-[10px] text-primary font-bold">Kustom Aktif</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 bg-secondary/80 rounded-2xl px-3.5 py-2.5 border border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition">
+                <span className="text-xs font-bold text-primary">Rp</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={customInput}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    if (!raw) {
+                      setCustomInput("");
+                      setDaily(0);
+                      return;
+                    }
+                    const val = parseInt(raw, 10);
+                    setCustomInput(new Intl.NumberFormat("id-ID").format(val));
+                    setDaily(val);
+                    setEnabled(true);
+                  }}
+                  placeholder="Contoh: 35.000"
+                  className="bg-transparent flex-1 outline-none text-foreground text-xs font-bold placeholder:text-muted-foreground/60 placeholder:font-normal"
+                />
+                {customInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomInput("");
+                      setDaily(50_000);
+                    }}
+                    className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground text-[10px] transition"
+                    title="Hapus nominal custom"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>
