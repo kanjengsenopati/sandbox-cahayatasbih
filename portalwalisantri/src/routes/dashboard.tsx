@@ -91,6 +91,8 @@ function Dashboard() {
 
   useEffect(() => {
     if (window.location.hash === "#transaksi-terkini") {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.refetchQueries({ queryKey: ["dashboard"] });
       const scrollTimer = setTimeout(() => {
         const el = document.getElementById("transaksi-terkini");
         if (el) {
@@ -99,7 +101,7 @@ function Dashboard() {
       }, 250);
       return () => clearTimeout(scrollTimer);
     }
-  }, []);
+  }, [queryClient]);
   
   const { data: limitData, isLoading: isLoadingLimit } = useQuery({
     queryKey: ["limit", active?.id],
@@ -161,6 +163,7 @@ function Dashboard() {
     },
     enabled: !!active,
     staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
