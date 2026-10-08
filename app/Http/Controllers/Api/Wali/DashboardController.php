@@ -59,7 +59,7 @@ class DashboardController extends BaseWaliApiController
                 })
                 ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
                 ->latest()
-                ->take(3)
+                ->take(20)
                 ->get()
                 ->reject(function($item) {
                     // Lewati SaldoHistory Kode Unik yang orphaned (tidak punya transaction_detail).
@@ -91,7 +91,7 @@ class DashboardController extends BaseWaliApiController
                 ->where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
                 ->latest()
-                ->take(5)
+                ->take(20)
                 ->get()
                 ->map(function($item) {
                     // Build item names from details
@@ -129,7 +129,7 @@ class DashboardController extends BaseWaliApiController
                     $q->whereNull('deleted_at');
                 })
                 ->latest()
-                ->take(5)
+                ->take(20)
                 ->get()
                 ->map(function($item) {
                     $billNames = $item->transactionDetails
@@ -158,7 +158,7 @@ class DashboardController extends BaseWaliApiController
                 return $collection->sortByDesc(function ($tx) {
                     $date = $tx['created_at'] ?? null;
                     return $date ? strtotime($date) : 0;
-                })->take(5)->values();
+                })->take(20)->values();
             };
 
             $showSaldo = $activeStudent->isPwaSaldoVisible();

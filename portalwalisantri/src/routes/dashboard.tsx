@@ -13,6 +13,7 @@ import {
   Wallet,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Loader2,
   Newspaper,
   Calendar,
@@ -28,7 +29,7 @@ import {
   Sparkles,
   AlertCircle,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
@@ -79,6 +80,8 @@ const STATUS_MAP: Record<string, string> = {
   failed: "Gagal",
 };
 
+const ITEMS_PER_PAGE = 4;
+
 function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -87,6 +90,7 @@ function Dashboard() {
   const [limitDaily, setLimitDaily] = useState<number>(0);
   const [limitCustomInput, setLimitCustomInput] = useState<string>("");
   const [limitEnabled, setLimitEnabled] = useState<boolean>(true);
+  const [txPage, setTxPage] = useState<number>(1);
   const { active, isLoading: isLoadingSantri } = useSantri();
 
   useEffect(() => {
@@ -168,6 +172,31 @@ function Dashboard() {
   });
 
   const hasUnpaidBills = dashboard?.has_unpaid_bills || false;
+
+  useEffect(() => {
+    setTxPage(1);
+  }, [active?.id]);
+
+  const validTransactions = useMemo(() => {
+    if (!dashboard?.recentTransactions || !Array.isArray(dashboard.recentTransactions)) return [];
+    return dashboard.recentTransactions.filter(
+      (t: any) => !["CANCELLED", "cancelled", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)
+    );
+  }, [dashboard?.recentTransactions]);
+
+  const totalTxPages = Math.max(1, Math.ceil(validTransactions.length / ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    if (txPage > totalTxPages) {
+      setTxPage(totalTxPages);
+    }
+  }, [totalTxPages, txPage]);
+
+  const paginatedTransactions = useMemo(() => {
+    const currentPage = Math.min(txPage, totalTxPages);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return validTransactions.slice(start, start + ITEMS_PER_PAGE);
+  }, [validTransactions, txPage, totalTxPages]);
 
   useEffect(() => {
     if (hasUnpaidBills) {
@@ -490,9 +519,9 @@ function Dashboard() {
       )}
 
       {/* Transaksi Terkini */}
-      <section id="transaksi-terkini" className="px-6 mt-7 mb-10 scroll-mt-20">
+      <section id="transaksi-terkini" className="px-5 mt-7 mb-10 scroll-mt-20">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-foreground">Transaksi Terkini</h3>
+          <Text.H2 className="text-base font-bold text-foreground">Transaksi Terkini</Text.H2>
           <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary bg-transparent shadow-none">Lihat Semua</button>
         </div>
 
@@ -515,10 +544,10 @@ function Dashboard() {
           </div>
         )}
 
-        <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
+        <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
           {isLoadingDashboard ? (
             <div className="divide-y divide-border">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-3 p-4 animate-pulse">
                   <div className="w-11 h-11 rounded-2xl bg-slate-100 shrink-0" />
                   <div className="flex-1 space-y-2">
@@ -529,10 +558,9 @@ function Dashboard() {
                 </div>
               ))}
             </div>
-          ) : (dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
-            dashboard.recentTransactions
-              .filter((t: any) => !["CANCELLED", "cancelled", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status))
-              .map((t: any, i: number) => {
+          ) : validTransactions.length > 0 ? (
+            <>
+              {paginatedTransactions.map((t: any, i: number) => {
                 const isIn = t.type === "IN";
                 const isBill = t.category === "BILL";
                 const isPending = t.id && ["PENDING", "PENDING_PAYMENT", "PENDING_CONFIRMATION"].includes(t.status);
@@ -541,7 +569,7 @@ function Dashboard() {
 
                 return (
                   <div
-                    key={i}
+                    key={t.id || i}
                     onClick={isClickable ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
                     className={`flex items-start gap-3 p-4 transition-all ${
                       isClickable 
@@ -630,7 +658,54 @@ function Dashboard() {
                     </div>
                   </div>
                 );
-              })
+              })}
+
+              {totalTxPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50/70 border-t border-border">
+                  <Text.Caption className="not-italic text-slate-500 font-medium">
+                    Hal {txPage} dari {totalTxPages} ({validTransactions.length} transaksi)
+                  </Text.Caption>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                      disabled={txPage === 1}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 active:scale-95 transition shadow-sm"
+                      title="Halaman Sebelumnya"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: totalTxPages }).map((_, idx) => {
+                      const pageNum = idx + 1;
+                      const isActive = pageNum === txPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setTxPage(pageNum)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                            isActive
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setTxPage((p) => Math.min(totalTxPages, p + 1))}
+                      disabled={txPage === totalTxPages}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 active:scale-95 transition shadow-sm"
+                      title="Halaman Selanjutnya"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="py-10 text-center">
               <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
