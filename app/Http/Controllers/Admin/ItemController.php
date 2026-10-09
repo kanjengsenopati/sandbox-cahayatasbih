@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Cache;
+use App\Services\OutletContextService;
 use App\Http\Requests\Admin\ItemRequest;
 
 class ItemController extends Controller
@@ -24,24 +25,6 @@ class ItemController extends Controller
     public function index()
     {
         $user = auth()->user();
-        if ($user && ($user->isKasirOutlet() || $user->hasRole('Kasir Karyawan Outlet'))) {
-            if (!Cache::has('kasir_outlet_perms_synced_v1')) {
-                $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
-                if ($kasirOutletRole) {
-                    $kasirOutletPermissions = [
-                        'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
-                        'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
-                        'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
-                        'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
-                    ];
-                    foreach ($kasirOutletPermissions as $p) {
-                        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
-                    }
-                    $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
-                }
-                Cache::forever('kasir_outlet_perms_synced_v1', true);
-            }
-        }
 
         if (!Auth::user()->can('Manage Barang') && !Auth::user()->can('View Barang') && !$user->isKasirOutlet()) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
@@ -56,8 +39,7 @@ class ItemController extends Controller
 
         if (request()->ajax()) {
             session()->save();
-            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $koperasiId = OutletContextService::getKoperasiOutletId();
 
             $data = Item::with(['categoryItem', 'outlet'])
                 ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
@@ -137,8 +119,7 @@ class ItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
 
         if (request('mode') === 'outlet') {
             $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
@@ -165,8 +146,7 @@ class ItemController extends Controller
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
         } elseif (request('mode') !== 'outlet') {
-            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $data['outlet_id'] = OutletContextService::getKoperasiOutletId();
         }
         Item::create($data);
         return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil ditambahkan. Silakan isi stok pada tab Inventori Barang.');
@@ -185,14 +165,10 @@ class ItemController extends Controller
      */
     public function edit(Item $item)
     {
-        if (!Auth::user()->can('Edit Barang')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        if (!Auth::user()->can('update', $item)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses ke barang outlet ini');
         }
-        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
-        }
-        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
 
         if (request('mode') === 'outlet') {
             $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
@@ -207,11 +183,8 @@ class ItemController extends Controller
      */
     public function update(ItemRequest $request, Item $item)
     {
-        if (!Auth::user()->can('Edit Barang')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
+        if (!Auth::user()->can('update', $item)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses ke barang outlet ini');
         }
         $data = $request->validated();
         unset($data['stock']); // Single Source of Truth: Prevent manual stock override from Edit Barang modal
@@ -223,8 +196,7 @@ class ItemController extends Controller
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
         } elseif (request('mode') !== 'outlet') {
-            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            $data['outlet_id'] = OutletContextService::getKoperasiOutletId();
         }
         $item->update($data);
         // Invalidate the cache for the top 10 items
@@ -237,11 +209,8 @@ class ItemController extends Controller
      */
     public function destroy(Item $item)
     {
-        if (!Auth::user()->can('Delete Barang')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
-            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
+        if (!Auth::user()->can('delete', $item)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses ke barang outlet ini');
         }
         file_exists($item->image) ? unlink($item->image) : null;
         $item->delete();
@@ -256,9 +225,7 @@ class ItemController extends Controller
         session()->save();
 
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
-
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
 
         if (!$request->search) {
             $items = Item::with('categoryItem:id,name')
@@ -292,9 +259,7 @@ class ItemController extends Controller
         session()->save();
 
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
-
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
 
         $item = Item::whereCode($request->search)
             ->whereIsActive(true)
@@ -319,9 +284,7 @@ class ItemController extends Controller
 
         $searchTerm = strtolower($request->search);
         $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
-
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
 
         $items = Item::with('categoryItem:id,name')
             ->select(['id', 'name', 'code', 'selling_price', 'stock', 'image', 'category_item_id', 'outlet_id'])

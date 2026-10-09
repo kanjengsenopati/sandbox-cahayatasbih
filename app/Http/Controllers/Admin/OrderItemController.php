@@ -318,10 +318,12 @@ class OrderItemController extends Controller
 
             $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
 
-            // 6. KHUSUS MODE OUTLET: Pengurangan Stok Atomik & Log StockHistory (OUT)
+            // 6. Pengurangan Stok Atomik & Log StockHistory (OUT) Berdasarkan Kapabilitas Outlet (track_inventory)
             $koperasiId = $this->getKoperasiId();
+            $currentOutlet = $outletModel ?? \App\Models\Outlet::find($outletId);
+            $shouldTrackInventory = $currentOutlet ? ($currentOutlet->track_inventory ?? ($outletId !== $koperasiId)) : ($outletId !== $koperasiId);
 
-            if ($outletId !== $koperasiId) {
+            if ($shouldTrackInventory) {
                 foreach ($carts as $cart) {
                     $item = Item::where('id', $cart->item_id)->lockForUpdate()->first();
                     if ($item) {
@@ -336,7 +338,7 @@ class OrderItemController extends Controller
                             'admin_id' => $adminId,
                             'quantity' => $cart->quantity,
                             'type' => StockHistory::TYPE_OUT,
-                            'notes' => 'Penjualan POS Outlet ' . $paymentCode,
+                            'notes' => 'Penjualan POS ' . ($currentOutlet->name ?? 'Outlet') . ' ' . $paymentCode,
                         ]);
                     }
                 }
@@ -951,9 +953,6 @@ class OrderItemController extends Controller
 
     protected function getKoperasiId(): string
     {
-        return Cache::remember('koperasi_outlet_id', 86400, function () {
-            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-        });
+        return \App\Services\OutletContextService::getKoperasiOutletId() ?? '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
     }
 }
