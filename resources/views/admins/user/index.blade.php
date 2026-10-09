@@ -16,6 +16,32 @@
         color: #2563EB !important;
         border-bottom-color: #2563EB !important;
     }
+    /* Reset Password Button Polish */
+    .btn-reset-password {
+        border-radius: 8px !important;
+        transition: all 0.2s ease-in-out !important;
+        background-color: #fff8dd !important;
+        border-color: #fff8dd !important;
+        color: #d97706 !important;
+    }
+    .btn-reset-password i {
+        color: #d97706 !important;
+        transition: color 0.2s ease-in-out !important;
+    }
+    .btn-reset-password:hover,
+    .btn-reset-password:focus,
+    .btn-reset-password:active {
+        background-color: #f59e0b !important;
+        border-color: #f59e0b !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.28) !important;
+        transform: translateY(-1px);
+    }
+    .btn-reset-password:hover i,
+    .btn-reset-password:focus i,
+    .btn-reset-password:active i {
+        color: #ffffff !important;
+    }
 </style>
 @endpush
 @section('content')
@@ -405,8 +431,12 @@
                     Berhasil Reset Password 12345678
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-0 pb-6 px-6 justify-content-center">
+            <div class="modal-footer border-0 pt-0 pb-6 px-6 justify-content-center gap-3">
                 <button type="button" class="btn btn-primary px-8" style="border-radius: 12px;" data-bs-dismiss="modal">OK</button>
+                <a href="#" target="_blank" id="btnSendWaResetPassword" class="btn btn-success px-6 d-inline-flex align-items-center gap-2" style="border-radius: 12px; background-color: #25D366; border-color: #25D366; color: #ffffff;">
+                    <i class="fab fa-whatsapp fs-2 text-white"></i>
+                    <span class="fw-bold text-white">Kirim WA</span>
+                </a>
             </div>
         </div>
     </div>
@@ -897,6 +927,7 @@
          $(document).on('click', '.btn-reset-password', function() {
              var url = $(this).data('url');
              var userName = $(this).data('name') || 'Wali Santri';
+             var userPhone = $(this).data('phone') || '';
 
              Swal.fire({
                  title: 'Reset Password?',
@@ -921,7 +952,11 @@
                          },
                          success: function(response) {
                              if (response.status === 'success') {
-                                 $('#resetPasswordUserName').text(response.user_name || userName);
+                                 var finalName = response.user_name || userName;
+                                 var finalPhone = response.user_phone || userPhone || '';
+
+                                 $('#resetPasswordUserName').text(finalName);
+                                 setupWhatsAppResetButton(finalPhone);
                                  $('#modalResetPasswordSuccess').modal('show');
                                  table.ajax.reload();
                              } else {
@@ -954,6 +989,36 @@
                  }
              });
          });
+
+         // Function to setup WhatsApp Direct button for Reset Password
+         function setupWhatsAppResetButton(phone) {
+             var $waBtn = $('#btnSendWaResetPassword');
+             var rawPhone = phone ? String(phone).trim() : '';
+
+             if (!rawPhone || rawPhone === '-' || rawPhone.toLowerCase() === 'n/a') {
+                 $waBtn.attr('href', 'javascript:void(0)')
+                       .removeAttr('target')
+                       .addClass('disabled opacity-50')
+                       .attr('title', 'Nomor WhatsApp tidak tersedia');
+                 return;
+             }
+
+             // Normalisasi target link wa.me: contoh 088986194876 -> 6288986194876
+             var cleanPhone = rawPhone.replace(/\D/g, '');
+             if (cleanPhone.startsWith('0')) {
+                 cleanPhone = '62' + cleanPhone.substring(1);
+             } else if (cleanPhone.startsWith('8')) {
+                 cleanPhone = '62' + cleanPhone;
+             }
+
+             var message = "Silahkan ulangi masuk ke aplikasi dengan nomor WA " + rawPhone + " dan kata sandi 12345678";
+             var waUrl = "https://wa.me/" + cleanPhone + "?text=" + encodeURIComponent(message);
+
+             $waBtn.attr('href', waUrl)
+                   .attr('target', '_blank')
+                   .removeClass('disabled opacity-50')
+                   .attr('title', 'Kirim informasi reset ke WhatsApp ' + rawPhone);
+         }
 
          // Function to refresh statistic counters
          function refreshCounters() {
