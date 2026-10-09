@@ -167,6 +167,14 @@ class PosTransactionController extends Controller
 
             $data->when($request->filled('status'), function ($query) use ($request) {
                     $query->where('status', $request->status);
+                });
+
+            // Clone base query sebelum filter tipe pembeli diterapkan agar breakdown Umum & Saldo pada kartu tetap akurat
+            $baseQueryBeforeType = clone $data;
+
+            // Filter Tipe Pembeli (Umum vs Saldo Santri)
+            $data->when($request->filled('type') && in_array($request->type, [PointOfSaleTransaction::TYPE_UMUM, PointOfSaleTransaction::TYPE_SANTRI]), function ($query) use ($request) {
+                    $query->where('type', $request->type);
                 })
                 ->latest();
 
@@ -177,6 +185,14 @@ class PosTransactionController extends Controller
                     SUM(pay_amount) as sales,
                     SUM(profit) as profit
                 ')->first();
+
+                // Hitung agregasi dinamis untuk Umum dan Saldo (Santri)
+                $buyerStats = (clone $baseQueryBeforeType)->selectRaw("
+                    COUNT(CASE WHEN type = 'UMUM' THEN id END) as umum_count,
+                    COALESCE(SUM(CASE WHEN type = 'UMUM' THEN pay_amount ELSE 0 END), 0) as umum_sales,
+                    COUNT(CASE WHEN type = 'SANTRI' THEN id END) as saldo_count,
+                    COALESCE(SUM(CASE WHEN type = 'SANTRI' THEN pay_amount ELSE 0 END), 0) as saldo_sales
+                ")->first();
 
                 // Hitung rekap dinamis Hari Ini, Minggu Ini, Bulan Ini
                 // dengan tetap memperhitungkan filter outlet (jika ada)
@@ -251,6 +267,14 @@ class PosTransactionController extends Controller
                 $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $filterOutletId, $hasOutletRestriction, $authOutletIds);
 
                 return response()->json([
+                    // Summary Cards Dinamis (Total, Umum, Saldo)
+                    'summary_total_amount' => 'Rp ' . number_format($totals->sales ?? 0, 0, ',', '.'),
+                    'summary_total_count' => number_format($totals->count ?? 0, 0, ',', '.') . ' Transaksi',
+                    'summary_umum_amount' => 'Rp ' . number_format($buyerStats->umum_sales ?? 0, 0, ',', '.'),
+                    'summary_umum_count' => number_format($buyerStats->umum_count ?? 0, 0, ',', '.') . ' Transaksi',
+                    'summary_saldo_amount' => 'Rp ' . number_format($buyerStats->saldo_sales ?? 0, 0, ',', '.'),
+                    'summary_saldo_count' => number_format($buyerStats->saldo_count ?? 0, 0, ',', '.') . ' Transaksi',
+
                     'total_sales' => 'Rp ' . number_format($totals->sales ?? 0, 0, ',', '.'),
                     'total_profit' => 'Rp ' . number_format($totals->profit ?? 0, 0, ',', '.'),
                     'total_transactions' => number_format($totals->count ?? 0, 0, ',', '.'),
