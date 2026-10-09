@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use ZipArchive;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\StudentBarcodeHistory;
+use App\Models\StudentCardReport;
 use Milon\Barcode\DNS1D;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -20,7 +22,7 @@ class StudentBarcodeController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = Student::with('user', 'classroom.school')->hasSchool()
+            $data = Student::with(['user', 'classroom.school', 'pendingCardReport'])->hasSchool()
                 ->when(request('school_id'), function ($query) {
                     $query->whereHas('classroom', function ($query) {
                         $query->where('school_id', request('school_id'));
@@ -36,25 +38,76 @@ class StudentBarcodeController extends Controller
                     $query->where('name', 'like', '%' . request('name') . '%');
                 });
             return DataTables::of($data)
+                ->editColumn('name', function ($data) {
+                    $output = '<div><strong class="text-gray-800">' . e($data->name) . '</strong></div>';
+                    if ($data->pendingCardReport) {
+                        $output .= '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1 fs-8" title="' . e($data->pendingCardReport->notes ?? '') . '"><i class="fa fa-exclamation-triangle text-danger me-1"></i>' . e($data->pendingCardReport->issue_label) . '</span></div>';
+                    }
+                    return $output;
+                })
                 ->addColumn('classroom', function ($data) {
                     return $data->classroom->name ?? 'Belum ada kelas';
                 })
                 ->addColumn('school', function ($data) {
                     return $data->classroom->school->name ?? 'Belum ada sekolah';
                 })
+                ->editColumn('barcode', function ($data) {
+                    $code = $data->barcode ? e($data->barcode) : '<span class="text-muted fst-italic">Belum ada</span>';
+                    $prev = $data->previous_barcode ? '<br><small class="text-muted fs-8" title="Barcode sebelumnya"><i class="fa fa-history fa-xs me-1"></i>Prev: ' . e($data->previous_barcode) . '</small>' : '';
+                    return '<div><span class="font-monospace fw-bold text-gray-700">' . $code . '</span>' . $prev . '</div>';
+                })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('student-barcode.change-barcode', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        "<a href='$actionEdit' class='btn btn-primary btn-sm mr-1' " .
-                        "onclick=\"return confirm('Apakah Anda yakin ingin mengganti barcode? Barcode yang lama tidak akan berfungsi.');\">" .
-                        "<i class='fas fa-edit fa-sm'></i> Ganti Barcode</a>" .
+                    $safeName = e($data->name);
+                    $safeNis = e($data->nis ?? '-');
+                    $safeBarcode = e($data->barcode ?? '');
+                    $safePrevBarcode = e($data->previous_barcode ?? '');
+                    $actionEditUrl = route('student-barcode.change-barcode', $data->id);
+                    $actionDownloadUrl = route('student-barcode.download-png', $data->id);
+
+                    // 1. Edit Barcode Button
+                    $btnEdit = "<button type='button' class='btn btn-primary btn-sm me-1 px-3 py-2 btn-edit-barcode' " .
+                        "data-id='{$data->id}' " .
+                        "data-name='{$safeName}' " .
+                        "data-nis='{$safeNis}' " .
+                        "data-barcode='{$safeBarcode}' " .
+                        "data-previous='{$safePrevBarcode}' " .
+                        "title='Edit Barcode Santri'>" .
+                        "<i class='fas fa-edit me-1'></i> Edit</button>";
+
+                    // 2. Rollback Button
+                    if (!empty($data->previous_barcode)) {
+                        $btnRollback = "<button type='button' class='btn btn-warning btn-sm me-1 px-3 py-2 btn-rollback-barcode' " .
+                            "data-id='{$data->id}' " .
+                            "data-name='{$safeName}' " .
+                            "data-previous='{$safePrevBarcode}' " .
+                            "title='Kembalikan ke barcode sebelumnya: {$safePrevBarcode}'>" .
+                            "<i class='fas fa-undo me-1'></i> Rollback</button>";
+                    } else {
+                        $btnRollback = "<button type='button' class='btn btn-light-secondary text-muted btn-sm me-1 px-3 py-2' " .
+                            "disabled title='Belum ada riwayat barcode sebelumnya'>" .
+                            "<i class='fas fa-undo me-1'></i> Rollback</button>";
+                    }
+
+                    // 3. Quick Generate Button & Download Button
+                    $btnGenerate = "<a href='{$actionEditUrl}' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px' " .
+                        "onclick=\"return confirm('Apakah Anda yakin ingin generate acak barcode baru untuk santri {$safeName}? Barcode lama akan disimpan dan dapat di-rollback.');\" " .
+                        "title='Generate Acak Baru & Unduh PNG'>" .
+                        "<i class='fas fa-sync-alt fa-xs'></i></a>";
+
+                    $btnDownload = "<a href='{$actionDownloadUrl}' class='btn btn-icon btn-light-success btn-sm w-30px h-30px' " .
+                        "title='Unduh Gambar Barcode PNG'>" .
+                        "<i class='fas fa-download fa-xs'></i></a>";
+
+                    return "<div class='d-flex align-items-center justify-content-center flex-nowrap'>" .
+                        $btnEdit . $btnRollback . $btnGenerate . $btnDownload .
                         "</div>";
                 })
-                ->rawColumns(['action', 'classroom', 'school'])
+                ->rawColumns(['name', 'action', 'classroom', 'school', 'barcode'])
                 ->make(true);
         }
         $schools = School::hasSchool()->orderBy('name')->get();
-        return view('admins.student-barcode.index', compact('schools'));
+        $pendingReportsCount = StudentCardReport::pending()->count();
+        return view('admins.student-barcode.index', compact('schools', 'pendingReportsCount'));
     }
 
     /**
@@ -241,39 +294,161 @@ class StudentBarcodeController extends Controller
     {
         $student = Student::findOrFail($id);
 
-        // Generate new barcode
-        $barcode = $this->generateBarcode();
-        $student->update(['barcode' => $barcode]);
+        $oldBarcode = $student->barcode;
+        $newBarcode = Student::generateUniqueBarcode();
 
-        // Generate barcode image
-        $dns1d = new DNS1D;
-        $barcodeImage = $dns1d->getBarcodePNG($barcode, 'C128');
-        $imageData = base64_decode($barcodeImage);
+        $student->update([
+            'barcode' => $newBarcode,
+            'previous_barcode' => $oldBarcode,
+        ]);
 
-        // Create image and resize it to the specified dimensions
-        $image = Image::make($imageData);
+        StudentBarcodeHistory::create([
+            'student_id' => $student->id,
+            'old_barcode' => $oldBarcode,
+            'new_barcode' => $newBarcode,
+            'action_type' => 'generated',
+            'admin_id' => auth()->id(),
+        ]);
 
-        // Convert dimensions from cm to pixels
-        $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels
-        $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels
-
-        // Resize the image
-        $image->resize($widthInPixels, $heightInPixels);
-
-        // Create a custom filename for the barcode image
-        $fileName = $student->nis . '.png';
-        $tempPath = storage_path('app/public/') . $fileName;
-
-        // Save the resized image temporarily
-        $image->save($tempPath);
-
-        // Download the barcode image and delete the file after sending
-        return response()->download($tempPath)->deleteFileAfterSend(true);
+        return $this->downloadBarcodePng($student->id);
     }
 
-    private function generateBarcode()
+    /**
+     * Update barcode manually from modal with uniqueness check.
+     */
+    public function updateBarcode(Request $request, $id)
     {
-        return substr(str_shuffle(str_repeat('0123456789', 17)), 0, 17);
+        $request->validate([
+            'barcode' => [
+                'required',
+                'string',
+                'min:5',
+                'max:64',
+                \Illuminate\Validation\Rule::unique('students', 'barcode')->ignore($id),
+            ],
+        ], [
+            'barcode.required' => 'Barcode wajib diisi.',
+            'barcode.unique' => 'Barcode sudah digunakan oleh santri lain.',
+            'barcode.min' => 'Barcode minimal 5 karakter.',
+            'barcode.max' => 'Barcode maksimal 64 karakter.',
+        ]);
+
+        $student = Student::findOrFail($id);
+        $newBarcode = trim($request->input('barcode'));
+        $oldBarcode = $student->barcode;
+
+        if ($oldBarcode !== $newBarcode) {
+            $student->update([
+                'barcode' => $newBarcode,
+                'previous_barcode' => $oldBarcode,
+            ]);
+
+            StudentBarcodeHistory::create([
+                'student_id' => $student->id,
+                'old_barcode' => $oldBarcode,
+                'new_barcode' => $newBarcode,
+                'action_type' => 'manual_edit',
+                'admin_id' => auth()->id(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Barcode santri {$student->name} berhasil diperbarui.",
+            'barcode' => $newBarcode,
+            'previous_barcode' => $student->previous_barcode,
+            'download_url' => route('student-barcode.download-png', $student->id),
+        ]);
+    }
+
+    /**
+     * Rollback barcode to previous state.
+     */
+    public function rollbackBarcode(Request $request, $id)
+    {
+        $student = Student::findOrFail($id);
+
+        if (empty($student->previous_barcode)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Santri ini belum memiliki riwayat barcode sebelumnya untuk di-rollback.',
+            ], 422);
+        }
+
+        $targetBarcode = $student->previous_barcode;
+
+        // Collision check
+        $conflict = Student::where('barcode', $targetBarcode)
+            ->where('id', '!=', $student->id)
+            ->first();
+
+        if ($conflict) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gagal rollback: Barcode lama ({$targetBarcode}) saat ini sedang digunakan oleh santri lain: {$conflict->name}.",
+            ], 422);
+        }
+
+        $currentBarcode = $student->barcode;
+
+        $student->update([
+            'barcode' => $targetBarcode,
+            'previous_barcode' => $currentBarcode, // One step rollback allows toggle back if needed
+        ]);
+
+        StudentBarcodeHistory::create([
+            'student_id' => $student->id,
+            'old_barcode' => $currentBarcode,
+            'new_barcode' => $targetBarcode,
+            'action_type' => 'rollback',
+            'admin_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Barcode santri {$student->name} berhasil dikembalikan ke state sebelumnya ({$targetBarcode}).",
+            'barcode' => $targetBarcode,
+            'previous_barcode' => $student->previous_barcode,
+        ]);
+    }
+
+    /**
+     * Generate unique 17-digit random barcode via API.
+     */
+    public function generateUnique()
+    {
+        return response()->json([
+            'success' => true,
+            'barcode' => Student::generateUniqueBarcode(),
+        ]);
+    }
+
+    /**
+     * Download barcode PNG for student.
+     */
+    public function downloadBarcodePng($id)
+    {
+        $student = Student::findOrFail($id);
+
+        if (empty($student->barcode)) {
+            return redirect()->back()->with('error', 'Santri belum memiliki barcode.');
+        }
+
+        $dns1d = new DNS1D;
+        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128');
+        $imageData = base64_decode($barcodeImage);
+
+        $image = Image::make($imageData);
+
+        $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels
+        $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels
+        $image->resize($widthInPixels, $heightInPixels);
+
+        $fileName = ($student->nis ?: $student->name) . '.png';
+        $tempPath = storage_path('app/public/') . $fileName;
+        $image->save($tempPath);
+
+        return response()->download($tempPath)->deleteFileAfterSend(true);
     }
 
 

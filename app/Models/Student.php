@@ -40,6 +40,7 @@ class Student extends Model
         'saldo',
         'avatar',
         'barcode',
+        'previous_barcode',
         'is_blocked',
         'daily_limit',
         'saving',
@@ -217,7 +218,9 @@ class Student extends Model
         //     $model->barcode = Str::random(17);
         // });
         static::creating(function ($model) {
-            $model->barcode = self::generateRandomNumber();
+            if (empty($model->barcode)) {
+                $model->barcode = self::generateUniqueBarcode();
+            }
         });
 
         static::creating(function ($model) {
@@ -246,9 +249,28 @@ class Student extends Model
         });
     }
 
-    private static function generateRandomNumber()
+    public static function generateUniqueBarcode(): string
     {
-        return substr(str_shuffle(str_repeat('0123456789', 17)), 0, 17);
+        do {
+            $code = substr(str_shuffle(str_repeat('0123456789', 17)), 0, 17);
+        } while (self::where('barcode', $code)->exists());
+
+        return $code;
+    }
+
+    public function barcodeHistories()
+    {
+        return $this->hasMany(StudentBarcodeHistory::class, 'student_id');
+    }
+
+    public function cardReports()
+    {
+        return $this->hasMany(StudentCardReport::class, 'student_id');
+    }
+
+    public function pendingCardReport()
+    {
+        return $this->hasOne(StudentCardReport::class, 'student_id')->where('status', StudentCardReport::STATUS_PENDING);
     }
 
     public function scopeHasSchool($query)
