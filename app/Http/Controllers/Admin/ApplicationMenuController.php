@@ -28,6 +28,19 @@ class ApplicationMenuController extends Controller
             session()->save();
             $data = ApplicationMenu::with('scopes.school')->latest();
             return DataTables::of($data)
+                ->addColumn('name', function ($data) {
+                    $html = '<div class="d-flex flex-column">';
+                    $html .= '<span class="text-gray-800 fw-bolder mb-1">' . e($data->name) . '</span>';
+                    if ($data->type === 'whatsapp') {
+                        $html .= '<span class="text-muted fs-8"><i class="fab fa-whatsapp text-success me-1"></i> WhatsApp: ' . e($data->wa_number ?? '-') . '</span>';
+                    } elseif ($data->type === 'external') {
+                        $html .= '<span class="text-muted fs-8"><i class="fas fa-external-link-alt text-primary me-1"></i> ' . e(\Illuminate\Support\Str::limit($data->url, 40)) . '</span>';
+                    } else {
+                        $html .= '<span class="text-muted fs-8"><i class="fas fa-code text-secondary me-1"></i> Flag: ' . e($data->flag) . '</span>';
+                    }
+                    $html .= '</div>';
+                    return $html;
+                })
                 ->addColumn('status', function ($data) {
                     return $data->status ? '<span class="badge badge-success">Aktif</span>'
                         : '<span class="badge badge-danger">Tidak Aktif</span>';
@@ -54,7 +67,7 @@ class ApplicationMenuController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Menu Aplikasi']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'status', 'scope'])
+                ->rawColumns(['action', 'status', 'scope', 'name'])
                 ->make(true);
         }
         return view('admins.application-menu.index');
@@ -80,7 +93,8 @@ class ApplicationMenuController extends Controller
         if (!Auth::user()->can('Create Menu Aplikasi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $menu = ApplicationMenu::create($request->validated());
+        $payload = $this->prepareMenuPayload($request);
+        $menu = ApplicationMenu::create($payload);
         $this->syncScopes($menu, $request);
         return redirect()->route('application-menu.index')->with('success', 'Menu Aplikasi berhasil ditambahkan');
     }
@@ -114,7 +128,8 @@ class ApplicationMenuController extends Controller
         if (!Auth::user()->can('Edit Menu Aplikasi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $applicationMenu->update($request->validated());
+        $payload = $this->prepareMenuPayload($request);
+        $applicationMenu->update($payload);
         $this->syncScopes($applicationMenu, $request);
         return redirect()->route('application-menu.index')->with('success', 'Menu Aplikasi berhasil diperbarui');
     }
@@ -203,5 +218,46 @@ class ApplicationMenuController extends Controller
                 }
             }
         }
+    }
+
+    /**
+     * Format dan persiapkan payload menu aplikasi berdasarkan tipe tautan.
+     */
+    private function prepareMenuPayload(ApplicationMenuRequest $request): array
+    {
+        $data = $request->validated();
+        $type = $request->input('type', 'internal');
+
+        if ($type === 'whatsapp') {
+            $rawPhone = $request->input('wa_number', '');
+            $cleaned = preg_replace('/[^0-9]/', '', (string)$rawPhone);
+            if (str_starts_with($cleaned, '08')) {
+                $cleaned = '62' . substr($cleaned, 1);
+            } elseif (str_starts_with($cleaned, '8')) {
+                $cleaned = '62' . $cleaned;
+            }
+
+            $message = $request->input('wa_message') ?: "Assalamu'alaikum, saya wali santri [nama_wali], orang tua / wali dari [nama-santri dan kelas] ingin bertanya";
+
+            $data['type'] = 'whatsapp';
+            $data['wa_number'] = $cleaned;
+            $data['wa_message'] = $message;
+            $data['url'] = "https://wa.me/{$cleaned}?text=" . urlencode($message);
+            $data['icon'] = $request->input('icon') ?: 'MessageCircle';
+        } elseif ($type === 'external') {
+            $data['type'] = 'external';
+            $data['url'] = $request->input('url');
+            $data['wa_number'] = null;
+            $data['wa_message'] = null;
+            $data['icon'] = $request->input('icon') ?: 'ExternalLink';
+        } else {
+            $data['type'] = 'internal';
+            $data['url'] = null;
+            $data['wa_number'] = null;
+            $data['wa_message'] = null;
+            $data['icon'] = null;
+        }
+
+        return $data;
     }
 }

@@ -28,6 +28,8 @@ import {
   X,
   Sparkles,
   AlertCircle,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { MobileShell } from "@/components/MobileShell";
@@ -38,6 +40,37 @@ import { fetchDashboard, fetchInformations, fetchLimit, updateLimit as updateLim
 import { resolveImageUrl, safeParseDate } from "@/lib/utils";
 import { Text } from "@/components/Text";
 import { toast } from "sonner";
+
+function resolveExternalUrl(urlTemplate: string, context: {
+  nama_wali: string;
+  nama_santri: string;
+  kelas: string;
+  unit_sekolah?: string;
+}): string {
+  const santriDanKelas = `${context.nama_santri} (${context.kelas})`;
+  
+  const replaceTokens = (text: string) => {
+    return text
+      .replace(/\[nama[-_]wali\]|\{nama[-_]wali\}/gi, context.nama_wali)
+      .replace(/\[nama[-_]santri dan kelas\]|\[nama[-_]siswa dan kelas\]|\{nama[-_]santri dan kelas\}|\{nama[-_]siswa dan kelas\}/gi, santriDanKelas)
+      .replace(/\[nama[-_]santri\]|\[nama[-_]siswa\]|\{nama[-_]santri\}|\{nama[-_]siswa\}/gi, context.nama_santri)
+      .replace(/\[kelas\]|\{kelas\}/gi, context.kelas)
+      .replace(/\[unit[-_]?sekolah\]|\[sekolah\]|\{unit[-_]?sekolah\}|\{sekolah\}/gi, context.unit_sekolah || "");
+  };
+
+  try {
+    const rawUrl = urlTemplate.startsWith("http") ? urlTemplate : `https://${urlTemplate}`;
+    const urlObj = new URL(rawUrl);
+    if (urlObj.searchParams.has("text")) {
+      const rawText = urlObj.searchParams.get("text") || "";
+      urlObj.searchParams.set("text", replaceTokens(rawText));
+      return urlObj.toString();
+    }
+    return replaceTokens(rawUrl);
+  } catch {
+    return replaceTokens(urlTemplate);
+  }
+}
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -295,10 +328,47 @@ function Dashboard() {
   const isSaldoVisible = dashboard?.pwa_permissions?.show_pwa_saldo ?? (active as any)?.show_pwa_saldo ?? true;
 
   // Resolve dynamic actions from database menus
-  const dynamicActions: Array<{ label: string; icon: any; accent: string; to: any }> = [];
+  interface ActionItem {
+    label: string;
+    icon: any;
+    accent: string;
+    to?: any;
+    url?: string;
+    isExternal?: boolean;
+  }
+
+  const dynamicActions: ActionItem[] = [];
   const dbMenus = dashboard?.menus || [];
-  
+
+  const contextData = {
+    nama_wali: dashboard?.user?.name || "Wali Santri",
+    nama_santri: active.name || "Santri",
+    kelas: active.classroom?.name || (active as any)?.className || "Tanpa Kelas",
+    unit_sekolah: active.school?.name || (active as any)?.jenjang || "",
+  };
+
   dbMenus.forEach((menu: any) => {
+    // 1. Cek apakah menu merupakan external link atau whatsapp
+    const isWa = menu.type === "whatsapp" || (menu.url && (menu.url.includes("wa.me") || menu.url.includes("whatsapp")));
+    const isExt = menu.type === "external" || Boolean(menu.url);
+
+    if (isWa || isExt) {
+      if (menu.url) {
+        const resolvedUrl = resolveExternalUrl(menu.url, contextData);
+        dynamicActions.push({
+          label: menu.name,
+          icon: isWa ? MessageCircle : ExternalLink,
+          accent: isWa 
+            ? "from-[#25D366] to-[#128C7E]" 
+            : "from-[#3b82f6] to-[#2563eb]",
+          url: resolvedUrl,
+          isExternal: true,
+        });
+      }
+      return;
+    }
+
+    // 2. Menu internal reguler
     const flagKey = (menu.flag || "").toLowerCase().trim();
     const nameKey = (menu.name || "").toLowerCase().trim();
     const mapped = menuMapping[flagKey] || menuMapping[nameKey];
@@ -313,7 +383,7 @@ function Dashboard() {
     }
   });
 
-  const finalActions = dynamicActions.length > 0 ? [
+  const finalActions: ActionItem[] = dynamicActions.length > 0 ? [
     ...dynamicActions.filter(a => a.label !== "Atur Limit" && a.label !== "Blokir Saldo"),
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const }
   ] : (isSaldoVisible ? [
@@ -482,20 +552,42 @@ function Dashboard() {
       {/* Quick actions */}
       <section className="px-5 mt-6">
         <div className="grid grid-cols-4 gap-2">
-          {finalActions.map(({ label, icon: Icon, accent, to }) => (
-            <button
-              key={label}
-              onClick={() => navigate({ to })}
-              className="flex flex-col items-center gap-2 p-2 rounded-[20px] bg-card border border-border shadow-[var(--shadow-soft)] active:scale-95 transition"
-            >
-              <div className={`w-10 h-10 rounded-[14px] bg-gradient-to-br ${accent} flex items-center justify-center shadow-sm`}>
-                <Icon size={18} className="text-primary-foreground" />
-              </div>
-              <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
-                {label}
-              </span>
-            </button>
-          ))}
+          {finalActions.map((action) => {
+            const { label, icon: Icon, accent } = action;
+            if (action.isExternal && action.url) {
+              return (
+                <a
+                  key={label}
+                  href={action.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 p-2 rounded-[20px] bg-card border border-border shadow-[var(--shadow-soft)] active:scale-95 transition no-underline text-inherit"
+                >
+                  <div className={`w-10 h-10 rounded-[14px] bg-gradient-to-br ${accent} flex items-center justify-center shadow-sm`}>
+                    <Icon size={18} className="text-white" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
+                    {label}
+                  </span>
+                </a>
+              );
+            }
+
+            return (
+              <button
+                key={label}
+                onClick={() => navigate({ to: action.to })}
+                className="flex flex-col items-center gap-2 p-2 rounded-[20px] bg-card border border-border shadow-[var(--shadow-soft)] active:scale-95 transition"
+              >
+                <div className={`w-10 h-10 rounded-[14px] bg-gradient-to-br ${accent} flex items-center justify-center shadow-sm`}>
+                  <Icon size={18} className="text-primary-foreground" />
+                </div>
+                <span className="text-[10px] font-bold text-slate-700 text-center leading-tight">
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
