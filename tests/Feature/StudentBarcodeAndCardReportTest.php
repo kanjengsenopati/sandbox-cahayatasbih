@@ -87,7 +87,7 @@ class StudentBarcodeAndCardReportTest extends TestCase
     public function test_update_barcode_success_and_saves_previous_state()
     {
         $oldBarcode = $this->student1->barcode;
-        $newBarcode = '99999888887777711';
+        $newBarcode = Student::generateUniqueBarcode();
 
         $response = $this->actingAs($this->admin, 'web')
             ->postJson(route('student-barcode.update-barcode', $this->student1->id), [
@@ -101,19 +101,20 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertEquals($newBarcode, $this->student1->barcode);
         $this->assertEquals($oldBarcode, $this->student1->previous_barcode);
 
-        // Check history log
+        // Check history log including admin_id (UUID string)
         $this->assertDatabaseHas('student_barcode_histories', [
             'student_id' => $this->student1->id,
             'old_barcode' => $oldBarcode,
             'new_barcode' => $newBarcode,
             'action_type' => 'manual_edit',
+            'admin_id' => (string) $this->admin->id,
         ]);
     }
 
     public function test_rollback_barcode_reverts_to_previous_state()
     {
         $originalBarcode = $this->student1->barcode;
-        $updatedBarcode = '88888777776666622';
+        $updatedBarcode = Student::generateUniqueBarcode();
 
         // 1. Update barcode first
         $this->actingAs($this->admin, 'web')
@@ -135,11 +136,12 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->student1->refresh();
         $this->assertEquals($originalBarcode, $this->student1->barcode);
 
-        // Check rollback history
+        // Check rollback history including admin_id (UUID string)
         $this->assertDatabaseHas('student_barcode_histories', [
             'student_id' => $this->student1->id,
             'new_barcode' => $originalBarcode,
             'action_type' => 'rollback',
+            'admin_id' => (string) $this->admin->id,
         ]);
     }
 
@@ -160,10 +162,12 @@ class StudentBarcodeAndCardReportTest extends TestCase
             'student_id' => $this->student1->id,
             'issue_type' => 'rusak',
             'status' => 'pending',
+            'reported_by' => (string) $this->admin->id,
         ]);
 
         $report = StudentCardReport::where('student_id', $this->student1->id)->first();
         $this->assertNotNull($report);
+        $this->assertEquals((string) $this->admin->id, $report->reported_by);
 
         // 2. Mark complete
         $completeResponse = $this->actingAs($this->admin, 'web')
@@ -174,6 +178,7 @@ class StudentBarcodeAndCardReportTest extends TestCase
 
         $report->refresh();
         $this->assertEquals('completed', $report->status);
+        $this->assertEquals((string) $this->admin->id, $report->processed_by);
         $this->assertNotNull($report->processed_at);
     }
 }
