@@ -11,7 +11,7 @@ class ApplicationMenu extends Model
 {
     use HasFactory, UuidTrait, SoftDeletes;
 
-    protected $fillable = ['name', 'flag', 'status'];
+    protected $fillable = ['name', 'flag', 'status', 'type', 'url', 'wa_number', 'wa_message', 'icon'];
 
     /**
      * Relasi ke scope visibilitas menu (per unit pendidikan & jenjang kelas).
