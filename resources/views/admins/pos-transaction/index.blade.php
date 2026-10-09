@@ -63,6 +63,115 @@
     .btn-toggle-pos-items[aria-expanded="false"] .show-less-badge {
         display: none !important;
     }
+
+    /* Refined Modern Smooth Palette Summary Cards */
+    .summary-card-smooth {
+        border-radius: 24px !important;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent !important;
+    }
+    .summary-card-smooth:hover {
+        transform: translateY(-3px);
+    }
+    
+    /* Card Total: Smooth Ocean Blue */
+    .summary-card-total {
+        background: linear-gradient(135deg, #eff6ff 0%, #f8faff 50%, #ffffff 100%) !important;
+        border-color: rgba(37, 99, 235, 0.18) !important;
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.07), 0 8px 10px -6px rgba(37, 99, 235, 0.04) !important;
+    }
+    .summary-card-total:hover {
+        box-shadow: 0 16px 32px -4px rgba(37, 99, 235, 0.15) !important;
+        border-color: rgba(37, 99, 235, 0.32) !important;
+    }
+    .summary-icon-total {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+    }
+    .summary-badge-total {
+        background: rgba(37, 99, 235, 0.1) !important;
+        color: #1d4ed8 !important;
+        border: 1px solid rgba(37, 99, 235, 0.22) !important;
+    }
+
+    /* Card Umum: Smooth Warm Amber */
+    .summary-card-umum {
+        background: linear-gradient(135deg, #fffbeb 0%, #fefcf3 50%, #ffffff 100%) !important;
+        border-color: rgba(245, 158, 11, 0.2) !important;
+        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.07), 0 8px 10px -6px rgba(245, 158, 11, 0.04) !important;
+    }
+    .summary-card-umum:hover {
+        box-shadow: 0 16px 32px -4px rgba(245, 158, 11, 0.15) !important;
+        border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+    .summary-icon-umum {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(245, 158, 11, 0.25);
+    }
+    .summary-badge-umum {
+        background: rgba(245, 158, 11, 0.12) !important;
+        color: #b45309 !important;
+        border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    }
+
+    /* Card Saldo: Smooth Emerald */
+    .summary-card-saldo {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f7fdfa 50%, #ffffff 100%) !important;
+        border-color: rgba(16, 185, 129, 0.22) !important;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.08), 0 8px 10px -6px rgba(16, 185, 129, 0.04) !important;
+    }
+    .summary-card-saldo:hover {
+        box-shadow: 0 16px 32px -4px rgba(16, 185, 129, 0.16) !important;
+        border-color: rgba(16, 185, 129, 0.38) !important;
+    }
+    .summary-icon-saldo {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(16, 185, 129, 0.25);
+    }
+    .summary-badge-saldo {
+        background: rgba(16, 185, 129, 0.12) !important;
+        color: #047857 !important;
+        border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    }
+
+    /* Background Watermark Icon */
+    .summary-watermark {
+        position: absolute;
+        right: -12px;
+        bottom: -15px;
+        font-size: 76px;
+        opacity: 0.04;
+        pointer-events: none;
+        line-height: 1;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .summary-card-smooth:hover .summary-watermark {
+        opacity: 0.08;
+        transform: scale(1.05) rotate(-3deg);
+    }
 </style>
 
 <div class="content d-flex flex-column flex-column-fluid safe-padding" id="kt_content">
@@ -288,57 +397,60 @@
                             <div class="row g-4 pt-4 mb-2" id="pos-summary-cards-container">
                                 <!-- Card 1: Total Nominal Transaksi -->
                                 <div class="col-md-4">
-                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
-                                        <div class="d-flex align-items-center justify-content-between mb-3">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(37, 99, 235, 0.1);">
-                                                    <i class="fa-solid fa-receipt text-primary fs-6"></i>
+                                    <div class="card p-6 summary-card-smooth summary-card-total h-100">
+                                        <i class="fa-solid fa-receipt summary-watermark text-primary"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-total">
+                                                    <i class="fa-solid fa-receipt fs-6 text-white"></i>
                                                 </div>
-                                                <x-text.label class="text-slate-400">Total Nominal Transaksi</x-text.label>
+                                                <x-text.label class="text-blue-700 fw-bolder">Total Transaksi</x-text.label>
                                             </div>
-                                            <span class="badge bg-light-primary text-primary px-3 py-1 fw-bold rounded-pill" id="summary-total-count">0 Transaksi</span>
+                                            <span class="badge summary-badge-total px-3 py-1.5 fw-bold rounded-pill" id="summary-total-count">0 Transaksi</span>
                                         </div>
-                                        <div class="d-flex align-items-baseline justify-content-between">
-                                            <div class="fs-3 fw-bolder text-slate-900" id="summary-total-amount">Rp 0</div>
-                                            <x-text.caption class="text-slate-400">Semua transaksi</x-text.caption>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <div class="fs-2x fw-bolder text-slate-900 tracking-tight" id="summary-total-amount">Rp 0</div>
+                                            <x-text.caption class="text-blue-600/70 fw-semibold">Semua transaksi</x-text.caption>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Card 2: Nominal Transaksi Umum -->
                                 <div class="col-md-4">
-                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
-                                        <div class="d-flex align-items-center justify-content-between mb-3">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(100, 116, 139, 0.1);">
-                                                    <i class="fa-solid fa-user-group text-slate-600 fs-6"></i>
+                                    <div class="card p-6 summary-card-smooth summary-card-umum h-100">
+                                        <i class="fa-solid fa-users summary-watermark text-warning"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-umum">
+                                                    <i class="fa-solid fa-users fs-6 text-white"></i>
                                                 </div>
-                                                <x-text.label class="text-slate-400">Nominal Transaksi Umum</x-text.label>
+                                                <x-text.label class="text-amber-800 fw-bolder">Transaksi Umum</x-text.label>
                                             </div>
-                                            <span class="badge bg-light-secondary text-slate-700 px-3 py-1 fw-bold rounded-pill" id="summary-umum-count">0 Transaksi</span>
+                                            <span class="badge summary-badge-umum px-3 py-1.5 fw-bold rounded-pill" id="summary-umum-count">0 Transaksi</span>
                                         </div>
-                                        <div class="d-flex align-items-baseline justify-content-between">
-                                            <div class="fs-3 fw-bolder text-slate-800" id="summary-umum-amount">Rp 0</div>
-                                            <x-text.caption class="text-slate-400">Pembeli umum</x-text.caption>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <div class="fs-2x fw-bolder text-amber-950 tracking-tight" id="summary-umum-amount">Rp 0</div>
+                                            <x-text.caption class="text-amber-700/70 fw-semibold">Pembeli umum</x-text.caption>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Card 3: Nominal Transaksi Saldo (Santri) -->
                                 <div class="col-md-4">
-                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
-                                        <div class="d-flex align-items-center justify-content-between mb-3">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(16, 185, 129, 0.1);">
-                                                    <i class="fa-solid fa-wallet text-success fs-6"></i>
+                                    <div class="card p-6 summary-card-smooth summary-card-saldo h-100">
+                                        <i class="fa-solid fa-wallet summary-watermark text-success"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-saldo">
+                                                    <i class="fa-solid fa-wallet fs-6 text-white"></i>
                                                 </div>
-                                                <x-text.label class="text-slate-400">Nominal Transaksi Saldo</x-text.label>
+                                                <x-text.label class="text-emerald-800 fw-bolder">Transaksi Saldo</x-text.label>
                                             </div>
-                                            <span class="badge bg-light-success text-success px-3 py-1 fw-bold rounded-pill" id="summary-saldo-count">0 Transaksi</span>
+                                            <span class="badge summary-badge-saldo px-3 py-1.5 fw-bold rounded-pill" id="summary-saldo-count">0 Transaksi</span>
                                         </div>
-                                        <div class="d-flex align-items-baseline justify-content-between">
-                                            <x-text.amount class="fs-3" id="summary-saldo-amount">Rp 0</x-text.amount>
-                                            <x-text.caption class="text-slate-400">Saldo santri</x-text.caption>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <x-text.amount class="fs-2x fw-bolder text-emerald-600 tracking-tight" id="summary-saldo-amount">Rp 0</x-text.amount>
+                                            <x-text.caption class="text-emerald-700/70 fw-semibold">Saldo santri</x-text.caption>
                                         </div>
                                     </div>
                                 </div>
