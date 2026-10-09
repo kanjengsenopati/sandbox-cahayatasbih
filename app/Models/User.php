@@ -278,8 +278,7 @@ class User extends Authenticatable
             return null;
         }
 
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = \App\Services\OutletContextService::getKoperasiOutletId();
 
         if ($this->isKasirKoperasi() || $this->isKoordinatorCahayaMart()) {
             return $koperasiId;
