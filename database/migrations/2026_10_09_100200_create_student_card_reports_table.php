@@ -15,11 +15,11 @@ return new class extends Migration
             Schema::create('student_card_reports', function (Blueprint $table) {
                 $table->id();
                 $table->string('student_id');
-                $table->unsignedBigInteger('reported_by')->nullable();
+                $table->string('reported_by', 36)->nullable();
                 $table->string('issue_type', 32); // 'rusak', 'tidak_bisa_transaksi', 'hilang'
                 $table->text('notes')->nullable();
                 $table->string('status', 32)->default('pending'); // 'pending', 'completed', 'rejected'
-                $table->unsignedBigInteger('processed_by')->nullable();
+                $table->string('processed_by', 36)->nullable();
                 $table->timestamp('processed_at')->nullable();
                 $table->timestamps();
 

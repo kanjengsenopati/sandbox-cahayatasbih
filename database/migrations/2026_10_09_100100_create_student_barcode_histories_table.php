@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->string('old_barcode', 64)->nullable();
                 $table->string('new_barcode', 64);
                 $table->string('action_type', 32); // 'manual_edit', 'generated', 'rollback'
-                $table->unsignedBigInteger('admin_id')->nullable();
+                $table->string('admin_id', 36)->nullable();
                 $table->timestamps();
 
                 $table->index('student_id');
