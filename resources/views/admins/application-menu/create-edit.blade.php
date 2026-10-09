@@ -124,6 +124,56 @@
                                     <h5 class="text-success fw-bolder mb-4">
                                         <i class="fab fa-whatsapp me-2 text-success fs-4"></i>Konfigurasi WhatsApp Petugas
                                     </h5>
+
+                                    <!--begin::Pilih Petugas-->
+                                    <div class="fv-row mb-5">
+                                        <label class="fs-6 fw-bold form-label" for="officer_id">
+                                            <span>Pilih Petugas (Officer / Petugas Backoffice)</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih petugas terdaftar untuk mengisi Nama dan Nomor WhatsApp secara otomatis"></i>
+                                        </label>
+                                        <select class="form-select form-select-solid" name="officer_id" id="officer_id"
+                                            data-control="select2" data-placeholder="-- Pilih Petugas Terdaftar (atau ketik manual) --">
+                                            <option value="">-- Ketik Manual / Petugas Lainnya --</option>
+                                            @if(isset($officers))
+                                                @foreach($officers as $officer)
+                                                    <option value="{{ $officer->id }}"
+                                                        data-name="{{ $officer->name }}"
+                                                        data-position="{{ $officer->position }}"
+                                                        data-phone="{{ $officer->phone }}"
+                                                        {{ (isset($applicationMenu) && $applicationMenu->officer_id == $officer->id) ? 'selected' : '' }}>
+                                                        {{ $officer->name }} — {{ $officer->position }} ({{ $officer->phone }})
+                                                    </option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                        <span class="text-muted fs-8 mt-1 d-block">Memilih petugas akan otomatis menampilkan nama, jabatan, serta mengisi nomor WhatsApp di bawah.</span>
+                                    </div>
+                                    <!--end::Pilih Petugas-->
+
+                                    <!--begin::Kartu Info Petugas Terpilih-->
+                                    <div id="selected_officer_card" class="bg-white rounded-3 p-4 border border-success mb-5 shadow-xs" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-45px symbol-circle me-3">
+                                                    <span class="symbol-label bg-light-success text-success fw-bolder fs-5" id="officer_initials">PT</span>
+                                                </div>
+                                                <div class="d-flex flex-column">
+                                                    <span class="text-gray-900 fw-bolder fs-6" id="officer_display_name">-</span>
+                                                    <span class="text-muted fs-7" id="officer_display_position">-</span>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge badge-light-success fw-bolder fs-7 py-2 px-3" id="officer_display_phone">
+                                                    <i class="fab fa-whatsapp text-success me-1"></i> -
+                                                </span>
+                                                <button type="button" class="btn btn-xs btn-light-primary" id="btn_apply_menu_name" title="Gunakan nama/jabatan ini sebagai Menu Aplikasi">
+                                                    <i class="fas fa-magic me-1"></i> Jadikan Nama Menu
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--end::Kartu Info Petugas Terpilih-->
                                     
                                     <div class="fv-row mb-5">
                                         <label class="fs-6 fw-bold form-label" for="wa_number">
@@ -380,6 +430,69 @@ $(document).ready(function() {
 
     $waMessage.on('input', updateWaPreview);
     updateWaPreview();
+
+    // Officer selection elements
+    const $officerSelect = $('#officer_id');
+    const $selectedOfficerCard = $('#selected_officer_card');
+    const $officerDisplayName = $('#officer_display_name');
+    const $officerDisplayPosition = $('#officer_display_position');
+    const $officerDisplayPhone = $('#officer_display_phone');
+    const $officerInitials = $('#officer_initials');
+    const $btnApplyMenuName = $('#btn_apply_menu_name');
+
+    function handleOfficerSelection(isInit = false) {
+        const val = $officerSelect.val();
+        if (val) {
+            const opt = $officerSelect.find('option:selected');
+            const name = opt.attr('data-name') || opt.data('name') || '';
+            const position = opt.attr('data-position') || opt.data('position') || '';
+            const phone = opt.attr('data-phone') || opt.data('phone') || '';
+
+            $officerDisplayName.text(name || '-');
+            $officerDisplayPosition.text(position || '-');
+            $officerDisplayPhone.html('<i class="fab fa-whatsapp text-success me-1"></i> ' + (phone || '-'));
+
+            const words = name ? name.trim().split(/\s+/) : [];
+            let initials = 'PT';
+            if (words.length >= 2) {
+                initials = (words[0][0] + words[1][0]).toUpperCase();
+            } else if (words.length === 1 && words[0].length > 0) {
+                initials = words[0].substring(0, 2).toUpperCase();
+            }
+            $officerInitials.text(initials);
+
+            if (!isInit && phone) {
+                $waNumber.val(phone);
+            }
+
+            if (!isInit && !$('#name').val() && (position || name)) {
+                $('#name').val(position ? ('WA ' + position) : ('WA ' + name));
+            }
+
+            $selectedOfficerCard.slideDown(200);
+        } else {
+            $selectedOfficerCard.slideUp(200);
+        }
+    }
+
+    $officerSelect.on('change', function() {
+        handleOfficerSelection(false);
+    });
+
+    $btnApplyMenuName.on('click', function(e) {
+        e.preventDefault();
+        const opt = $officerSelect.find('option:selected');
+        const name = opt.attr('data-name') || opt.data('name') || '';
+        const position = opt.attr('data-position') || opt.data('position') || '';
+        const suggestedName = position ? ('WA ' + position) : (name ? ('WA ' + name) : '');
+        if (suggestedName) {
+            $('#name').val(suggestedName).focus();
+        }
+    });
+
+    if ($officerSelect.val()) {
+        handleOfficerSelection(true);
+    }
 
     // Existing class levels dari database (saat edit)
     const existingClassLevels = @json(isset($applicationMenu) ? $applicationMenu->scopes->pluck('class_level')->filter()->unique()->values() : []);
