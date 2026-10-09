@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Models\School;
 use App\Models\Classroom;
+use App\Models\Officer;
 use App\Models\ApplicationMenu;
 use App\Models\ApplicationMenuScope;
 use Yajra\DataTables\DataTables;
@@ -26,13 +27,17 @@ class ApplicationMenuController extends Controller
         }
         if (request()->ajax()) {
             session()->save();
-            $data = ApplicationMenu::with('scopes.school')->latest();
+            $data = ApplicationMenu::with(['scopes.school', 'officer.admin'])->latest();
             return DataTables::of($data)
                 ->addColumn('name', function ($data) {
                     $html = '<div class="d-flex flex-column">';
                     $html .= '<span class="text-gray-800 fw-bolder mb-1">' . e($data->name) . '</span>';
                     if ($data->type === 'whatsapp') {
-                        $html .= '<span class="text-muted fs-8"><i class="fab fa-whatsapp text-success me-1"></i> WhatsApp: ' . e($data->wa_number ?? '-') . '</span>';
+                        $html .= '<span class="text-muted fs-8"><i class="fab fa-whatsapp text-success me-1"></i> WhatsApp: ' . e($data->wa_number ?? '-');
+                        if ($data->officer) {
+                            $html .= ' · <span class="badge badge-light-success py-0 px-1 fs-9">' . e($data->officer->name . ' (' . $data->officer->position . ')') . '</span>';
+                        }
+                        $html .= '</span>';
                     } elseif ($data->type === 'external') {
                         $html .= '<span class="text-muted fs-8"><i class="fas fa-external-link-alt text-primary me-1"></i> ' . e(\Illuminate\Support\Str::limit($data->url, 40)) . '</span>';
                     } else {
@@ -82,7 +87,12 @@ class ApplicationMenuController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $schools = School::orderBy('name')->get();
-        return view('admins.application-menu.create-edit', compact('schools'));
+        $officers = Officer::with('admin')
+            ->where('is_active', true)
+            ->get()
+            ->sortBy('name')
+            ->values();
+        return view('admins.application-menu.create-edit', compact('schools', 'officers'));
     }
 
     /**
@@ -116,8 +126,13 @@ class ApplicationMenuController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $schools = School::orderBy('name')->get();
-        $applicationMenu->load('scopes');
-        return view('admins.application-menu.create-edit', compact('applicationMenu', 'schools'));
+        $officers = Officer::with('admin')
+            ->where('is_active', true)
+            ->get()
+            ->sortBy('name')
+            ->values();
+        $applicationMenu->load(['scopes', 'officer.admin']);
+        return view('admins.application-menu.create-edit', compact('applicationMenu', 'schools', 'officers'));
     }
 
     /**
@@ -240,18 +255,21 @@ class ApplicationMenuController extends Controller
             $message = $request->input('wa_message') ?: "Assalamu'alaikum, saya wali santri [nama_wali], orang tua / wali dari [nama-santri dan kelas] ingin bertanya";
 
             $data['type'] = 'whatsapp';
+            $data['officer_id'] = $request->input('officer_id') ?: null;
             $data['wa_number'] = $cleaned;
             $data['wa_message'] = $message;
             $data['url'] = "https://wa.me/{$cleaned}?text=" . urlencode($message);
             $data['icon'] = $request->input('icon') ?: 'MessageCircle';
         } elseif ($type === 'external') {
             $data['type'] = 'external';
+            $data['officer_id'] = null;
             $data['url'] = $request->input('url');
             $data['wa_number'] = null;
             $data['wa_message'] = null;
             $data['icon'] = $request->input('icon') ?: 'ExternalLink';
         } else {
             $data['type'] = 'internal';
+            $data['officer_id'] = null;
             $data['url'] = null;
             $data['wa_number'] = null;
             $data['wa_message'] = null;

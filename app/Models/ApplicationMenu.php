@@ -11,7 +11,7 @@ class ApplicationMenu extends Model
 {
     use HasFactory, UuidTrait, SoftDeletes;
 
-    protected $fillable = ['name', 'flag', 'status', 'type', 'url', 'wa_number', 'wa_message', 'icon'];
+    protected $fillable = ['name', 'flag', 'status', 'type', 'officer_id', 'url', 'wa_number', 'wa_message', 'icon'];
 
     /**
      * Relasi ke scope visibilitas menu (per unit pendidikan & jenjang kelas).
@@ -31,5 +31,10 @@ class ApplicationMenu extends Model
     public function scopes()
     {
         return $this->hasMany(ApplicationMenuScope::class);
+    }
+
+    public function officer()
+    {
+        return $this->belongsTo(Officer::class);
     }
 }

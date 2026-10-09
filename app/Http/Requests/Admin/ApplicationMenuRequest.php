@@ -40,6 +40,7 @@ class ApplicationMenuRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'in:internal,whatsapp,external'],
+            'officer_id' => ['nullable', 'string', 'exists:officers,id'],
             'flag' => ['required', 'string', 'max:255'],
             'url' => ['nullable', 'string'],
             'wa_number' => ['nullable', 'string', 'max:50'],
