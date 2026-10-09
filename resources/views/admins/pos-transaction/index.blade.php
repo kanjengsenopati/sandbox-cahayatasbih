@@ -268,32 +268,83 @@
                                         @else
                                             <input type="hidden" id="filter_outlet_id" value="{{ request('outlet_id') ?? ($outlets->first()->id ?? '') }}">
                                         @endif
+
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Tipe Pembeli</x-text.caption>
+                                            <div class="btn-group btn-group-sm" role="group" id="quick-type-group">
+                                                <button type="button" class="btn btn-sm btn-primary btn-type active" data-type="">Semua</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="UMUM">Umum</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="SANTRI">Saldo</button>
+                                            </div>
+                                            <input type="hidden" id="filter_type" name="type" value="">
+                                        </div>
                                     </div>
                                 </form>
-
-                                @if(!$isKasir)
-                                <div class="d-flex gap-2">
-                                    <div class="card bg-light-primary border-0 p-3 d-flex flex-row align-items-center gap-3">
-                                        <i class="fa-solid fa-money-bill-trend-up text-primary fs-4"></i>
-                                        <div>
-                                            <div class="fs-8 text-slate-500 fw-bold">Omzet Filter</div>
-                                            <div class="fs-6 fw-bolder text-primary" id="total-filtered-sales">Rp 0</div>
-                                        </div>
-                                    </div>
-                                    <div class="card bg-light-success border-0 p-3 d-flex flex-row align-items-center gap-3">
-                                        <i class="fa-solid fa-chart-line text-success fs-4"></i>
-                                        <div>
-                                            <div class="fs-8 text-slate-500 fw-bold">Profit Filter</div>
-                                            <div class="fs-6 fw-bolder text-success" id="total-filtered-profit">Rp 0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
                             </div>
                         </div>
 
                         <div class="card-body pt-0 px-8 pb-8">
-                            <div class="table-responsive mt-6">
+                            <!-- SUMMARY CARDS: TOTAL NOMINAL, UMUM, SALDO (FILTER-DRIVEN) -->
+                            <div class="row g-4 pt-4 mb-2" id="pos-summary-cards-container">
+                                <!-- Card 1: Total Nominal Transaksi -->
+                                <div class="col-md-4">
+                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(37, 99, 235, 0.1);">
+                                                    <i class="fa-solid fa-receipt text-primary fs-6"></i>
+                                                </div>
+                                                <x-text.label class="text-slate-400">Total Nominal Transaksi</x-text.label>
+                                            </div>
+                                            <span class="badge bg-light-primary text-primary px-3 py-1 fw-bold rounded-pill" id="summary-total-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between">
+                                            <div class="fs-3 fw-bolder text-slate-900" id="summary-total-amount">Rp 0</div>
+                                            <x-text.caption class="text-slate-400">Semua transaksi</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2: Nominal Transaksi Umum -->
+                                <div class="col-md-4">
+                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(100, 116, 139, 0.1);">
+                                                    <i class="fa-solid fa-user-group text-slate-600 fs-6"></i>
+                                                </div>
+                                                <x-text.label class="text-slate-400">Nominal Transaksi Umum</x-text.label>
+                                            </div>
+                                            <span class="badge bg-light-secondary text-slate-700 px-3 py-1 fw-bold rounded-pill" id="summary-umum-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between">
+                                            <div class="fs-3 fw-bolder text-slate-800" id="summary-umum-amount">Rp 0</div>
+                                            <x-text.caption class="text-slate-400">Pembeli umum</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 3: Nominal Transaksi Saldo (Santri) -->
+                                <div class="col-md-4">
+                                    <div class="card p-5 bg-white h-100" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="w-35px h-35px rounded-circle d-flex align-items-center justify-content-center" style="background: rgba(16, 185, 129, 0.1);">
+                                                    <i class="fa-solid fa-wallet text-success fs-6"></i>
+                                                </div>
+                                                <x-text.label class="text-slate-400">Nominal Transaksi Saldo</x-text.label>
+                                            </div>
+                                            <span class="badge bg-light-success text-success px-3 py-1 fw-bold rounded-pill" id="summary-saldo-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between">
+                                            <x-text.amount class="fs-3" id="summary-saldo-amount">Rp 0</x-text.amount>
+                                            <x-text.caption class="text-slate-400">Saldo santri</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mt-4">
                                 <table id="table-transactions" class="table align-middle table-row-dashed fs-7 gy-5">
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
@@ -659,6 +710,9 @@
             initializeHandoverTable();
         }
 
+        // Panggil rekap ringkasan awal agar 3 Summary Card langsung terisi angka
+        fetchFilteredSummary();
+
         // Initialize Top Items table
         @if(!$isKasir)
         tableTopItems = $('#table-top-items').DataTable({
@@ -868,6 +922,15 @@
             reloadTransactions();
         });
 
+        // Event listener untuk tombol filter tipe pembeli (Semua, Umum, Saldo)
+        $('.btn-type').on('click', function() {
+            $('.btn-type').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
+            var type = $(this).data('type');
+            $('#filter_type').val(type);
+            reloadTransactions();
+        });
+
         // Pastikan form menyinkronkan nominal sebelum submit
         $('#modal-add-handover form').on('submit', function() {
             var displayVal = $('#handover_form_amount_display').val();
@@ -889,6 +952,7 @@
                     d.mode = '{{ $mode ?? "bisnis" }}';
                     d.period = $('#filter_period').val();
                     d.mode_filter = $('#filter_mode_filter').val();
+                    d.type = $('#filter_type').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.status = $('#filter_status').val();
@@ -965,15 +1029,22 @@
                 mode: '{{ $mode ?? "bisnis" }}',
                 period: $('#filter_period').val(),
                 mode_filter: $('#filter_mode_filter').val(),
+                type: $('#filter_type').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
                 status: $('#filter_status').val(),
                 outlet_id: $('#filter_outlet_id').val()
             },
             success: function(response) {
-                // Update rekap filter di sebelah kanan form
-                $('#total-filtered-sales').text(response.total_sales);
-                $('#total-filtered-profit').text(response.total_profit);
+                // Update 3 Summary Card utama di atas data tabel (Total, Umum, Saldo)
+                if (response.summary_total_amount) {
+                    $('#summary-total-amount').text(response.summary_total_amount);
+                    $('#summary-total-count').text(response.summary_total_count);
+                    $('#summary-umum-amount').text(response.summary_umum_amount);
+                    $('#summary-umum-count').text(response.summary_umum_count);
+                    $('#summary-saldo-amount').text(response.summary_saldo_amount);
+                    $('#summary-saldo-count').text(response.summary_saldo_count);
+                }
 
                 // Update 3 card rekap utama secara dinamis berdasarkan filter outlet
                 $('#today-sales-text').text(response.today_sales);
@@ -1017,8 +1088,8 @@
         if (typeof tableTopItems !== 'undefined' && tableTopItems) {
             tableTopItems.ajax.reload();
         }
-        fetchFilteredSummary();
         @endif
+        fetchFilteredSummary();
     }
 </script>
 @endpush
