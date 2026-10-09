@@ -63,6 +63,115 @@
     .btn-toggle-pos-items[aria-expanded="false"] .show-less-badge {
         display: none !important;
     }
+
+    /* Refined Modern Smooth Palette Summary Cards */
+    .summary-card-smooth {
+        border-radius: 24px !important;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent !important;
+    }
+    .summary-card-smooth:hover {
+        transform: translateY(-3px);
+    }
+    
+    /* Card Total: Smooth Ocean Blue */
+    .summary-card-total {
+        background: linear-gradient(135deg, #eff6ff 0%, #f8faff 50%, #ffffff 100%) !important;
+        border-color: rgba(37, 99, 235, 0.18) !important;
+        box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.07), 0 8px 10px -6px rgba(37, 99, 235, 0.04) !important;
+    }
+    .summary-card-total:hover {
+        box-shadow: 0 16px 32px -4px rgba(37, 99, 235, 0.15) !important;
+        border-color: rgba(37, 99, 235, 0.32) !important;
+    }
+    .summary-icon-total {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+    }
+    .summary-badge-total {
+        background: rgba(37, 99, 235, 0.1) !important;
+        color: #1d4ed8 !important;
+        border: 1px solid rgba(37, 99, 235, 0.22) !important;
+    }
+
+    /* Card Umum: Smooth Warm Amber */
+    .summary-card-umum {
+        background: linear-gradient(135deg, #fffbeb 0%, #fefcf3 50%, #ffffff 100%) !important;
+        border-color: rgba(245, 158, 11, 0.2) !important;
+        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.07), 0 8px 10px -6px rgba(245, 158, 11, 0.04) !important;
+    }
+    .summary-card-umum:hover {
+        box-shadow: 0 16px 32px -4px rgba(245, 158, 11, 0.15) !important;
+        border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+    .summary-icon-umum {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(245, 158, 11, 0.25);
+    }
+    .summary-badge-umum {
+        background: rgba(245, 158, 11, 0.12) !important;
+        color: #b45309 !important;
+        border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    }
+
+    /* Card Saldo: Smooth Emerald */
+    .summary-card-saldo {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f7fdfa 50%, #ffffff 100%) !important;
+        border-color: rgba(16, 185, 129, 0.22) !important;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.08), 0 8px 10px -6px rgba(16, 185, 129, 0.04) !important;
+    }
+    .summary-card-saldo:hover {
+        box-shadow: 0 16px 32px -4px rgba(16, 185, 129, 0.16) !important;
+        border-color: rgba(16, 185, 129, 0.38) !important;
+    }
+    .summary-icon-saldo {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff !important;
+        box-shadow: 0 6px 14px rgba(16, 185, 129, 0.25);
+    }
+    .summary-badge-saldo {
+        background: rgba(16, 185, 129, 0.12) !important;
+        color: #047857 !important;
+        border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    }
+
+    /* Background Watermark Icon */
+    .summary-watermark {
+        position: absolute;
+        right: -12px;
+        bottom: -15px;
+        font-size: 76px;
+        opacity: 0.04;
+        pointer-events: none;
+        line-height: 1;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .summary-card-smooth:hover .summary-watermark {
+        opacity: 0.08;
+        transform: scale(1.05) rotate(-3deg);
+    }
 </style>
 
 <div class="content d-flex flex-column flex-column-fluid safe-padding" id="kt_content">
@@ -268,32 +377,86 @@
                                         @else
                                             <input type="hidden" id="filter_outlet_id" value="{{ request('outlet_id') ?? ($outlets->first()->id ?? '') }}">
                                         @endif
+
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Tipe Pembeli</x-text.caption>
+                                            <div class="btn-group btn-group-sm" role="group" id="quick-type-group">
+                                                <button type="button" class="btn btn-sm btn-primary btn-type active" data-type="">Semua</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="UMUM">Umum</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="SANTRI">Saldo</button>
+                                            </div>
+                                            <input type="hidden" id="filter_type" name="type" value="">
+                                        </div>
                                     </div>
                                 </form>
-
-                                @if(!$isKasir)
-                                <div class="d-flex gap-2">
-                                    <div class="card bg-light-primary border-0 p-3 d-flex flex-row align-items-center gap-3">
-                                        <i class="fa-solid fa-money-bill-trend-up text-primary fs-4"></i>
-                                        <div>
-                                            <div class="fs-8 text-slate-500 fw-bold">Omzet Filter</div>
-                                            <div class="fs-6 fw-bolder text-primary" id="total-filtered-sales">Rp 0</div>
-                                        </div>
-                                    </div>
-                                    <div class="card bg-light-success border-0 p-3 d-flex flex-row align-items-center gap-3">
-                                        <i class="fa-solid fa-chart-line text-success fs-4"></i>
-                                        <div>
-                                            <div class="fs-8 text-slate-500 fw-bold">Profit Filter</div>
-                                            <div class="fs-6 fw-bolder text-success" id="total-filtered-profit">Rp 0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
                             </div>
                         </div>
 
                         <div class="card-body pt-0 px-8 pb-8">
-                            <div class="table-responsive mt-6">
+                            <!-- SUMMARY CARDS: TOTAL NOMINAL, UMUM, SALDO (FILTER-DRIVEN) -->
+                            <div class="row g-4 pt-4 mb-2" id="pos-summary-cards-container">
+                                <!-- Card 1: Total Nominal Transaksi -->
+                                <div class="col-md-4">
+                                    <div class="card p-6 summary-card-smooth summary-card-total h-100">
+                                        <i class="fa-solid fa-receipt summary-watermark text-primary"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-total">
+                                                    <i class="fa-solid fa-receipt fs-6 text-white"></i>
+                                                </div>
+                                                <x-text.label class="text-blue-700 fw-bolder">Total Transaksi</x-text.label>
+                                            </div>
+                                            <span class="badge summary-badge-total px-3 py-1.5 fw-bold rounded-pill" id="summary-total-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <div class="fs-2x fw-bolder text-slate-900 tracking-tight" id="summary-total-amount">Rp 0</div>
+                                            <x-text.caption class="text-blue-600/70 fw-semibold">Semua transaksi</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2: Nominal Transaksi Umum -->
+                                <div class="col-md-4">
+                                    <div class="card p-6 summary-card-smooth summary-card-umum h-100">
+                                        <i class="fa-solid fa-users summary-watermark text-warning"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-umum">
+                                                    <i class="fa-solid fa-users fs-6 text-white"></i>
+                                                </div>
+                                                <x-text.label class="text-amber-800 fw-bolder">Transaksi Umum</x-text.label>
+                                            </div>
+                                            <span class="badge summary-badge-umum px-3 py-1.5 fw-bold rounded-pill" id="summary-umum-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <div class="fs-2x fw-bolder text-amber-950 tracking-tight" id="summary-umum-amount">Rp 0</div>
+                                            <x-text.caption class="text-amber-700/70 fw-semibold">Pembeli umum</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 3: Nominal Transaksi Saldo (Santri) -->
+                                <div class="col-md-4">
+                                    <div class="card p-6 summary-card-smooth summary-card-saldo h-100">
+                                        <i class="fa-solid fa-wallet summary-watermark text-success"></i>
+                                        <div class="d-flex align-items-center justify-content-between mb-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="summary-icon-saldo">
+                                                    <i class="fa-solid fa-wallet fs-6 text-white"></i>
+                                                </div>
+                                                <x-text.label class="text-emerald-800 fw-bolder">Transaksi Saldo</x-text.label>
+                                            </div>
+                                            <span class="badge summary-badge-saldo px-3 py-1.5 fw-bold rounded-pill" id="summary-saldo-count">0 Transaksi</span>
+                                        </div>
+                                        <div class="d-flex align-items-baseline justify-content-between mt-auto">
+                                            <x-text.amount class="fs-2x fw-bolder text-emerald-600 tracking-tight" id="summary-saldo-amount">Rp 0</x-text.amount>
+                                            <x-text.caption class="text-emerald-700/70 fw-semibold">Saldo santri</x-text.caption>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive mt-4">
                                 <table id="table-transactions" class="table align-middle table-row-dashed fs-7 gy-5">
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
@@ -659,6 +822,9 @@
             initializeHandoverTable();
         }
 
+        // Panggil rekap ringkasan awal agar 3 Summary Card langsung terisi angka
+        fetchFilteredSummary();
+
         // Initialize Top Items table
         @if(!$isKasir)
         tableTopItems = $('#table-top-items').DataTable({
@@ -868,6 +1034,15 @@
             reloadTransactions();
         });
 
+        // Event listener untuk tombol filter tipe pembeli (Semua, Umum, Saldo)
+        $('.btn-type').on('click', function() {
+            $('.btn-type').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
+            var type = $(this).data('type');
+            $('#filter_type').val(type);
+            reloadTransactions();
+        });
+
         // Pastikan form menyinkronkan nominal sebelum submit
         $('#modal-add-handover form').on('submit', function() {
             var displayVal = $('#handover_form_amount_display').val();
@@ -889,6 +1064,7 @@
                     d.mode = '{{ $mode ?? "bisnis" }}';
                     d.period = $('#filter_period').val();
                     d.mode_filter = $('#filter_mode_filter').val();
+                    d.type = $('#filter_type').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.status = $('#filter_status').val();
@@ -965,15 +1141,22 @@
                 mode: '{{ $mode ?? "bisnis" }}',
                 period: $('#filter_period').val(),
                 mode_filter: $('#filter_mode_filter').val(),
+                type: $('#filter_type').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
                 status: $('#filter_status').val(),
                 outlet_id: $('#filter_outlet_id').val()
             },
             success: function(response) {
-                // Update rekap filter di sebelah kanan form
-                $('#total-filtered-sales').text(response.total_sales);
-                $('#total-filtered-profit').text(response.total_profit);
+                // Update 3 Summary Card utama di atas data tabel (Total, Umum, Saldo)
+                if (response.summary_total_amount) {
+                    $('#summary-total-amount').text(response.summary_total_amount);
+                    $('#summary-total-count').text(response.summary_total_count);
+                    $('#summary-umum-amount').text(response.summary_umum_amount);
+                    $('#summary-umum-count').text(response.summary_umum_count);
+                    $('#summary-saldo-amount').text(response.summary_saldo_amount);
+                    $('#summary-saldo-count').text(response.summary_saldo_count);
+                }
 
                 // Update 3 card rekap utama secara dinamis berdasarkan filter outlet
                 $('#today-sales-text').text(response.today_sales);
@@ -1017,8 +1200,8 @@
         if (typeof tableTopItems !== 'undefined' && tableTopItems) {
             tableTopItems.ajax.reload();
         }
-        fetchFilteredSummary();
         @endif
+        fetchFilteredSummary();
     }
 </script>
 @endpush
