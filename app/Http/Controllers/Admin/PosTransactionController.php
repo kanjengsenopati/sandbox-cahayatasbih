@@ -55,10 +55,7 @@ class PosTransactionController extends Controller
         $hasOutletRestriction = count($authOutletIds) > 0;
         $outletId = $request->input('outlet_id');
 
-        $koperasiId = \Illuminate\Support\Facades\Cache::remember('koperasi_outlet_id', 86400, function() {
-            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-        });
+        $koperasiId = \App\Services\OutletContextService::getKoperasiOutletId();
 
         if (!$outletId && !$hasOutletRestriction) {
             if ($mode === 'outlet') {
@@ -289,7 +286,7 @@ class PosTransactionController extends Controller
                         return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
                     })
                     ->addColumn('profit', function ($data) {
-                        if (auth()->user()->isKasir()) {
+                        if (!auth()->user()->can('View Nilai Profit POS') && auth()->user()->isKasir()) {
                             return 'Rp 0';
                         }
                         return 'Rp ' . number_format($data->profit, 0, ',', '.');

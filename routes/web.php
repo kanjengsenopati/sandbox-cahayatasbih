@@ -508,7 +508,24 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('bank', BankController::class, ['except' => ['show']]);
     Route::get('student-barcode/change-barcode/{id}', [StudentBarcodeController::class, 'changeBarcode'])
         ->name('student-barcode.change-barcode');
+    Route::post('student-barcode/{id}/update', [StudentBarcodeController::class, 'updateBarcode'])
+        ->name('student-barcode.update-barcode');
+    Route::post('student-barcode/{id}/rollback', [StudentBarcodeController::class, 'rollbackBarcode'])
+        ->name('student-barcode.rollback-barcode');
+    Route::get('student-barcode/generate-unique', [StudentBarcodeController::class, 'generateUnique'])
+        ->name('student-barcode.generate-unique');
+    Route::get('student-barcode/{id}/download-png', [StudentBarcodeController::class, 'downloadBarcodePng'])
+        ->name('student-barcode.download-png');
     Route::resource('student-barcode', StudentBarcodeController::class, ['only' => ['index', 'create', 'store']]);
+
+    // Student Card Issue Reports (Lapor Kartu & Monitoring)
+    Route::post('student-card-reports/bulk-store', [\App\Http\Controllers\Admin\StudentCardReportController::class, 'store'])
+        ->name('student-card-reports.store');
+    Route::post('student-card-reports/{id}/complete', [\App\Http\Controllers\Admin\StudentCardReportController::class, 'complete'])
+        ->name('student-card-reports.complete');
+    Route::post('student-card-reports/bulk-complete', [\App\Http\Controllers\Admin\StudentCardReportController::class, 'bulkComplete'])
+        ->name('student-card-reports.bulk-complete');
+    Route::resource('student-card-reports', \App\Http\Controllers\Admin\StudentCardReportController::class)->only(['index', 'destroy']);
     Route::get('report-transaction/get-filters', [ReportTransactionController::class, 'getFilters'])->name('report-transaction.get-filters');
     Route::get('report-transaction/export', [ReportTransactionController::class, 'export'])->name('report-transaction.export');
     Route::get('report-transaction/export-sheets', [ReportTransactionController::class, 'exportSheets'])->name('report-transaction.export-sheets');

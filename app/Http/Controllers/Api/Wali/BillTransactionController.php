@@ -12,12 +12,11 @@ class BillTransactionController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['data' => []]);
 
-        $query = Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'admin', 'user'])
+        $query = Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'admin', 'user', 'activeProof'])
             ->where('student_id', $student->id)
             ->where('type', Transaction::TYPE_BILL)
             ->whereNotIn('status', [
                 Transaction::STATUS_CANCELLED,
-                Transaction::STATUS_REJECTED,
                 Transaction::STATUS_EXPIRED
             ])
             ->latest();
@@ -51,7 +50,8 @@ class BillTransactionController extends BaseWaliApiController
                 'bill_names' => $billNames ?: 'Pembayaran Tagihan',
                 'payment_method_name' => $item->paymentMethod->name ?? 'Metode Lain',
                 'payment_method_type' => $item->paymentMethod->type ?? 'OTHER',
-                'cashier' => $item->admin->name ?? ($item->user->name ?? ($item->paymentMethod->name ?? 'Sistem'))
+                'cashier' => $item->admin->name ?? ($item->user->name ?? ($item->paymentMethod->name ?? 'Sistem')),
+                'rejection_note' => ($item->status === Transaction::STATUS_REJECTED) ? ($item->activeProof?->note ?? 'Bukti pembayaran ditolak oleh bendahara') : null,
             ];
         });
 

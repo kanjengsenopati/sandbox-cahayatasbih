@@ -180,11 +180,16 @@ class Admin extends Authenticatable
     {
         $roles = $this->getRoleNamesLower();
         foreach ($roles as $role) {
-            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
+            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi') || str_contains($role, 'pondok mart'))) {
                 return true;
             }
         }
         return false;
+    }
+
+    public function isKoordinatorPondokMart(): bool
+    {
+        return $this->isKoordinatorCahayaMart();
     }
 
     /**
@@ -220,8 +225,7 @@ class Admin extends Authenticatable
             return null;
         }
 
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = \App\Services\OutletContextService::getKoperasiOutletId();
 
         if ($this->isKasirKoperasi() || $this->isKoordinatorCahayaMart()) {
             return $koperasiId;
@@ -380,7 +384,7 @@ class Admin extends Authenticatable
             return true;
         }
 
-        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'superadmin@gmail.com'])) {
+        if ($this->hasRole('Super Admin')) {
             return true;
         }
 
@@ -390,7 +394,12 @@ class Admin extends Authenticatable
             return true;
         }
 
-        return $this->hasRole('Super Admin');
+        $superAdminEmails = array_filter(array_map('trim', explode(',', env('SUPER_ADMIN_EMAILS', ''))));
+        if (!empty($superAdminEmails) && in_array(strtolower($this->email), array_map('strtolower', $superAdminEmails), true)) {
+            return true;
+        }
+
+        return false;
     }
 }
 

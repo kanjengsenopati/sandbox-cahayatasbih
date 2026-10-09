@@ -13,6 +13,7 @@ import {
   Wallet,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Loader2,
   Newspaper,
   Calendar,
@@ -24,13 +25,16 @@ import {
   GraduationCap,
   Users,
   Receipt,
+  X,
+  Sparkles,
+  AlertCircle,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
-import { useQuery } from "@tanstack/react-query";
-import { fetchDashboard, fetchInformations } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchDashboard, fetchInformations, fetchLimit, updateLimit as updateLimitApi } from "@/lib/api";
 import { resolveImageUrl, safeParseDate } from "@/lib/utils";
 import { Text } from "@/components/Text";
 import { toast } from "sonner";
@@ -61,11 +65,11 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
 
 const STATUS_MAP: Record<string, string> = {
   SUCCESS: "Sukses",
-  approved: "Sukses",
+  approved: "Lunas",
   PAID: "Lunas",
-  PENDING: "Menunggu",
-  PENDING_PAYMENT: "Belum Bayar",
-  PENDING_CONFIRMATION: "Menunggu Konfirmasi",
+  PENDING: "Menunggu Bukti Bayar",
+  PENDING_PAYMENT: "Menunggu Bukti Bayar",
+  PENDING_CONFIRMATION: "Menunggu Verifikasi",
   CANCELLED: "Dibatalkan",
   cancelled: "Dibatalkan",
   rejected: "Ditolak",
@@ -76,10 +80,84 @@ const STATUS_MAP: Record<string, string> = {
   failed: "Gagal",
 };
 
+const ITEMS_PER_PAGE = 4;
+
 function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [hide, setHide] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitDaily, setLimitDaily] = useState<number>(0);
+  const [limitCustomInput, setLimitCustomInput] = useState<string>("");
+  const [limitEnabled, setLimitEnabled] = useState<boolean>(true);
+  const [txPage, setTxPage] = useState<number>(1);
   const { active, isLoading: isLoadingSantri } = useSantri();
+
+  useEffect(() => {
+    if (window.location.hash === "#transaksi-terkini") {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.refetchQueries({ queryKey: ["dashboard"] });
+      const scrollTimer = setTimeout(() => {
+        const el = document.getElementById("transaksi-terkini");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 250);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [queryClient]);
+  
+  const { data: limitData, isLoading: isLoadingLimit } = useQuery({
+    queryKey: ["limit", active?.id],
+    queryFn: async () => {
+      const res = await fetchLimit();
+      return res.data;
+    },
+    enabled: !!active && showLimitModal,
+  });
+
+  useEffect(() => {
+    if (limitData) {
+      if (limitData.daily_limit > 0) {
+        setLimitDaily(limitData.daily_limit);
+        setLimitCustomInput(new Intl.NumberFormat("id-ID").format(limitData.daily_limit));
+        setLimitEnabled(true);
+      } else if (limitData.daily_limit === -1) {
+        setLimitDaily(0);
+        setLimitCustomInput("");
+        setLimitEnabled(false);
+      } else {
+        if (limitData.effective_limit > 0) {
+          setLimitDaily(limitData.effective_limit);
+          setLimitCustomInput(new Intl.NumberFormat("id-ID").format(limitData.effective_limit));
+          setLimitEnabled(true);
+        } else {
+          setLimitDaily(0);
+          setLimitCustomInput("");
+          setLimitEnabled(false);
+        }
+      }
+    } else if (active) {
+      const def = (active.daily_limit && active.daily_limit > 0) ? active.daily_limit : (active.effective_daily_limit || 0);
+      setLimitDaily(def);
+      setLimitCustomInput(def > 0 ? new Intl.NumberFormat("id-ID").format(def) : "");
+      setLimitEnabled(def > 0);
+    }
+  }, [limitData, active, showLimitModal]);
+
+  const updateLimitMutation = useMutation({
+    mutationFn: (newLimit: number) => updateLimitApi({ daily_limit: newLimit }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["limit"] });
+      queryClient.invalidateQueries({ queryKey: ["active-student"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Limit jajan harian berhasil diperbarui");
+      setShowLimitModal(false);
+    },
+    onError: () => {
+      toast.error("Gagal memperbarui limit harian.");
+    },
+  });
   
   const { data: dashboard, isLoading: isLoadingDashboard } = useQuery({
     queryKey: ["dashboard", active?.id],
@@ -89,10 +167,36 @@ function Dashboard() {
     },
     enabled: !!active,
     staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
   const hasUnpaidBills = dashboard?.has_unpaid_bills || false;
+
+  useEffect(() => {
+    setTxPage(1);
+  }, [active?.id]);
+
+  const validTransactions = useMemo(() => {
+    if (!dashboard?.recentTransactions || !Array.isArray(dashboard.recentTransactions)) return [];
+    return dashboard.recentTransactions.filter(
+      (t: any) => !["CANCELLED", "cancelled", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)
+    );
+  }, [dashboard?.recentTransactions]);
+
+  const totalTxPages = Math.max(1, Math.ceil(validTransactions.length / ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    if (txPage > totalTxPages) {
+      setTxPage(totalTxPages);
+    }
+  }, [totalTxPages, txPage]);
+
+  const paginatedTransactions = useMemo(() => {
+    const currentPage = Math.min(txPage, totalTxPages);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return validTransactions.slice(start, start + ITEMS_PER_PAGE);
+  }, [validTransactions, txPage, totalTxPages]);
 
   useEffect(() => {
     if (hasUnpaidBills) {
@@ -292,10 +396,22 @@ function Dashboard() {
                     {hide ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
-                  <Text.Label className="text-white/85 block text-[10px]">Limit Harian</Text.Label>
-                  <Text.Caption className={`not-italic font-bold mt-0.5 block leading-none ${active.is_custom_limit ? 'text-yellow-400' : 'text-white'}`}>{fmt(active.effective_daily_limit)}</Text.Caption>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLimitModal(true)}
+                  className="text-right bg-white/15 hover:bg-white/25 active:scale-95 transition-all px-3 py-1.5 rounded-2xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex flex-col items-end group cursor-pointer"
+                  title="Klik untuk atur limit harian"
+                >
+                  <div className="flex items-center gap-1">
+                    <Text.Label className="text-white/85 font-bold block text-[10px] tracking-wider uppercase group-hover:text-white transition">
+                      Limit Harian
+                    </Text.Label>
+                    <Sliders size={11} className="text-white/80 group-hover:text-white transition" />
+                  </div>
+                  <span className="text-[14px] font-black tracking-tight text-white mt-0.5 block leading-tight drop-shadow-sm">
+                    {fmt(active.effective_daily_limit)}
+                  </span>
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-2.5 mt-4 bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-md shadow-sm">
@@ -403,9 +519,9 @@ function Dashboard() {
       )}
 
       {/* Transaksi Terkini */}
-      <section className="px-6 mt-7 mb-10">
+      <section id="transaksi-terkini" className="px-5 mt-7 mb-10 scroll-mt-20">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-foreground">Transaksi Terkini</h3>
+          <Text.H2 className="text-base font-bold text-foreground">Transaksi Terkini</Text.H2>
           <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary bg-transparent shadow-none">Lihat Semua</button>
         </div>
 
@@ -428,10 +544,10 @@ function Dashboard() {
           </div>
         )}
 
-        <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
+        <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
           {isLoadingDashboard ? (
             <div className="divide-y divide-border">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-3 p-4 animate-pulse">
                   <div className="w-11 h-11 rounded-2xl bg-slate-100 shrink-0" />
                   <div className="flex-1 space-y-2">
@@ -442,26 +558,30 @@ function Dashboard() {
                 </div>
               ))}
             </div>
-          ) : (dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
-            dashboard.recentTransactions
-              .filter((t: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status))
-              .map((t: any, i: number) => {
+          ) : validTransactions.length > 0 ? (
+            <>
+              {paginatedTransactions.map((t: any, i: number) => {
                 const isIn = t.type === "IN";
                 const isBill = t.category === "BILL";
                 const isPending = t.id && ["PENDING", "PENDING_PAYMENT", "PENDING_CONFIRMATION"].includes(t.status);
+                const isRejected = t.status === "REJECTED" || t.status === "rejected";
+                const isClickable = Boolean(t.id && (isBill || isPending || isRejected));
+
                 return (
                   <div
-                    key={i}
-                    onClick={isPending ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
-                    className={`flex items-center gap-3 p-4 transition-all ${
-                      isPending 
+                    key={t.id || i}
+                    onClick={isClickable ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
+                    className={`flex items-start gap-3 p-4 transition-all ${
+                      isClickable 
                         ? "cursor-pointer hover:bg-slate-50 active:bg-slate-100/80" 
                         : ""
                     }`}
                   >
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                        isIn 
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
+                        isRejected
+                          ? "bg-red-50 text-red-600"
+                          : isIn 
                           ? "bg-emerald-50 text-emerald-600" 
                           : isBill 
                           ? "bg-purple-50 text-purple-600" 
@@ -480,12 +600,14 @@ function Dashboard() {
                       <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
                       <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                         {t.status && (
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                             t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID"
-                              ? "bg-emerald-500/15 text-emerald-700"
-                              : t.status === "FAILED" || t.status === "rejected" || t.status === "REJECTED"
-                              ? "bg-destructive text-white"
-                              : "bg-[oklch(0.78_0.16_75)] text-white"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : t.status === "FAILED" || isRejected
+                              ? "bg-red-100 text-red-700"
+                              : t.status === "PENDING_CONFIRMATION"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-amber-100 text-amber-800"
                           }`}>
                             {STATUS_MAP[t.status] || t.status}
                           </span>
@@ -512,8 +634,16 @@ function Dashboard() {
                           </>
                         )}
                       </p>
+                      {isRejected && t.rejection_note && (
+                        <div className="mt-2 flex items-start gap-1.5 p-2 rounded-xl bg-red-50 border border-red-200/80 text-[11px] text-red-900 leading-tight w-full">
+                          <AlertCircle size={13} className="shrink-0 text-red-600 mt-0.5" />
+                          <span>
+                            <span className="font-bold text-red-950">Alasan Penolakan:</span> {t.rejection_note}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-0.5">
                       <span
                         className={`text-sm font-bold tabular-nums whitespace-nowrap ${
                           isIn ? "text-emerald-600" : "text-red-600"
@@ -522,13 +652,60 @@ function Dashboard() {
                         {isIn ? "+" : "-"}
                         {fmt(t.amount || 0)}
                       </span>
-                      {isPending && (
+                      {isClickable && (
                         <ChevronRight size={14} className="text-slate-400 shrink-0" />
                       )}
                     </div>
                   </div>
                 );
-              })
+              })}
+
+              {totalTxPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-50/70 border-t border-border">
+                  <Text.Caption className="not-italic text-slate-500 font-medium">
+                    Hal {txPage} dari {totalTxPages} ({validTransactions.length} transaksi)
+                  </Text.Caption>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                      disabled={txPage === 1}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 active:scale-95 transition shadow-sm"
+                      title="Halaman Sebelumnya"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {Array.from({ length: totalTxPages }).map((_, idx) => {
+                      const pageNum = idx + 1;
+                      const isActive = pageNum === txPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setTxPage(pageNum)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center ${
+                            isActive
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 active:scale-95"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setTxPage((p) => Math.min(totalTxPages, p + 1))}
+                      disabled={txPage === totalTxPages}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 active:scale-95 transition shadow-sm"
+                      title="Halaman Selanjutnya"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="py-10 text-center">
               <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
@@ -645,6 +822,195 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* Modal Pengaturan Limit Harian */}
+      {showLimitModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-5 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-[24px] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Decorative top background blur */}
+            <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Sliders size={18} />
+                </div>
+                <div>
+                  <Text.H2 className="leading-none text-slate-800">Atur Limit Harian</Text.H2>
+                  <Text.Caption className="text-slate-400 not-italic text-[11px] mt-0.5 block">
+                    Kontrol belanja santri di kantin digital
+                  </Text.Caption>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLimitModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition active:scale-90"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Status Toggle */}
+            <div className="mt-4 bg-slate-50 rounded-2xl p-3.5 border border-slate-100 flex items-center justify-between">
+              <div className="flex-1 mr-3">
+                <p className="text-xs font-bold text-slate-800">Aktifkan Limit Harian</p>
+                <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                  {limitDaily === 0 && (active?.effective_daily_limit || 0) > 0
+                    ? "Limit otomatis oleh sekolah. Nonaktifkan untuk batal."
+                    : "Membatasi pengeluaran jajan harian santri agar hemat."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !limitEnabled;
+                  setLimitEnabled(next);
+                  if (!next) {
+                    setLimitDaily(0);
+                    setLimitCustomInput("");
+                  } else {
+                    const defVal = (active?.daily_limit && active.daily_limit > 0) ? active.daily_limit : (active?.effective_daily_limit || 50_000);
+                    setLimitDaily(defVal);
+                    setLimitCustomInput(new Intl.NumberFormat("id-ID").format(defVal));
+                  }
+                }}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                  limitEnabled ? "bg-blue-600" : "bg-slate-300"
+                }`}
+              >
+                <div
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                    limitEnabled ? "translate-x-5.5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Nominal Controls */}
+            {limitEnabled && (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Text.Label className="text-slate-400">Nominal Limit</Text.Label>
+                  <span className="text-base font-extrabold text-blue-600">
+                    {fmt(limitDaily)}
+                  </span>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[15_000, 25_000, 50_000, 100_000].map((p) => {
+                    const isSelected = limitDaily === p;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setLimitDaily(p);
+                          setLimitCustomInput(new Intl.NumberFormat("id-ID").format(p));
+                        }}
+                        className={`py-2 rounded-xl text-[11px] font-bold border transition active:scale-95 ${
+                          isSelected
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        {p >= 1000 ? `${p / 1000}rb` : p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Input */}
+                <div className="pt-0.5">
+                  <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-3.5 py-2.5 border border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition">
+                    <span className="text-xs font-bold text-blue-600">Rp</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={limitCustomInput}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        if (!raw) {
+                          setLimitCustomInput("");
+                          setLimitDaily(0);
+                          return;
+                        }
+                        const val = parseInt(raw, 10);
+                        setLimitCustomInput(new Intl.NumberFormat("id-ID").format(val));
+                        setLimitDaily(val);
+                      }}
+                      placeholder="Atau ketik sendiri: misal 20.000"
+                      className="bg-transparent flex-1 outline-none text-slate-800 text-xs font-bold placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                    {limitCustomInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLimitCustomInput("");
+                          setLimitDaily(0);
+                        }}
+                        className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 text-[10px] transition"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Info tips */}
+            <div className="mt-3.5 rounded-xl bg-blue-50/70 p-2.5 border border-blue-100/70 flex items-start gap-2">
+              <Sparkles size={14} className="text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-slate-600 leading-normal">
+                Transaksi jajan otomatis dibatasi sesuai nominal ini setiap harinya.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLimitModal(false)}
+                className="flex-1 py-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition active:scale-95"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const payload = limitEnabled ? (limitDaily > 0 ? limitDaily : 0) : -1;
+                  updateLimitMutation.mutate(payload);
+                }}
+                disabled={updateLimitMutation.isPending}
+                className="flex-1 py-3 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md active:scale-95 disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+              >
+                {updateLimitMutation.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  "Simpan Limit"
+                )}
+              </button>
+            </div>
+
+            {/* Detailed page shortcut */}
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLimitModal(false);
+                  navigate({ to: "/limit" });
+                }}
+                className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-1 active:scale-95 transition"
+              >
+                Buka halaman pengaturan limit lengkap →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MobileShell>
   );
 }

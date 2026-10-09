@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Wali;
 
 use App\Models\Bill;
 use App\Models\BillType;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class BillController extends BaseWaliApiController
@@ -161,13 +162,32 @@ class BillController extends BaseWaliApiController
         
         \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
 
+        // Bersihkan transaksi tagihan expired (> 2 jam tanpa bukti bayar)
+        \App\Models\Transaction::where('student_id', $student->id)
+            ->where('type', \App\Models\Transaction::TYPE_BILL)
+            ->whereIn('status', [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])
+            ->whereDoesntHave('activeProof')
+            ->where(function($q) {
+                $q->where('created_at', '<=', now()->subHours(2))
+                  ->orWhere(function($sub) {
+                      $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
+                  });
+            })
+            ->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
+
         $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
         $academicYearId = request('academic_year_id');
         
         $query = Bill::with(['academicYear', 'transactionDetails' => function ($query) {
-                $query->whereHas('transaction', function ($query) {
-                    $query->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION);
-                });
+                $query->whereNull('deleted_at')
+                    ->whereHas('transaction', function ($query) {
+                        $query->whereNull('deleted_at')
+                            ->whereIn('status', [
+                                \App\Models\Transaction::STATUS_PENDING,
+                                \App\Models\Transaction::STATUS_PENDING_PAYMENT,
+                                \App\Models\Transaction::STATUS_PENDING_CONFIRMATION,
+                            ]);
+                    })->with('transaction');
             }])
             ->whereHas('billType', function ($q) {
                 $q->whereNull('deleted_at');
@@ -183,7 +203,24 @@ class BillController extends BaseWaliApiController
             ->orderBy('month', 'asc')
             ->get()
             ->map(function ($bill) {
-                $bill->setAttribute('is_pending_confirmation', $bill->transactionDetails->isNotEmpty());
+                $activeDetail = $bill->transactionDetails->first();
+                $activeTx = $activeDetail?->transaction;
+                $isPendingPayment = false;
+                $isPendingConfirmation = false;
+                $pendingTxId = null;
+
+                if ($activeTx) {
+                    $pendingTxId = $activeTx->id;
+                    if ($activeTx->status === \App\Models\Transaction::STATUS_PENDING_CONFIRMATION) {
+                        $isPendingConfirmation = true;
+                    } elseif (in_array($activeTx->status, [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])) {
+                        $isPendingPayment = true;
+                    }
+                }
+
+                $bill->setAttribute('is_pending_payment', $isPendingPayment);
+                $bill->setAttribute('is_pending_confirmation', $isPendingConfirmation);
+                $bill->setAttribute('pending_transaction_id', $pendingTxId);
                 return $bill;
             });
 
@@ -220,7 +257,9 @@ class BillController extends BaseWaliApiController
                         'remaining_amount' => $amt,
                         'status' => 'UNPAID',
                     ]);
+                    $found->setAttribute('is_pending_payment', false);
                     $found->setAttribute('is_pending_confirmation', false);
+                    $found->setAttribute('pending_transaction_id', null);
                 } else {
                     if ($found->amount <= 0) {
                         $expectedAmt = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $found->month, $found->year);

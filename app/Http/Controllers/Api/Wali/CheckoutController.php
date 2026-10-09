@@ -57,6 +57,70 @@ class CheckoutController extends BaseWaliApiController
         }
 
         try {
+            // Bersihkan transaksi kadaluwarsa (> 2 jam tanpa bukti) agar tagihan bisa diproses kembali
+            Transaction::where('student_id', $student->id)
+                ->where('type', Transaction::TYPE_BILL)
+                ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
+                ->whereDoesntHave('activeProof')
+                ->where(function($q) {
+                    $q->where('created_at', '<=', now()->subHours(2))
+                      ->orWhere(function($sub) {
+                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
+                      });
+                })
+                ->update(['status' => Transaction::STATUS_CANCELLED]);
+
+            // Cek apakah item tagihan yang dipilih sudah berada dalam transaksi aktif (menunggu bukti atau verifikasi)
+            $billIds = $request->bill_ids ?? [];
+            $realBillIds = [];
+            foreach ($billIds as $bId) {
+                if (str_starts_with($bId, 'generated_') || str_starts_with($bId, 'auto_')) {
+                    $parts = explode('_', $bId);
+                    if (count($parts) >= 5) {
+                        $btId = $parts[1];
+                        $m = $parts[3];
+                        $y = $parts[4];
+                        $existing = \App\Models\Bill::where('student_id', $student->id)
+                            ->where('bill_type_id', $btId)
+                            ->where('month', $m)
+                            ->where('year', $y)
+                            ->first();
+                        if ($existing) {
+                            $realBillIds[] = $existing->id;
+                        }
+                    }
+                } else {
+                    $realBillIds[] = $bId;
+                }
+            }
+
+            if (!empty($realBillIds)) {
+                $lockedDetail = TransactionDetail::whereIn('bill_id', $realBillIds)
+                    ->whereNull('deleted_at')
+                    ->whereHas('transaction', function ($q) {
+                        $q->whereNull('deleted_at')
+                          ->whereIn('status', [
+                              Transaction::STATUS_PENDING,
+                              Transaction::STATUS_PENDING_PAYMENT,
+                              Transaction::STATUS_PENDING_CONFIRMATION,
+                          ]);
+                    })
+                    ->with(['bill.billType', 'transaction'])
+                    ->first();
+
+                if ($lockedDetail) {
+                    $billName = $lockedDetail->bill?->billType?->name ?? 'Tagihan';
+                    $isWaitingVerif = ($lockedDetail->transaction?->status === Transaction::STATUS_PENDING_CONFIRMATION);
+                    $statusText = $isWaitingVerif 
+                        ? 'sedang menunggu verifikasi bendahara' 
+                        : 'sedang menunggu unggah bukti bayar';
+                    return response()->json([
+                        'message' => "Tagihan '{$billName}' {$statusText}. Harap selesaikan pembayaran sebelumnya atau batalkan terlebih dahulu.",
+                        'pending_transaction_id' => $lockedDetail->transaction_id
+                    ], 422);
+                }
+            }
+
             $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
             
             if ($paymentMethod->type === \App\Models\PaymentMethod::TYPE_BALANCE) {

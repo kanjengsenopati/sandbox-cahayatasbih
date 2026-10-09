@@ -6,6 +6,7 @@ use App\Models\Information;
 use App\Models\Student;
 use App\Models\Tahfidz;
 use App\Models\StudyGrade;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,19 @@ class DashboardController extends BaseWaliApiController
         $tahfidzCount = 0;
         $studyCount = 0;
         if ($activeStudent) {
+            // Bersihkan transaksi tagihan expired (> 2 jam tanpa bukti bayar)
+            \App\Models\Transaction::where('student_id', $activeStudent->id)
+                ->where('type', \App\Models\Transaction::TYPE_BILL)
+                ->whereIn('status', [\App\Models\Transaction::STATUS_PENDING, \App\Models\Transaction::STATUS_PENDING_PAYMENT])
+                ->whereDoesntHave('activeProof')
+                ->where(function($q) {
+                    $q->where('created_at', '<=', now()->subHours(2))
+                      ->orWhere(function($sub) {
+                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', now());
+                      });
+                })
+                ->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
+
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
@@ -45,7 +59,7 @@ class DashboardController extends BaseWaliApiController
                 })
                 ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
                 ->latest()
-                ->take(3)
+                ->take(20)
                 ->get()
                 ->reject(function($item) {
                     // Lewati SaldoHistory Kode Unik yang orphaned (tidak punya transaction_detail).
@@ -61,13 +75,14 @@ class DashboardController extends BaseWaliApiController
                     return false;
                 })
                 ->map(function($item) {
+                    $rawDate = $item->created_at;
                     return [
                         'id' => $item->transaction_details->first()?->transaction_id ?? $item->id,
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
                         'status' => $item->status,
-                        'created_at' => $item->created_at,
+                        'created_at' => $rawDate ? \Carbon\Carbon::parse($rawDate)->toIso8601String() : null,
                         'category' => $item->type === 'IN' ? 'TOPUP' : ($item->type === 'WITHDRAW' ? 'WITHDRAW' : 'SALDO')
                     ];
                 });
@@ -76,7 +91,7 @@ class DashboardController extends BaseWaliApiController
                 ->where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
                 ->latest()
-                ->take(3)
+                ->take(20)
                 ->get()
                 ->map(function($item) {
                     // Build item names from details
@@ -87,7 +102,9 @@ class DashboardController extends BaseWaliApiController
                     $totalItems = $item->pointOfSaleTransactionDetails->count();
                     if ($totalItems > 2) {
                         $itemNames .= ' +' . ($totalItems - 2) . ' lainnya';
-                      }
+                    }
+
+                    $rawDate = $item->paid_at ?? $item->created_at;
 
                     return [
                         'type' => 'OUT',
@@ -95,32 +112,34 @@ class DashboardController extends BaseWaliApiController
                         'note' => $itemNames ?: 'Belanja Kantin',
                         'merchant' => $item->admins->name ?? null,
                         'items_count' => $totalItems,
-                        'created_at' => $item->paid_at ?? $item->created_at,
+                        'created_at' => $rawDate ? \Carbon\Carbon::parse($rawDate)->toIso8601String() : null,
                         'category' => 'POS',
                         'status' => 'SUCCESS'
                     ];
                 });
 
-            $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType'])
+            $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'activeProof'])
                 ->where('student_id', $activeStudent->id)
                 ->where('type', \App\Models\Transaction::TYPE_BILL)
                 ->whereNotIn('status', [
                     \App\Models\Transaction::STATUS_CANCELLED,
-                    \App\Models\Transaction::STATUS_REJECTED,
                     \App\Models\Transaction::STATUS_EXPIRED
                 ])
                 ->whereHas('transactionDetails', function ($q) {
                     $q->whereNull('deleted_at');
                 })
                 ->latest()
-                ->take(3)
+                ->take(20)
                 ->get()
                 ->map(function($item) {
                     $billNames = $item->transactionDetails
                         ->filter(fn($d) => is_null($d->deleted_at))
-                        ->map(fn($d) => $d->bill->billType->name ?? 'Tagihan')
+                        ->map(fn($d) => $d->bill?->billType?->name ?? 'Tagihan')
                         ->unique()
+                        ->filter()
                         ->join(', ');
+
+                    $rawDate = $item->paid_at ?? $item->getRawOriginal('created_at') ?? $item->created_at;
 
                     return [
                         'id' => $item->id,
@@ -128,22 +147,30 @@ class DashboardController extends BaseWaliApiController
                         'amount' => $item->pay_amount,
                         'note' => $billNames ?: 'Pembayaran Tagihan',
                         'merchant' => $item->getTranslatedPaymentMethod(),
-                        'created_at' => $item->paid_at ?? $item->created_at,
+                        'created_at' => $rawDate ? \Carbon\Carbon::parse($rawDate)->toIso8601String() : null,
                         'category' => 'BILL',
-                        'status' => $item->status
+                        'status' => $item->status,
+                        'rejection_note' => ($item->status === \App\Models\Transaction::STATUS_REJECTED) ? ($item->activeProof?->note ?? 'Bukti pembayaran ditolak oleh bendahara') : null,
                     ];
                 });
 
+            $sortByTimestamp = function ($collection) {
+                return $collection->sortByDesc(function ($tx) {
+                    $date = $tx['created_at'] ?? null;
+                    return $date ? strtotime($date) : 0;
+                })->take(20)->values();
+            };
+
             $showSaldo = $activeStudent->isPwaSaldoVisible();
             if ($showSaldo) {
-                $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->take(3)->values();
+                $recentTransactions = $sortByTimestamp($saldoHistories->concat($posTransactions)->concat($billTransactions));
                 $todaySummary = [
                     'count' => 0,
                     'in' => 0,
                     'out' => 0,
                 ];
             } else {
-                $recentTransactions = $billTransactions->sortByDesc('created_at')->take(3)->values();
+                $recentTransactions = $sortByTimestamp($billTransactions);
                 $todaySummary = [
                     'count' => 0,
                     'in' => 0,
