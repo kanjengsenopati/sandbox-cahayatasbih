@@ -93,21 +93,28 @@
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2">
+                                @can('Edit Santri')
                                 <button type="button" id="btn-bulk-update-substatus" class="btn btn-warning btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalBulkUpdateSubStatus">
                                     <i class="fa fa-edit me-2"></i> Ubah Status PPTQ
                                 </button>
+                                @endcan
+                                @can('Delete Santri')
                                 <button type="button" id="btn-bulk-delete-student" class="btn btn-danger btn-sm d-none">
                                     <i class="fa fa-trash me-2"></i> Hapus Terpilih
+                                </button>
+                                @endcan
+                                <button type="button" id="btn-bulk-report-card" class="btn btn-danger btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalBulkReportCard">
+                                    <i class="fa fa-id-card me-2"></i> Lapor Kendala Kartu (<span id="bulk_report_card_count">0</span>)
                                 </button>
                                 <a href="{{ route('student-barcode.index') }}" class="btn btn-primary btn-sm"><i
                                         class="fa fa-print me-2"></i>
                                     Barcode Santri</a>
+                                @can('Create Santri')
                                 <x-action.import target="#modalImport" name="Santri" />
-                                {{--
-                            </div> --}}
-                            <x-action.create name="Santri" action="{{ route('student.create') }}" />
-                        </div>
+                                <x-action.create name="Santri" action="{{ route('student.create') }}" />
+                                @endcan
+                            </div>
                     </div>
                 </div>
                 <!--end::Card header-->
@@ -225,6 +232,70 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="button" id="btn-submit-bulk-substatus" class="btn btn-primary">Simpan</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bulk Lapor Kartu Santri -->
+<div class="modal fade" id="modalBulkReportCard" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-550px">
+        <div class="modal-content rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bolder"><i class="fa fa-id-card text-danger me-2"></i>Lapor Kendala Kartu Santri</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formBulkReportCard">
+                @csrf
+                <div class="modal-body py-4 px-lg-8">
+                    <div class="alert alert-light-danger d-flex align-items-center p-3 mb-4 rounded border border-danger border-dashed">
+                        <i class="fa fa-info-circle text-danger fs-3 me-3"></i>
+                        <div class="text-gray-800 fs-7">
+                            Melaporkan kendala kartu untuk <strong id="modal_report_card_count">0</strong> santri terpilih ke Super Admin untuk proses pembuatan ulang.
+                        </div>
+                    </div>
+
+                    <!-- Pilihan Kendala -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold required">Jenis Masalah Kartu</label>
+                        <div class="d-flex flex-column gap-2 mt-2">
+                            <label class="d-flex align-items-center p-3 rounded border border-gray-200 cursor-pointer bg-hover-light">
+                                <input class="form-check-input me-3" type="radio" name="report_issue_type" value="rusak" checked />
+                                <div>
+                                    <div class="fw-bolder text-gray-800"><i class="fa fa-heart-broken text-danger me-1"></i> Kartu Rusak</div>
+                                    <div class="text-muted fs-8">Fisik kartu patah, retak, pudar, atau chip aus.</div>
+                                </div>
+                            </label>
+                            <label class="d-flex align-items-center p-3 rounded border border-gray-200 cursor-pointer bg-hover-light">
+                                <input class="form-check-input me-3" type="radio" name="report_issue_type" value="tidak_bisa_transaksi" />
+                                <div>
+                                    <div class="fw-bolder text-gray-800"><i class="fa fa-times-circle text-warning me-1"></i> Tidak Bisa Digunakan Transaksi</div>
+                                    <div class="text-muted fs-8">Barcode atau RFID tidak terbaca saat di-scan di kasir Pondok Mart.</div>
+                                </div>
+                            </label>
+                            <label class="d-flex align-items-center p-3 rounded border border-gray-200 cursor-pointer bg-hover-light">
+                                <input class="form-check-input me-3" type="radio" name="report_issue_type" value="hilang" />
+                                <div>
+                                    <div class="fw-bolder text-gray-800"><i class="fa fa-search text-primary me-1"></i> Kartu Hilang</div>
+                                    <div class="text-muted fs-8">Santri kehilangan kartu fisiknya dan membutuhkan kartu pengganti baru.</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Catatan Tambahan -->
+                    <div class="mb-3">
+                        <label for="report_notes" class="form-label fw-bold">Catatan Tambahan (Opsional)</label>
+                        <textarea id="report_notes" class="form-control form-control-solid" rows="2" placeholder="Contoh: Kartu patah di kantin, santri kehilangan kartu di asrama..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" id="btn-submit-report-card" class="btn btn-danger">
+                        <span class="indicator-label"><i class="fa fa-paper-plane me-1"></i> Kirim Laporan</span>
+                        <span class="indicator-progress d-none">Mengirim... <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -479,14 +550,88 @@
         function toggleBulkDeleteButton() {
             var checkedCount = $('.student-checkbox:checked').length;
             if (checkedCount > 0) {
+                @can('Delete Santri')
                 $('#btn-bulk-delete-student').removeClass('d-none');
+                @endcan
+                @can('Edit Santri')
                 $('#btn-bulk-update-substatus').removeClass('d-none');
+                @endcan
+                $('#btn-bulk-report-card').removeClass('d-none');
                 $('#bulk_sub_status_count').text(checkedCount);
+                $('#bulk_report_card_count').text(checkedCount);
+                $('#modal_report_card_count').text(checkedCount);
             } else {
                 $('#btn-bulk-delete-student').addClass('d-none');
                 $('#btn-bulk-update-substatus').addClass('d-none');
+                $('#btn-bulk-report-card').addClass('d-none');
             }
         }
+
+        // Handle Submit Bulk Report Card
+        $('#formBulkReportCard').on('submit', function(e) {
+            e.preventDefault();
+
+            var selectedIds = [];
+            $('.student-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                Swal.fire('Peringatan', 'Pilih minimal satu santri yang ingin dilaporkan.', 'warning');
+                return;
+            }
+
+            var issueType = $('input[name="report_issue_type"]:checked').val();
+            var notes = $('#report_notes').val();
+            var submitBtn = $('#btn-submit-report-card');
+
+            submitBtn.find('.indicator-label').addClass('d-none');
+            submitBtn.find('.indicator-progress').removeClass('d-none');
+            submitBtn.prop('disabled', true);
+
+            $.ajax({
+                url: '{{ route('student-card-reports.store') }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    student_ids: selectedIds,
+                    issue_type: issueType,
+                    notes: notes
+                },
+                success: function(response) {
+                    submitBtn.find('.indicator-label').removeClass('d-none');
+                    submitBtn.find('.indicator-progress').addClass('d-none');
+                    submitBtn.prop('disabled', false);
+
+                    $('#modalBulkReportCard').modal('hide');
+                    $('#report_notes').val('');
+
+                    // Reset selection & reload
+                    $('#check-all-student').prop('checked', false);
+                    $('.student-checkbox').prop('checked', false);
+                    toggleBulkDeleteButton();
+                    table.ajax.reload(null, false);
+
+                    Swal.fire({
+                        title: 'Laporan Terkirim!',
+                        text: response.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                },
+                error: function(xhr) {
+                    submitBtn.find('.indicator-label').removeClass('d-none');
+                    submitBtn.find('.indicator-progress').addClass('d-none');
+                    submitBtn.prop('disabled', false);
+
+                    var msg = 'Terjadi kesalahan saat mengirim laporan.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire('Gagal Mengirim', msg, 'error');
+                }
+            });
+        });
 
         // Bulk Delete Button Click
         $('#btn-bulk-delete-student').on('click', function() {

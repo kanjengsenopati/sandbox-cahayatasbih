@@ -38,7 +38,7 @@ class StudentController extends Controller
         }
         if (request()->ajax()) {
             session()->save();
-            $data = Student::with('user', 'classroom.school', 'studentSubStatus')->hasSchool()
+            $data = Student::with('user', 'classroom.school', 'studentSubStatus', 'pendingCardReport')->hasSchool()
                 ->when(request('school_id'), function ($query) {
                     $classroomIds = \App\Models\Classroom::where('school_id', request('school_id'))->pluck('id');
                     $query->whereIn('classroom_id', $classroomIds);
@@ -151,6 +151,10 @@ class StudentController extends Controller
                         if ($subStatus) {
                             $html .= '<div class="mt-1"><span class="badge badge-light-info fw-bolder px-2 py-1">' . $subStatus->name . '</span></div>';
                         }
+                    }
+
+                    if ($data->pendingCardReport) {
+                        $html .= '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1" title="' . e($data->pendingCardReport->notes ?? '') . '"><i class="fa fa-exclamation-triangle text-danger me-1"></i>Kendala: ' . e($data->pendingCardReport->issue_label) . '</span></div>';
                     }
 
                     return $html;
