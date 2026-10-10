@@ -1096,16 +1096,24 @@
             // AJAX: Hitung Pending Saldo Koperasi ➔ Outlet
             $('#koperasi_handover_recipient_outlet_id').on('change', function() {
                 var recipientId = $(this).val();
+                var startDate = $('#start_date').val() || '';
+                var endDate = $('#end_date').val() || '';
+
                 if (recipientId) {
                     $('#koperasi_suggestion_text').html('<i class="fas fa-spinner fa-spin me-1"></i> Menghitung sisa dana saldo santri...');
+                    var ajaxUrl = "{{ route('outlet-handover.pending-amount', ':id') }}".replace(':id', recipientId) 
+                        + "?type=KOPERASI" 
+                        + (startDate ? "&start_date=" + encodeURIComponent(startDate) : "") 
+                        + (endDate ? "&end_date=" + encodeURIComponent(endDate) : "");
+
                     $.ajax({
-                        url: "{{ route('outlet-handover.pending-amount', ':id') }}".replace(':id', recipientId) + "?type=KOPERASI",
+                        url: ajaxUrl,
                         type: "GET",
                         success: function(res) {
                             if (res.status === 'success') {
                                 $('#koperasi_handover_amount_display').val(formatRupiah(res.pending_amount.toString()));
                                 $('#koperasi_handover_system_amount').val(res.system_amount);
-                                $('#koperasi_suggestion_text').html('Sisa dana pending yang belum diserahterimakan: <strong class="text-success">Rp ' + res.pending_amount_formatted + '</strong>');
+                                $('#koperasi_suggestion_text').html('Sisa dana pending log saat ini: <strong class="text-success">Rp ' + res.pending_amount_formatted + '</strong>');
                             }
                         },
                         error: function() {
@@ -1122,11 +1130,18 @@
             $('#cashier_handover_cashier_id').on('change', function() {
                 var cashierId = $(this).val();
                 var outletId = $('#cashier_handover_outlet_id').val() || '{{ $koperasiOutlet ? $koperasiOutlet->id : "" }}';
+                var startDate = $('#start_date').val() || '';
+                var endDate = $('#end_date').val() || '';
 
                 if (cashierId) {
                     $('#cashier_suggestion_text').html('<i class="fas fa-spinner fa-spin me-1"></i> Menghitung total penjualan tunai kasir...');
+                    var ajaxUrl = "{{ route('outlet-handover.pending-amount', ':id') }}".replace(':id', outletId) 
+                        + "?type=CASHIER&cashier_id=" + cashierId 
+                        + (startDate ? "&start_date=" + encodeURIComponent(startDate) : "") 
+                        + (endDate ? "&end_date=" + encodeURIComponent(endDate) : "");
+
                     $.ajax({
-                        url: "{{ route('outlet-handover.pending-amount', ':id') }}".replace(':id', outletId) + "?type=CASHIER&cashier_id=" + cashierId,
+                        url: ajaxUrl,
                         type: "GET",
                         success: function(res) {
                             if (res.status === 'success') {
@@ -1151,14 +1166,16 @@
             // Modal Shown Triggers for instant auto-fill & refresh
             $('#modal-add-handover-koperasi').on('shown.bs.modal', function() {
                 var recipientId = $('#koperasi_handover_recipient_outlet_id').val();
-                if (recipientId) {
+                var currentVal = $('#koperasi_handover_amount_display').val();
+                if (recipientId && (!currentVal || currentVal === '0')) {
                     $('#koperasi_handover_recipient_outlet_id').trigger('change');
                 }
             });
 
             $('#modal-add-handover-cashier').on('shown.bs.modal', function() {
                 var cashierId = $('#cashier_handover_cashier_id').val();
-                if (cashierId) {
+                var currentVal = $('#cashier_handover_amount_display').val();
+                if (cashierId && (!currentVal || currentVal === '0')) {
                     $('#cashier_handover_cashier_id').trigger('change');
                 }
             });
