@@ -42,6 +42,7 @@ class ApplicationMenuRequest extends FormRequest
             'type' => ['nullable', 'string', 'in:internal,whatsapp,external'],
             'officer_id' => ['nullable', 'string', 'exists:officers,id'],
             'flag' => ['required', 'string', 'max:255'],
+            'order' => ['nullable', 'integer', 'min:0'],
             'url' => ['nullable', 'string'],
             'wa_number' => ['nullable', 'string', 'max:50'],
             'wa_message' => ['nullable', 'string'],

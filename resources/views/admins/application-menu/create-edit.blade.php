@@ -59,16 +59,29 @@
                                 @csrf
                                 <x-form.put-method />
 
-                                <!--begin::Nama Menu-->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Menu Aplikasi</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Menu Aplikasi Yang Valid"></i>
-                                    </label>
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan Menu Aplikasi"
-                                        value="{{ @$applicationMenu->name ?? old('name') }}" required />
+                                <!--begin::Nama Menu & Urutan-->
+                                <div class="row g-5 mb-7">
+                                    <div class="col-md-9 fv-row">
+                                        <label class="fs-6 fw-bold form-label mt-3" for="name">
+                                            <span class="required">Menu Aplikasi</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Menu Aplikasi Yang Valid"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" name="name" id="name"
+                                            placeholder="Masukkan Menu Aplikasi"
+                                            value="{{ @$applicationMenu->name ?? old('name') }}" required />
+                                    </div>
+                                    <div class="col-md-3 fv-row">
+                                        <label class="fs-6 fw-bold form-label mt-3" for="order">
+                                            <span class="required">Urutan Menu</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Urutan tampilan ikon menu di aplikasi wali santri (angka terkecil tampil paling awal)"></i>
+                                        </label>
+                                        <input type="number" min="1" class="form-control form-control-solid" name="order" id="order"
+                                            placeholder="Contoh: 1"
+                                            value="{{ @$applicationMenu->order ?? old('order', $nextOrder ?? 1) }}" required />
+                                        <span class="text-muted fs-8 mt-1 d-block">Angka terkecil tampil paling awal di PWA</span>
+                                    </div>
                                 </div>
 
                                 <!--begin::Tipe Menu-->

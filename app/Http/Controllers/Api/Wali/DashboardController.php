@@ -233,6 +233,8 @@ class DashboardController extends BaseWaliApiController
                           });
                     });
                 })
+                ->orderBy('order', 'asc')
+                ->orderBy('created_at', 'asc')
                 ->get();
         });
 
