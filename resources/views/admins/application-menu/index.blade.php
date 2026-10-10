@@ -53,6 +53,10 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
+                        <span class="text-muted fs-7">
+                            <i class="fas fa-info-circle text-primary me-1"></i>
+                            Gunakan tombol <span class="badge badge-light-primary py-0 px-1">▲</span> <span class="badge badge-light-primary py-0 px-1">▼</span> atau ketik angka pada kolom <strong>Urutan</strong> untuk mengatur susunan ikon navigasi di PWA.
+                        </span>
                     </div>
                     <x-action.create name="Menu Aplikasi" action="{{ route('application-menu.create') }}" />
                     <!--end::Card title-->
@@ -66,6 +70,7 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
+                                    <th style="width: 10%">Urutan</th>
                                     <th>Nama Menu</th>
                                     <th>Scope Visibilitas</th>
                                     <th>Status</th>
@@ -91,50 +96,142 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-application-menu').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                ajax: "{{ route('application-menu.index') }}",
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
+        var table = $('#table-application-menu').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            pageLength: 25,
+            ajax: "{{ route('application-menu.index') }}",
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
                 },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                     {
-                        data: 'name',
-                        name: 'name'
-                    },
-                    {
-                        data: 'scope',
-                        name: 'scope',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'status',
-                        name: 'status'
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: true,
-                        searchable: true
-                    },
-                ]
-            });
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'order',
+                    name: 'order',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'name',
+                    name: 'name'
+                },
+                {
+                    data: 'scope',
+                    name: 'scope',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status',
+                    name: 'status'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: true,
+                    searchable: true
+                },
+            ]
+        });
 
-        })
+        // Handler tombol panah geser urutan (Naik / Turun)
+        $(document).on('click', '.btn-move-order', function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const id = $btn.data('id');
+            const direction = $btn.data('direction');
+
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: "{{ route('application-menu.move-order') }}",
+                type: "POST",
+                data: {
+                    id: id,
+                    direction: direction
+                },
+                success: function(res) {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.message || 'Urutan berhasil dipindahkan');
+                    }
+                    table.ajax.reload(null, false);
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false);
+                    const msg = xhr.responseJSON?.message || xhr.responseJSON?.error || 'Gagal memindahkan urutan.';
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(msg);
+                    } else {
+                        alert(msg);
+                    }
+                }
+            });
+        });
+
+        // Handler ubah nomor urut via input angka langsung
+        $(document).on('change', '.menu-order-input', function() {
+            const $input = $(this);
+            const id = $input.data('id');
+            const originalVal = $input.data('original');
+            const newVal = parseInt($input.val(), 10);
+
+            if (isNaN(newVal) || newVal < 1) {
+                $input.val(originalVal);
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Nomor urutan harus berupa angka minimal 1.');
+                }
+                return;
+            }
+
+            if (newVal === parseInt(originalVal, 10)) {
+                return;
+            }
+
+            $input.prop('disabled', true);
+            $.ajax({
+                url: "{{ route('application-menu.update-order') }}",
+                type: "POST",
+                data: {
+                    id: id,
+                    order: newVal
+                },
+                success: function(res) {
+                    if (typeof toastr !== 'undefined') {
+                        toastr.success(res.message || 'Urutan berhasil diperbarui');
+                    }
+                    table.ajax.reload(null, false);
+                },
+                error: function(xhr) {
+                    $input.prop('disabled', false).val(originalVal);
+                    const msg = xhr.responseJSON?.message || xhr.responseJSON?.error || 'Gagal memperbarui urutan.';
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error(msg);
+                    } else {
+                        alert(msg);
+                    }
+                }
+            });
+        });
+
+        // Submit saat enter di input angka
+        $(document).on('keypress', '.menu-order-input', function(e) {
+            if (e.which === 13) {
+                $(this).trigger('change');
+            }
+        });
+    });
 </script>
 @endpush

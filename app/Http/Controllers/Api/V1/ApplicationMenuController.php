@@ -10,7 +10,7 @@ class ApplicationMenuController extends Controller
 {
     public function index()
     {
-        $menu = ApplicationMenu::latest()->get();
+        $menu = ApplicationMenu::orderBy('order', 'asc')->orderBy('created_at', 'asc')->get();
         return $this->getSuccessResponse($menu);
     }
 }

@@ -11,6 +11,7 @@ use App\Models\ApplicationMenuScope;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Admin\ApplicationMenuRequest;
 
 class ApplicationMenuController extends Controller
@@ -27,8 +28,29 @@ class ApplicationMenuController extends Controller
         }
         if (request()->ajax()) {
             session()->save();
-            $data = ApplicationMenu::with(['scopes.school', 'officer.admin'])->latest();
+            $data = ApplicationMenu::with(['scopes.school', 'officer.admin'])
+                ->orderBy('order', 'asc')
+                ->orderBy('created_at', 'asc');
             return DataTables::of($data)
+                ->addColumn('order', function ($data) {
+                    return '
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" min="1" class="form-control form-control-sm form-control-solid text-center px-1 py-1 fw-bolder text-primary menu-order-input" 
+                                style="width: 55px; font-size: 13px;" 
+                                data-id="' . $data->id . '" 
+                                data-original="' . $data->order . '" 
+                                value="' . $data->order . '" />
+                            <div class="d-flex flex-column gap-0">
+                                <button type="button" class="btn btn-icon btn-xs btn-light-primary py-0 px-1 btn-move-order" data-id="' . $data->id . '" data-direction="up" title="Geser ke Atas" style="height: 16px; width: 22px;">
+                                    <i class="fas fa-chevron-up fs-9"></i>
+                                </button>
+                                <button type="button" class="btn btn-icon btn-xs btn-light-primary py-0 px-1 btn-move-order" data-id="' . $data->id . '" data-direction="down" title="Geser ke Bawah" style="height: 16px; width: 22px;">
+                                    <i class="fas fa-chevron-down fs-9"></i>
+                                </button>
+                            </div>
+                        </div>
+                    ';
+                })
                 ->addColumn('name', function ($data) {
                     $html = '<div class="d-flex flex-column">';
                     $html .= '<span class="text-gray-800 fw-bolder mb-1">' . e($data->name) . '</span>';
@@ -72,7 +94,7 @@ class ApplicationMenuController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Menu Aplikasi']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'status', 'scope', 'name'])
+                ->rawColumns(['action', 'status', 'scope', 'name', 'order'])
                 ->make(true);
         }
         return view('admins.application-menu.index');
@@ -92,7 +114,8 @@ class ApplicationMenuController extends Controller
             ->get()
             ->sortBy('name')
             ->values();
-        return view('admins.application-menu.create-edit', compact('schools', 'officers'));
+        $nextOrder = (ApplicationMenu::max('order') ?? 0) + 1;
+        return view('admins.application-menu.create-edit', compact('schools', 'officers', 'nextOrder'));
     }
 
     /**
@@ -276,6 +299,115 @@ class ApplicationMenuController extends Controller
             $data['icon'] = null;
         }
 
+        if ($request->filled('order')) {
+            $data['order'] = (int) $request->input('order');
+        } elseif (!$request->route('application_menu')) {
+            $data['order'] = (ApplicationMenu::max('order') ?? 0) + 1;
+        }
+
         return $data;
+    }
+
+    /**
+     * AJAX: Update urutan menu ke nomor spesifik dan re-index semua menu.
+     */
+    public function updateOrder(Request $request)
+    {
+        if (!Auth::user()->can('Edit Menu Aplikasi')) {
+            return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk tindakan ini.'], 403);
+        }
+
+        $request->validate([
+            'id' => 'required|exists:application_menus,id',
+            'order' => 'required|integer|min:1',
+        ]);
+
+        $targetId = $request->input('id');
+        $newOrder = (int) $request->input('order');
+
+        DB::transaction(function () use ($targetId, $newOrder) {
+            $allMenus = ApplicationMenu::orderBy('order', 'asc')->orderBy('created_at', 'asc')->get();
+            $targetMenu = $allMenus->firstWhere('id', $targetId);
+
+            if (!$targetMenu) return;
+
+            $remaining = $allMenus->filter(fn($m) => $m->id !== $targetId)->values();
+            $insertIndex = max(0, min($newOrder - 1, $remaining->count()));
+            $remaining->splice($insertIndex, 0, [$targetMenu]);
+
+            foreach ($remaining as $idx => $m) {
+                $seqOrder = $idx + 1;
+                if ($m->order != $seqOrder) {
+                    $m->update(['order' => $seqOrder]);
+                }
+            }
+        });
+
+        \Illuminate\Support\Facades\Cache::forever('wali_menus_version', time());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Urutan menu berhasil diperbarui'
+        ]);
+    }
+
+    /**
+     * AJAX: Pindahkan urutan menu satu tingkat ke atas atau ke bawah (swap).
+     */
+    public function moveOrder(Request $request)
+    {
+        if (!Auth::user()->can('Edit Menu Aplikasi')) {
+            return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk tindakan ini.'], 403);
+        }
+
+        $request->validate([
+            'id' => 'required|exists:application_menus,id',
+            'direction' => 'required|in:up,down',
+        ]);
+
+        $targetId = $request->input('id');
+        $direction = $request->input('direction');
+
+        DB::transaction(function () use ($targetId, $direction) {
+            $menus = ApplicationMenu::orderBy('order', 'asc')->orderBy('created_at', 'asc')->get();
+            $currentIndex = $menus->search(fn($m) => $m->id === $targetId);
+
+            if ($currentIndex === false) return;
+
+            $targetIndex = $direction === 'up' ? $currentIndex - 1 : $currentIndex + 1;
+
+            if ($targetIndex < 0 || $targetIndex >= $menus->count()) {
+                return; // Sudah berada di posisi paling atas atau paling bawah
+            }
+
+            $currentMenu = $menus[$currentIndex];
+            $neighborMenu = $menus[$targetIndex];
+
+            $tempOrder = $currentMenu->order;
+            $currentMenu->order = $neighborMenu->order;
+            $neighborMenu->order = $tempOrder;
+
+            if ($currentMenu->order == $neighborMenu->order) {
+                $currentMenu->order = $direction === 'up' ? $neighborMenu->order - 1 : $neighborMenu->order + 1;
+            }
+
+            $currentMenu->save();
+            $neighborMenu->save();
+
+            // Normalisasi seluruh urutan secara sekuensial
+            $refreshed = ApplicationMenu::orderBy('order', 'asc')->orderBy('created_at', 'asc')->get();
+            foreach ($refreshed as $idx => $m) {
+                if ($m->order != $idx + 1) {
+                    $m->update(['order' => $idx + 1]);
+                }
+            }
+        });
+
+        \Illuminate\Support\Facades\Cache::forever('wali_menus_version', time());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Urutan menu berhasil dipindahkan'
+        ]);
     }
 }
