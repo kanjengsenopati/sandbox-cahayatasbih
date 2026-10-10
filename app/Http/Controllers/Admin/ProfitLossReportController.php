@@ -330,8 +330,19 @@ class ProfitLossReportController extends Controller
         $defaultRecipientOutletId = null;
         if ($selectedOutlet && $selectedOutlet->id !== $koperasiId) {
             $defaultRecipientOutletId = $selectedOutlet->id;
-        } elseif ($childOutlets->isNotEmpty()) {
-            $defaultRecipientOutletId = $childOutlets->first()->id;
+        } else {
+            $activeChild = $childOutlets->first(function ($child) use ($startDate, $endDate) {
+                return PointOfSaleTransaction::where('outlet_id', $child->id)
+                    ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                    ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                    ->exists();
+            });
+            if ($activeChild) {
+                $defaultRecipientOutletId = $activeChild->id;
+            } elseif ($childOutlets->isNotEmpty()) {
+                $defaultRecipientOutletId = $childOutlets->first()->id;
+            }
         }
 
         $defaultPendingSantriLog = 0;
@@ -339,26 +350,71 @@ class ProfitLossReportController extends Controller
             $childSales = PointOfSaleTransaction::where('outlet_id', $defaultRecipientOutletId)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                 ->sum('pay_amount');
             $childReceived = OutletHandover::where('recipient_outlet_id', $defaultRecipientOutletId)
                 ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                ->whereBetween('handover_date', [$startDate, $endDate])
                 ->sum('amount');
             $defaultPendingSantriLog = max(0, $childSales - $childReceived);
         }
 
+        // Pastikan sinkron dengan log sistem halaman aktif jika spesifik outlet belum terhitung
+        if ($defaultPendingSantriLog === 0 && $pendingSantriHandover > 0) {
+            $defaultPendingSantriLog = $pendingSantriHandover;
+        }
+
         // 5. Default kasir & nominal log untuk Modal Setor Kasir Tunai
-        $defaultCashierId = $kasirList->isNotEmpty() ? $kasirList->first()->id : null;
+        $activeCashier = $kasirList->first(function ($cashier) use ($startDate, $endDate, $queryOutletId) {
+            return PointOfSaleTransaction::where('admin_id', $cashier->id)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_UMUM)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                    if (is_array($queryOutletId)) {
+                        $q->whereIn('outlet_id', $queryOutletId);
+                    } else {
+                        $q->where('outlet_id', $queryOutletId);
+                    }
+                })
+                ->exists();
+        });
+
+        if ($activeCashier) {
+            $defaultCashierId = $activeCashier->id;
+        } elseif ($kasirList->isNotEmpty()) {
+            $defaultCashierId = $kasirList->first()->id;
+        } else {
+            $defaultCashierId = null;
+        }
+
         $defaultCashierSales = 0;
         $defaultPendingCashierLog = 0;
         if ($defaultCashierId) {
             $defaultCashierSales = PointOfSaleTransaction::where('admin_id', $defaultCashierId)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->where('type', PointOfSaleTransaction::TYPE_UMUM)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                    if (is_array($queryOutletId)) {
+                        $q->whereIn('outlet_id', $queryOutletId);
+                    } else {
+                        $q->where('outlet_id', $queryOutletId);
+                    }
+                })
                 ->sum('pay_amount');
+
             $cashierHandovers = OutletHandover::where('cashier_id', $defaultCashierId)
                 ->where('handover_type', OutletHandover::TYPE_CASHIER_TO_MANAGEMENT)
+                ->whereBetween('handover_date', [$startDate, $endDate])
                 ->sum('amount');
             $defaultPendingCashierLog = max(0, $defaultCashierSales - $cashierHandovers);
+        }
+
+        // Pastikan sinkron dengan log sistem halaman aktif jika kasir belum dipilih atau per-kasir belum terhitung
+        if ($defaultPendingCashierLog === 0 && $pendingCashierHandover > 0) {
+            $defaultPendingCashierLog = $pendingCashierHandover;
+            $defaultCashierSales = $posUmumSalesTotal;
         }
 
         return view('admins.report-profit-loss.index', compact(

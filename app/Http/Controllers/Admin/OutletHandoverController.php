@@ -270,6 +270,15 @@ class OutletHandoverController extends Controller
         }
 
         $type = $request->input('type');
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+
+        $startDate = null;
+        $endDate = null;
+        if ($startDateInput && $endDateInput) {
+            $startDate = Carbon::parse($startDateInput)->format('Y-m-d');
+            $endDate = Carbon::parse($endDateInput)->format('Y-m-d');
+        }
 
         // Skenario 1: Handover Kasir Tunai (Shift Closing)
         if ($type === 'CASHIER' || $request->filled('cashier_id')) {
@@ -280,13 +289,28 @@ class OutletHandoverController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Kasir tidak ditemukan'], 404);
             }
 
-            $cashierSales = PointOfSaleTransaction::where('admin_id', $cashierId)
+            $cashierSalesQuery = PointOfSaleTransaction::where('admin_id', $cashierId)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->where('type', PointOfSaleTransaction::TYPE_UMUM)
-                ->sum('pay_amount');
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                    $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+                });
+
+            $filterOutletId = $request->input('outlet_id') ?: ($outletId && $outletId !== 'all' ? $outletId : null);
+            if ($filterOutletId) {
+                $cashierSalesQuery->where('outlet_id', $filterOutletId);
+            }
+
+            $cashierSales = $cashierSalesQuery->sum('pay_amount');
 
             $cashierHandovers = OutletHandover::where('cashier_id', $cashierId)
                 ->where('handover_type', OutletHandover::TYPE_CASHIER_TO_MANAGEMENT)
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                    $q->whereBetween('handover_date', [$startDate, $endDate]);
+                })
+                ->when($filterOutletId, function($q) use ($filterOutletId) {
+                    $q->where('outlet_id', $filterOutletId);
+                })
                 ->sum('amount');
 
             $pendingAmount = max(0, $cashierSales - $cashierHandovers);
@@ -324,10 +348,16 @@ class OutletHandoverController extends Controller
                 $childSales = PointOfSaleTransaction::where('outlet_id', $child->id)
                     ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                     ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                    ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                        $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+                    })
                     ->sum('pay_amount');
 
                 $childReceived = OutletHandover::where('recipient_outlet_id', $child->id)
                     ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                    ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                        $q->whereBetween('handover_date', [$startDate, $endDate]);
+                    })
                     ->sum('amount');
 
                 $totalSales += $childSales;
@@ -339,10 +369,16 @@ class OutletHandoverController extends Controller
             $totalSales = PointOfSaleTransaction::where('outlet_id', $targetOutletId)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                    $q->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+                })
                 ->sum('pay_amount');
 
             $totalReceived = OutletHandover::where('recipient_outlet_id', $targetOutletId)
                 ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                    $q->whereBetween('handover_date', [$startDate, $endDate]);
+                })
                 ->sum('amount');
 
             $pendingAmount = max(0, $totalSales - $totalReceived);
