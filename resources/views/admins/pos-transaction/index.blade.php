@@ -335,12 +335,15 @@
 
                                         <div>
                                             <x-text.caption class="text-slate-500 d-block mb-1">Filter Tanggal</x-text.caption>
-                                            <div id="dateRange" class="d-flex align-items-center justify-content-between" style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 12px;">
-                                                <i class="fa-solid fa-calendar-days text-slate-400 me-2"></i>
-                                                <span class="fs-7 fw-bold text-slate-700"></span> <b class="caret ms-2 text-slate-400"></b>
+                                            <div id="dateRange" class="d-flex align-items-center justify-content-between" style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 10px; height: 38px; min-width: 220px;">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fa-solid fa-calendar-days text-slate-400 me-2"></i>
+                                                    <span class="fs-7 fw-bold text-slate-700">Semua Tanggal</span>
+                                                </div>
+                                                <b class="caret ms-2 text-slate-400"></b>
                                             </div>
-                                            <input type="text" id="start_date" name="start_date" hidden>
-                                            <input type="text" id="end_date" name="end_date" hidden>
+                                            <input type="text" id="start_date" name="start_date" value="" hidden>
+                                            <input type="text" id="end_date" name="end_date" value="" hidden>
                                         </div>
 
                                         @if(($mode ?? '') === 'bisnis')
@@ -353,16 +356,6 @@
                                             </select>
                                         </div>
                                         @endif
-
-                                        <div>
-                                            <x-text.caption class="text-slate-500 d-block mb-1">Status</x-text.caption>
-                                            <select name="status" class="form-select form-select-solid rounded-3 fs-7" id="filter_status" style="width: 140px; border: 1px solid #cbd5e1; height: 38px;">
-                                                <option value="">Semua Status</option>
-                                                <option value="SUCCESS">Sukses</option>
-                                                <option value="PENDING">Pending</option>
-                                                <option value="FAILED">Gagal</option>
-                                            </select>
-                                        </div>
 
                                         @if(($mode ?? '') === 'bisnis' && (!$hasOutletRestriction || count($outlets) > 1))
                                         <div>
@@ -377,16 +370,6 @@
                                         @else
                                             <input type="hidden" id="filter_outlet_id" value="{{ request('outlet_id') ?? ($outlets->first()->id ?? '') }}">
                                         @endif
-
-                                        <div>
-                                            <x-text.caption class="text-slate-500 d-block mb-1">Tipe Pembeli</x-text.caption>
-                                            <div class="btn-group btn-group-sm" role="group" id="quick-type-group">
-                                                <button type="button" class="btn btn-sm btn-primary btn-type active" data-type="">Semua</button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="UMUM">Umum</button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary btn-type" data-type="SANTRI">Saldo</button>
-                                            </div>
-                                            <input type="hidden" id="filter_type" name="type" value="">
-                                        </div>
                                     </div>
                                 </form>
                             </div>
@@ -786,35 +769,82 @@
     var tableTopItems;
 
     $(document).ready(function() {
-        // Tentukan tanggal awal filter
-        var start = moment().startOf('month');
-        var end = moment().endOf('month');
+        // Inisialisasi awal Date Range Picker (Default: Semua Tanggal)
+        $('#start_date').val('');
+        $('#end_date').val('');
+        $('#dateRange span').html('Semua Tanggal');
 
-        // Set nilai ke input hidden
-        $('#start_date').val(start.format('YYYY-MM-DD'));
-        $('#end_date').val(end.format('YYYY-MM-DD'));
+        function applyDateRange(start, end) {
+            var startFormatted = start.format('YYYY-MM-DD');
+            var endFormatted = end.format('YYYY-MM-DD');
 
-        // Initialize Date Range Picker
+            $('#start_date').val(startFormatted);
+            $('#end_date').val(endFormatted);
+            $('#filter_period').val('');
+
+            if (start.isSame(end, 'day')) {
+                $('#dateRange span').html(start.format('D MMM YYYY'));
+            } else {
+                $('#dateRange span').html(start.format('D MMM YYYY') + ' - ' + end.format('D MMM YYYY'));
+            }
+
+            // Sinkronisasi status active tombol Periode Transaksi jika rentang cocok
+            $('.btn-period').removeClass('active btn-primary').addClass('btn-outline-primary');
+            if (start.isSame(moment(), 'day') && end.isSame(moment(), 'day')) {
+                $('.btn-period[data-period="today"]').removeClass('btn-outline-primary').addClass('active btn-primary');
+                $('#filter_period').val('today');
+            } else if (start.isSame(moment().startOf('isoWeek'), 'day') && end.isSame(moment().endOf('isoWeek'), 'day')) {
+                $('.btn-period[data-period="week"]').removeClass('btn-outline-primary').addClass('active btn-primary');
+                $('#filter_period').val('week');
+            } else if (start.isSame(moment().startOf('month'), 'day') && end.isSame(moment().endOf('month'), 'day')) {
+                $('.btn-period[data-period="month"]').removeClass('btn-outline-primary').addClass('active btn-primary');
+                $('#filter_period').val('month');
+            }
+
+            reloadTransactions();
+        }
+
+        function resetToAllDates() {
+            $('#start_date').val('');
+            $('#end_date').val('');
+            $('#filter_period').val('all');
+            $('#dateRange span').html('Semua Tanggal');
+            $('.btn-period').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $('.btn-period[data-period="all"]').removeClass('btn-outline-primary').addClass('active btn-primary');
+            reloadTransactions();
+        }
+
         $('#dateRange').daterangepicker({
-            startDate: start,
-            endDate: end,
+            autoUpdateInput: false,
+            startDate: moment().startOf('month'),
+            endDate: moment().endOf('month'),
+            showDropdowns: true,
+            locale: {
+                format: 'YYYY-MM-DD',
+                applyLabel: 'Terapkan',
+                cancelLabel: 'Semua Tanggal',
+                customRangeLabel: 'Pilih Rentang',
+                daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+                monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                firstDay: 1
+            },
             ranges: {
                 'Hari Ini': [moment(), moment()],
                 'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                 '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+                'Minggu Ini': [moment().startOf('isoWeek'), moment().endOf('isoWeek')],
                 'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
                 'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
                 'Tahun Ini': [moment().startOf('year'), moment().endOf('year')]
             }
         }, function(start, end) {
-            $('#dateRange span').html(start.format('D MMM YYYY') + ' - ' + end.format('D MMM YYYY'));
-            $('#start_date').val(start.format('YYYY-MM-DD'));
-            $('#end_date').val(end.format('YYYY-MM-DD'));
-            reloadTransactions();
+            applyDateRange(start, end);
         });
 
-        // Set display teks awal
-        $('#dateRange span').html(start.format('D MMM YYYY') + ' - ' + end.format('D MMM YYYY'));
+        // Event handler jika user klik cancel / 'Semua Tanggal' pada popup datepicker
+        $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
+            resetToAllDates();
+        });
 
         // Load Tables
         initializeTransactionTable();
@@ -960,7 +990,7 @@
 
         // Summary is already pre-rendered by server on initial load; only re-fetch on filter changes
 
-        $('#filter_status, #filter_outlet_id').on('change', function() {
+        $('#filter_outlet_id').on('change', function() {
             reloadTransactions();
             if ($('#stats-pane').hasClass('show') || $('#stats-pane').hasClass('active')) {
                 const url = new URL(window.location.href);
@@ -1010,18 +1040,45 @@
             $('#handover_form_amount_real').val(numericVal);
         });
 
-        // Event listener untuk tombol filter periode cepat (Hari Ini, Minggu Ini, Bulan Ini)
+        // Event listener untuk tombol filter periode cepat (Semua, Hari Ini, Minggu Ini, Bulan Ini)
         $('.btn-period').on('click', function() {
             $('.btn-period').removeClass('active btn-primary').addClass('btn-outline-primary');
             $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
             var period = $(this).data('period');
             $('#filter_period').val(period);
 
-            if (period !== 'all') {
-                $('#start_date').val('');
-                $('#end_date').val('');
-                $('#dateRange span').html('Filter Periode Cepat');
-            } else {
+            var picker = $('#dateRange').data('daterangepicker');
+
+            if (period === 'today') {
+                var today = moment();
+                $('#start_date').val(today.format('YYYY-MM-DD'));
+                $('#end_date').val(today.format('YYYY-MM-DD'));
+                $('#dateRange span').html(today.format('D MMM YYYY'));
+                if (picker) {
+                    picker.setStartDate(today);
+                    picker.setEndDate(today);
+                }
+            } else if (period === 'week') {
+                var startWeek = moment().startOf('isoWeek');
+                var endWeek = moment().endOf('isoWeek');
+                $('#start_date').val(startWeek.format('YYYY-MM-DD'));
+                $('#end_date').val(endWeek.format('YYYY-MM-DD'));
+                $('#dateRange span').html(startWeek.format('D MMM YYYY') + ' - ' + endWeek.format('D MMM YYYY'));
+                if (picker) {
+                    picker.setStartDate(startWeek);
+                    picker.setEndDate(endWeek);
+                }
+            } else if (period === 'month') {
+                var startMonth = moment().startOf('month');
+                var endMonth = moment().endOf('month');
+                $('#start_date').val(startMonth.format('YYYY-MM-DD'));
+                $('#end_date').val(endMonth.format('YYYY-MM-DD'));
+                $('#dateRange span').html(startMonth.format('D MMM YYYY') + ' - ' + endMonth.format('D MMM YYYY'));
+                if (picker) {
+                    picker.setStartDate(startMonth);
+                    picker.setEndDate(endMonth);
+                }
+            } else { // 'all'
                 $('#start_date').val('');
                 $('#end_date').val('');
                 $('#dateRange span').html('Semua Tanggal');
@@ -1031,15 +1088,6 @@
         });
 
         $('#filter_mode_filter').on('change', function() {
-            reloadTransactions();
-        });
-
-        // Event listener untuk tombol filter tipe pembeli (Semua, Umum, Saldo)
-        $('.btn-type').on('click', function() {
-            $('.btn-type').removeClass('active btn-primary').addClass('btn-outline-primary');
-            $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
-            var type = $(this).data('type');
-            $('#filter_type').val(type);
             reloadTransactions();
         });
 
@@ -1064,10 +1112,8 @@
                     d.mode = '{{ $mode ?? "bisnis" }}';
                     d.period = $('#filter_period').val();
                     d.mode_filter = $('#filter_mode_filter').val();
-                    d.type = $('#filter_type').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
-                    d.status = $('#filter_status').val();
                     d.outlet_id = $('#filter_outlet_id').val();
                 }
             },
@@ -1141,10 +1187,8 @@
                 mode: '{{ $mode ?? "bisnis" }}',
                 period: $('#filter_period').val(),
                 mode_filter: $('#filter_mode_filter').val(),
-                type: $('#filter_type').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
-                status: $('#filter_status').val(),
                 outlet_id: $('#filter_outlet_id').val()
             },
             success: function(response) {

@@ -151,8 +151,11 @@ class PosTransactionController extends Controller
                 });
             }
 
-            // Filter Periode Cepat (Hari Ini, Minggu Ini, Bulan Ini) atau Custom Range
-            if ($request->filled('period')) {
+            // Filter Tanggal: Prioritaskan start_date dan end_date dari Date Range Picker
+            if ($request->filled('start_date') && $request->filled('end_date')) {
+                $data->whereDate('created_at', '>=', $request->start_date)
+                    ->whereDate('created_at', '<=', $request->end_date);
+            } elseif ($request->filled('period') && $request->period !== 'all') {
                 if ($request->period === 'today') {
                     $data->whereDate('created_at', Carbon::today());
                 } elseif ($request->period === 'week') {
@@ -160,23 +163,9 @@ class PosTransactionController extends Controller
                 } elseif ($request->period === 'month') {
                     $data->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                 }
-            } elseif ($request->filled('start_date') && $request->filled('end_date')) {
-                $data->whereDate('created_at', '>=', $request->start_date)
-                    ->whereDate('created_at', '<=', $request->end_date);
             }
 
-            $data->when($request->filled('status'), function ($query) use ($request) {
-                    $query->where('status', $request->status);
-                });
-
-            // Clone base query sebelum filter tipe pembeli diterapkan agar breakdown Umum & Saldo pada kartu tetap akurat
-            $baseQueryBeforeType = clone $data;
-
-            // Filter Tipe Pembeli (Umum vs Saldo Santri)
-            $data->when($request->filled('type') && in_array($request->type, [PointOfSaleTransaction::TYPE_UMUM, PointOfSaleTransaction::TYPE_SANTRI]), function ($query) use ($request) {
-                    $query->where('type', $request->type);
-                })
-                ->latest();
+            $data->latest();
 
             // Hitung total ringkasan terfilter
             if ($request->data == 'total') {
@@ -186,8 +175,8 @@ class PosTransactionController extends Controller
                     SUM(profit) as profit
                 ')->first();
 
-                // Hitung agregasi dinamis untuk Umum dan Saldo (Santri)
-                $buyerStats = (clone $baseQueryBeforeType)->selectRaw("
+                // Hitung agregasi dinamis untuk Umum dan Saldo (Santri) langsung dari data terfilter
+                $buyerStats = (clone $data)->selectRaw("
                     COUNT(CASE WHEN type = 'UMUM' THEN id END) as umum_count,
                     COALESCE(SUM(CASE WHEN type = 'UMUM' THEN pay_amount ELSE 0 END), 0) as umum_sales,
                     COUNT(CASE WHEN type = 'SANTRI' THEN id END) as saldo_count,

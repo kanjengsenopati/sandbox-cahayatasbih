@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\Outlet;
+use App\Models\Admin;
 use App\Models\CashFlow;
 use App\Models\CashFlowCategory;
+use App\Models\OutletHandover;
 use App\Models\PointOfSaleTransaction;
+use App\Services\OutletContextService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -63,8 +66,8 @@ class ProfitLossReportController extends Controller
         $hasOutletRestriction = count($authOutletIds) > 0;
         $outletId = $request->input('outlet_id');
 
-        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        $koperasiId = OutletContextService::getKoperasiOutletId();
+        $koperasiOutlet = Outlet::find($koperasiId);
 
         if (!$outletId && !$hasOutletRestriction) {
             if ($request->input('mode') === 'outlet') {
@@ -108,8 +111,47 @@ class ProfitLossReportController extends Controller
         $posProfitTotal = (clone $posQuery)->sum('profit');
         $posCostTotal = max($posSalesTotal - $posProfitTotal, 0);
 
-        // 2. Hitung Pemasukan Kas Operasional (APPROVED, excluding internal handovers)
+        // Breakdown POS: Non-tunai Santri vs Tunai Umum
+        $posSantriSalesTotal = (clone $posQuery)->where('type', PointOfSaleTransaction::TYPE_SANTRI)->sum('pay_amount');
+        $posUmumSalesTotal = (clone $posQuery)->where('type', PointOfSaleTransaction::TYPE_UMUM)->sum('pay_amount');
+
+        // 2. Real Movement Keuangan: Handover yang sudah terjadi (Settled)
+        // A. Handover Saldo Koperasi ➔ Outlet
+        $santriHandoverQuery = OutletHandover::where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+            ->whereBetween('handover_date', [$startDate, $endDate])
+            ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                if (is_array($queryOutletId)) {
+                    $q->whereIn('recipient_outlet_id', $queryOutletId);
+                } else {
+                    $q->where('recipient_outlet_id', $queryOutletId);
+                }
+            });
+        $santriHandoverTotal = (clone $santriHandoverQuery)->sum('amount');
+
+        // B. Handover Setor Kasir Tunai ➔ Manajemen
+        $cashierHandoverQuery = OutletHandover::where('handover_type', OutletHandover::TYPE_CASHIER_TO_MANAGEMENT)
+            ->whereBetween('handover_date', [$startDate, $endDate])
+            ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                if (is_array($queryOutletId)) {
+                    $q->whereIn('outlet_id', $queryOutletId);
+                } else {
+                    $q->where('outlet_id', $queryOutletId);
+                }
+            });
+        $cashierHandoverTotal = (clone $cashierHandoverQuery)->sum('amount');
+
+        // Total Kas Riil Diterima via Handover
+        $totalRealHandover = $santriHandoverTotal + $cashierHandoverTotal;
+
+        // Pending Handover (Selisih Log Sistem vs Real Handover)
+        $pendingSantriHandover = max(0, $posSantriSalesTotal - $santriHandoverTotal);
+        $pendingCashierHandover = max(0, $posUmumSalesTotal - $cashierHandoverTotal);
+        $totalPendingHandover = $pendingSantriHandover + $pendingCashierHandover;
+
+        // 3. Hitung Pemasukan Kas Operasional Eksternal (APPROVED, excluding internal handovers)
         $excludeCategoryNames = [
+            'Serah Terima Dana',
+            'Setoran Kasir Tunai',
             'Serah Terima Piket ke Bendahara',
             'Serah Terima Bendahara ke Yayasan'
         ];
@@ -134,7 +176,7 @@ class ProfitLossReportController extends Controller
             ->with('cashflow_category')
             ->get();
 
-        // 3. Hitung Pengeluaran Kas Operasional (APPROVED)
+        // 4. Hitung Pengeluaran Kas Operasional (APPROVED)
         $cashExpensesQuery = CashFlow::where('type', CashFlow::TYPE_EXPENSE)
             ->where('status', CashFlow::STATUS_APPROVED)
             ->whereBetween('date', [$startDate, $endDate])
@@ -147,31 +189,29 @@ class ProfitLossReportController extends Controller
             });
 
         $cashExpensesTotal = $cashExpensesQuery->sum('amount');
-        
+
         // Custom breakdown grouping to separate custom "Lainnya" subcategories
         $cashExpensesBreakdown = [];
         $rawExpenses = (clone $cashExpensesQuery)
             ->select('id', 'cash_flow_category_id', 'description', 'amount')
             ->with('cashflow_category:id,name')
             ->get();
-        
+
         foreach ($rawExpenses as $exp) {
             $catName = $exp->cashflow_category?->name ?? 'Lainnya';
-            
-            // Check if it is a custom category under "Lainnya"
+
             if ($catName === 'Lainnya' && preg_match('/^\[Kustom:\s*([^\]]+)\]/', $exp->description, $matches)) {
                 $displayName = trim($matches[1]);
             } else {
                 $displayName = $catName;
             }
-            
+
             if (!isset($cashExpensesBreakdown[$displayName])) {
                 $cashExpensesBreakdown[$displayName] = 0;
             }
             $cashExpensesBreakdown[$displayName] += $exp->amount;
         }
 
-        // Convert key-value back to array for simple Blade rendering
         $cashExpensesBreakdownFormatted = [];
         foreach ($cashExpensesBreakdown as $name => $total) {
             $cashExpensesBreakdownFormatted[] = (object)[
@@ -180,12 +220,16 @@ class ProfitLossReportController extends Controller
             ];
         }
 
-        // 4. Perhitungan Rugi Laba
+        // 5. Perhitungan Laba Rugi Komprehensif
         $totalRevenues = $posSalesTotal + $cashIncomesTotal;
         $totalHpp = $posCostTotal;
         $grossProfit = $totalRevenues - $totalHpp;
         $totalExpenses = $cashExpensesTotal;
         $netProfit = $grossProfit - $totalExpenses;
+
+        // Posisi Kas Riil (Net Cash Realized)
+        $realCashRevenues = $totalRealHandover + $cashIncomesTotal;
+        $realNetCashProfit = $realCashRevenues - $totalHpp - $totalExpenses;
 
         // Fetch outlets for dropdown filter
         if ($hasOutletRestriction) {
@@ -208,7 +252,7 @@ class ProfitLossReportController extends Controller
                 ->orderBy('name')->get();
         }
 
-        // Current selected outlet details
+        // Selected outlet details
         $selectedOutlet = null;
         if ($outletId && !$hasOutletRestriction) {
             $selectedOutlet = Outlet::find($outletId);
@@ -216,13 +260,12 @@ class ProfitLossReportController extends Controller
             $selectedOutlet = Outlet::find($outletId);
         }
 
-        // Fetch expenses list for the Transaksi tab
+        // Fetch expenses list for Transaksi tab
         $expensesList = (clone $cashExpensesQuery)
             ->with(['cashflow_category', 'sender'])
-            ->latest()
+            ->latest('date')
             ->get()
             ->map(function ($exp) {
-                // Parse custom category from description if present
                 $categoryName = $exp->cashflow_category?->name ?? '-';
                 $cleanDescription = $exp->description;
                 if ($categoryName === 'Lainnya' && preg_match('/^\[Kustom:\s*([^\]]+)\]\s*(?:-\s*)?(.*)/s', $exp->description, $matches)) {
@@ -234,17 +277,163 @@ class ProfitLossReportController extends Controller
                 return $exp;
             });
 
-        // Get operational expense categories for form select dropdown
+        // Fetch handovers list for Serah Terima tab
+        $handoversList = OutletHandover::with(['outlet', 'recipientOutlet', 'recipient', 'cashier', 'creator'])
+            ->whereBetween('handover_date', [$startDate, $endDate])
+            ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                if (is_array($queryOutletId)) {
+                    $q->where(function ($sub) use ($queryOutletId) {
+                        $sub->whereIn('outlet_id', $queryOutletId)
+                            ->orWhereIn('recipient_outlet_id', $queryOutletId);
+                    });
+                } else {
+                    $q->where(function ($sub) use ($queryOutletId) {
+                        $sub->where('outlet_id', $queryOutletId)
+                            ->orWhere('recipient_outlet_id', $queryOutletId);
+                    });
+                }
+            })
+            ->latest('handover_date')
+            ->get();
+
+        // Operational expense categories for form select dropdown
         $expenseCategories = CashFlowCategory::whereIn('name', ['Listrik', 'Honor Kasir', 'Server Aplikasi', 'IT Support', 'Lainnya'])
             ->orderBy('name')
             ->get();
 
+        // Data pendukung modal handover:
+        // 1. Dapatkan user default Gus Maulana Rifqi
+        $gusMaulana = Admin::where('name', 'like', '%MAULANA RIFQI%')->first();
+        $defaultPenerimaId = $gusMaulana ? $gusMaulana->id : null;
+
+        // 2. List Pengelola / Penerima: GUS MAULANA RIFQI (default) + role Kasir Outlet (sembunyikan admin lain)
+        $kasirOutletAdmins = Admin::whereHas('roles', function($q) {
+            $q->whereIn('name', ['Kasir Outlet', 'Kasir Karyawan Outlet', 'Kasir']);
+        })->orderBy('name')->get();
+
+        if ($gusMaulana) {
+            $pengelolaPenerimaList = collect([$gusMaulana])->merge($kasirOutletAdmins)->unique('id');
+        } else {
+            $pengelolaPenerimaList = $kasirOutletAdmins;
+        }
+
+        // 3. List Kasir yang Menyerahkan Kas: HANYA role kasir (sembunyikan admin non-kasir)
+        $kasirList = Admin::whereHas('roles', function($q) {
+            $q->where('name', 'like', '%Kasir%')
+              ->orWhere('name', 'like', '%KASIR%');
+        })->orderBy('name')->get();
+
+        $childOutlets = Outlet::where('id', '!=', $koperasiId)->orderBy('name')->get();
+        $allOutlets = Outlet::orderBy('name')->get();
+
+        // 4. Default recipient outlet & nominal log untuk Modal Handover Saldo Koperasi
+        $defaultRecipientOutletId = null;
+        if ($selectedOutlet && $selectedOutlet->id !== $koperasiId) {
+            $defaultRecipientOutletId = $selectedOutlet->id;
+        } else {
+            $activeChild = $childOutlets->first(function ($child) use ($startDate, $endDate) {
+                return PointOfSaleTransaction::where('outlet_id', $child->id)
+                    ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                    ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                    ->exists();
+            });
+            if ($activeChild) {
+                $defaultRecipientOutletId = $activeChild->id;
+            } elseif ($childOutlets->isNotEmpty()) {
+                $defaultRecipientOutletId = $childOutlets->first()->id;
+            }
+        }
+
+        $defaultPendingSantriLog = 0;
+        if ($defaultRecipientOutletId) {
+            $childSales = PointOfSaleTransaction::where('outlet_id', $defaultRecipientOutletId)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->sum('pay_amount');
+            $childReceived = OutletHandover::where('recipient_outlet_id', $defaultRecipientOutletId)
+                ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                ->whereBetween('handover_date', [$startDate, $endDate])
+                ->sum('amount');
+            $defaultPendingSantriLog = max(0, $childSales - $childReceived);
+        }
+
+        // Pastikan sinkron dengan log sistem halaman aktif jika spesifik outlet belum terhitung
+        if ($defaultPendingSantriLog === 0 && $pendingSantriHandover > 0) {
+            $defaultPendingSantriLog = $pendingSantriHandover;
+        }
+
+        // 5. Default kasir & nominal log untuk Modal Setor Kasir Tunai
+        $activeCashier = $kasirList->first(function ($cashier) use ($startDate, $endDate, $queryOutletId) {
+            return PointOfSaleTransaction::where('admin_id', $cashier->id)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_UMUM)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                    if (is_array($queryOutletId)) {
+                        $q->whereIn('outlet_id', $queryOutletId);
+                    } else {
+                        $q->where('outlet_id', $queryOutletId);
+                    }
+                })
+                ->exists();
+        });
+
+        if ($activeCashier) {
+            $defaultCashierId = $activeCashier->id;
+        } elseif ($kasirList->isNotEmpty()) {
+            $defaultCashierId = $kasirList->first()->id;
+        } else {
+            $defaultCashierId = null;
+        }
+
+        $defaultCashierSales = 0;
+        $defaultPendingCashierLog = 0;
+        if ($defaultCashierId) {
+            $defaultCashierSales = PointOfSaleTransaction::where('admin_id', $defaultCashierId)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_UMUM)
+                ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+                ->when($queryOutletId, function ($q) use ($queryOutletId) {
+                    if (is_array($queryOutletId)) {
+                        $q->whereIn('outlet_id', $queryOutletId);
+                    } else {
+                        $q->where('outlet_id', $queryOutletId);
+                    }
+                })
+                ->sum('pay_amount');
+
+            $cashierHandovers = OutletHandover::where('cashier_id', $defaultCashierId)
+                ->where('handover_type', OutletHandover::TYPE_CASHIER_TO_MANAGEMENT)
+                ->whereBetween('handover_date', [$startDate, $endDate])
+                ->sum('amount');
+            $defaultPendingCashierLog = max(0, $defaultCashierSales - $cashierHandovers);
+        }
+
+        // Pastikan sinkron dengan log sistem halaman aktif jika kasir belum dipilih atau per-kasir belum terhitung
+        if ($defaultPendingCashierLog === 0 && $pendingCashierHandover > 0) {
+            $defaultPendingCashierLog = $pendingCashierHandover;
+            $defaultCashierSales = $posUmumSalesTotal;
+        }
+
         return view('admins.report-profit-loss.index', compact(
             'outlets',
+            'allOutlets',
+            'childOutlets',
             'selectedOutlet',
+            'koperasiOutlet',
             'startDate',
             'endDate',
             'posSalesTotal',
+            'posSantriSalesTotal',
+            'posUmumSalesTotal',
+            'santriHandoverTotal',
+            'cashierHandoverTotal',
+            'totalRealHandover',
+            'pendingSantriHandover',
+            'pendingCashierHandover',
+            'totalPendingHandover',
             'posProfitTotal',
             'posCostTotal',
             'cashIncomesTotal',
@@ -256,9 +445,19 @@ class ProfitLossReportController extends Controller
             'grossProfit',
             'totalExpenses',
             'netProfit',
+            'realNetCashProfit',
             'hasOutletRestriction',
             'expensesList',
-            'expenseCategories'
+            'handoversList',
+            'expenseCategories',
+            'pengelolaPenerimaList',
+            'kasirList',
+            'defaultPenerimaId',
+            'defaultRecipientOutletId',
+            'defaultPendingSantriLog',
+            'defaultCashierId',
+            'defaultCashierSales',
+            'defaultPendingCashierLog'
         ));
     }
 
@@ -285,7 +484,6 @@ class ProfitLossReportController extends Controller
             $category = CashFlowCategory::findOrFail($request->cash_flow_category_id);
             $description = $request->description;
 
-            // If "Lainnya" and free text provided, format description to capture custom category name
             if ($category->name === 'Lainnya' && $request->filled('custom_category')) {
                 $customName = strip_tags($request->custom_category);
                 $description = "[Kustom: {$customName}]" . ($description ? " - " . $description : "");
@@ -298,7 +496,7 @@ class ProfitLossReportController extends Controller
 
             $data = [
                 'sender_id' => Auth::id(),
-                'receiver_id' => Auth::id(), // self receiver
+                'receiver_id' => Auth::id(),
                 'outlet_id' => $request->outlet_id,
                 'cash_flow_category_id' => $request->cash_flow_category_id,
                 'payment_code' => $paymentCode,
@@ -306,7 +504,7 @@ class ProfitLossReportController extends Controller
                 'amount' => $amount,
                 'date' => $request->date,
                 'description' => $description,
-                'status' => CashFlow::STATUS_APPROVED, // Auto-approved operational expense
+                'status' => CashFlow::STATUS_APPROVED,
                 'payment_method' => 'CASH',
             ];
 
@@ -335,14 +533,12 @@ class ProfitLossReportController extends Controller
         try {
             $cashflow = CashFlow::findOrFail($id);
 
-            // Access control check
             $authOutletIds = auth()->user()->getOutletIds();
             $hasOutletRestriction = count($authOutletIds) > 0;
             if ($hasOutletRestriction && !in_array($cashflow->outlet_id, $authOutletIds)) {
                 return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus transaksi outlet ini');
             }
 
-            // Remove physical proof of payment file if it exists
             if ($cashflow->proof_of_payment) {
                 $cleanPath = str_replace('storage/', '', $cashflow->proof_of_payment);
                 Storage::disk('public')->delete($cleanPath);
