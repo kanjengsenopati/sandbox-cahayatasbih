@@ -94,6 +94,11 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
   "nilai": { label: "Nilai", icon: GraduationCap, accent: "from-[#8b5cf6] to-[#7c3aed]", to: "/nilai" as const },
   "petugas": { label: "Hubungi Petugas", icon: Users, accent: "from-[#0284c7] to-[#0369a1]", to: "/petugas" as const },
   "perizinan": { label: "Izin Keluar", icon: Calendar, accent: "from-[#ec4899] to-[#db2777]", to: "/perizinan" as const },
+  "riwayat": { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
+  "riwayat_transaksi": { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
+  "riwayat transaksi": { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
+  "riwayat_saldo": { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
+  "riwayat saldo": { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
 };
 
 const STATUS_MAP: Record<string, string> = {
@@ -384,8 +389,7 @@ function Dashboard() {
   });
 
   const finalActions: ActionItem[] = dynamicActions.length > 0 ? [
-    ...dynamicActions.filter(a => a.label !== "Atur Limit" && a.label !== "Blokir Saldo"),
-    { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const }
+    ...dynamicActions.filter(a => a.label !== "Atur Limit" && a.label !== "Blokir Saldo")
   ] : (isSaldoVisible ? [
     { label: "Topup Saldo", icon: Plus, accent: "from-primary to-primary-glow", to: "/topup" as const },
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
