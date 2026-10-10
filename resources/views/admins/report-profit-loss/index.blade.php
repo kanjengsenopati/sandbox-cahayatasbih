@@ -835,19 +835,28 @@
                             <select name="recipient_outlet_id" id="koperasi_handover_recipient_outlet_id" class="form-select" style="border-radius: 12px;" required>
                                 <option value="">Pilih Outlet Penerima</option>
                                 @foreach($childOutlets as $child)
-                                    <option value="{{ $child->id }}">{{ $child->name }}</option>
+                                    <option value="{{ $child->id }}" {{ ($defaultRecipientOutletId == $child->id) ? 'selected' : '' }}>
+                                        {{ $child->name }}
+                                    </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1" id="koperasi_suggestion_text">Pilih outlet penerima untuk melihat sisa dana pending.</small>
+                            <small class="text-muted d-block mt-1" id="koperasi_suggestion_text">
+                                @if($defaultPendingSantriLog > 0)
+                                    Sisa dana pending log saat ini: <strong class="text-success">Rp {{ number_format($defaultPendingSantriLog, 0, ',', '.') }}</strong>
+                                @else
+                                    Pilih outlet penerima untuk melihat sisa dana pending.
+                                @endif
+                            </small>
                         </div>
 
-                        <!-- Penerima (Admin / Pengelola) -->
+                        <!-- Penerima (Gus Maulana Rifqi default + Kasir Outlet) -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-gray-700 fs-7">Nama Pengelola / Penerima <span class="text-danger">*</span></label>
                             <select name="recipient_id" class="form-select" style="border-radius: 12px;" required>
-                                <option value="">Pilih Pengelola Penerima</option>
-                                @foreach($allAdmins as $adm)
-                                    <option value="{{ $adm->id }}">{{ $adm->name }}</option>
+                                @foreach($pengelolaPenerimaList as $adm)
+                                    <option value="{{ $adm->id }}" {{ ($defaultPenerimaId == $adm->id) ? 'selected' : '' }}>
+                                        {{ $adm->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -858,14 +867,15 @@
                             <input type="date" name="handover_date" class="form-control" value="{{ date('Y-m-d') }}" style="border-radius: 12px;" required>
                         </div>
 
-                        <!-- Nominal Handover -->
+                        <!-- Nominal Handover / Serah Terima -->
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-gray-700 fs-7">Nominal Transfer (Rp) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold text-gray-700 fs-7">Nominal Serah Terima (Rp) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text fw-bold" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">Rp</span>
-                                <input type="text" name="amount" id="koperasi_handover_amount_display" class="form-control" placeholder="0" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;" required>
+                                <input type="text" name="amount" id="koperasi_handover_amount_display" class="form-control" value="{{ number_format($defaultPendingSantriLog, 0, ',', '.') }}" placeholder="0" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;" required>
                             </div>
-                            <input type="hidden" name="system_amount" id="koperasi_handover_system_amount" value="0">
+                            <input type="hidden" name="system_amount" id="koperasi_handover_system_amount" value="{{ $defaultPendingSantriLog }}">
+                            <small class="text-muted fs-8 mt-1 d-block">Default otomatis terisi dari log sistem pending, dapat disesuaikan manual.</small>
                         </div>
 
                         <!-- Bukti Transfer -->
@@ -925,32 +935,41 @@
                             <select name="outlet_id" id="cashier_handover_outlet_id" class="form-select" style="border-radius: 12px;" required>
                                 <option value="">Pilih Outlet</option>
                                 @foreach($allOutlets as $otl)
-                                    <option value="{{ $otl->id }}" {{ (request('outlet_id') == $otl->id) ? 'selected' : '' }}>
+                                    <option value="{{ $otl->id }}" {{ (request('outlet_id') == $otl->id || (count($allOutlets) == 1)) ? 'selected' : '' }}>
                                         {{ $otl->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <!-- Kasir yang Menyerahkan -->
+                        <!-- Kasir yang Menyerahkan (Khusus Role Kasir) -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-gray-700 fs-7">Kasir yang Menyerahkan Kas <span class="text-danger">*</span></label>
                             <select name="cashier_id" id="cashier_handover_cashier_id" class="form-select" style="border-radius: 12px;" required>
-                                <option value="">Pilih Kasir (Yogo, Khurotun, dll)</option>
-                                @foreach($allAdmins as $adm)
-                                    <option value="{{ $adm->id }}">{{ $adm->name }}</option>
+                                <option value="">Pilih Kasir</option>
+                                @foreach($kasirList as $kasir)
+                                    <option value="{{ $kasir->id }}" {{ ($defaultCashierId == $kasir->id) ? 'selected' : '' }}>
+                                        {{ $kasir->name }}
+                                    </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1" id="cashier_suggestion_text">Pilih kasir untuk mengecek sisa kas yang belum disetor.</small>
+                            <small class="text-muted d-block mt-1" id="cashier_suggestion_text">
+                                @if($defaultPendingCashierLog > 0)
+                                    Sisa kas fisik belum disetor kasir: <strong class="text-warning">Rp {{ number_format($defaultPendingCashierLog, 0, ',', '.') }}</strong>
+                                @else
+                                    Pilih kasir untuk mengecek sisa kas yang belum disetor.
+                                @endif
+                            </small>
                         </div>
 
-                        <!-- Penerima (Bendahara / Pengelola) -->
+                        <!-- Penerima (Gus Maulana Rifqi default + Kasir Outlet) -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-gray-700 fs-7">Bendahara / Pengelola Penerima <span class="text-danger">*</span></label>
                             <select name="recipient_id" class="form-select" style="border-radius: 12px;" required>
-                                <option value="">Pilih Pengelola Penerima</option>
-                                @foreach($allAdmins as $adm)
-                                    <option value="{{ $adm->id }}">{{ $adm->name }}</option>
+                                @foreach($pengelolaPenerimaList as $adm)
+                                    <option value="{{ $adm->id }}" {{ ($defaultPenerimaId == $adm->id) ? 'selected' : '' }}>
+                                        {{ $adm->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -964,17 +983,18 @@
                         <!-- Nominal Log Sistem -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-gray-700 fs-7">Total Log Penjualan Kasir (Rp)</label>
-                            <input type="text" id="cashier_system_amount_display" class="form-control bg-light" readonly value="Rp 0" style="border-radius: 12px;">
-                            <input type="hidden" name="system_amount" id="cashier_system_amount_real" value="0">
+                            <input type="text" id="cashier_system_amount_display" class="form-control bg-light" readonly value="Rp {{ number_format($defaultCashierSales, 0, ',', '.') }}" style="border-radius: 12px;">
+                            <input type="hidden" name="system_amount" id="cashier_system_amount_real" value="{{ $defaultCashierSales }}">
                         </div>
 
-                        <!-- Nominal Riil Diserahkan -->
+                        <!-- Nominal Serah Terima -->
                         <div class="col-md-6">
-                            <label class="form-label fw-bold text-gray-700 fs-7">Nominal Fisik yang Diserahkan (Rp) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold text-gray-700 fs-7">Nominal Serah Terima (Rp) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text fw-bold" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">Rp</span>
-                                <input type="text" name="amount" id="cashier_handover_amount_display" class="form-control" placeholder="0" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;" required>
+                                <input type="text" name="amount" id="cashier_handover_amount_display" class="form-control" value="{{ number_format($defaultPendingCashierLog, 0, ',', '.') }}" placeholder="0" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;" required>
                             </div>
+                            <small class="text-muted fs-8 mt-1 d-block">Default otomatis terisi dari log kasir, dapat disesuaikan jika ada selisih uang fisik.</small>
                         </div>
 
                         <!-- Bukti Serah Terima -->
@@ -1125,6 +1145,21 @@
                     $('#cashier_system_amount_display').val('Rp 0');
                     $('#cashier_system_amount_real').val('0');
                     $('#cashier_handover_amount_display').val('0');
+                }
+            });
+
+            // Modal Shown Triggers for instant auto-fill & refresh
+            $('#modal-add-handover-koperasi').on('shown.bs.modal', function() {
+                var recipientId = $('#koperasi_handover_recipient_outlet_id').val();
+                if (recipientId) {
+                    $('#koperasi_handover_recipient_outlet_id').trigger('change');
+                }
+            });
+
+            $('#modal-add-handover-cashier').on('shown.bs.modal', function() {
+                var cashierId = $('#cashier_handover_cashier_id').val();
+                if (cashierId) {
+                    $('#cashier_handover_cashier_id').trigger('change');
                 }
             });
 
