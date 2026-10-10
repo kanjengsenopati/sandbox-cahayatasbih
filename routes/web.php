@@ -442,6 +442,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('semester', SemesterController::class);
     Route::resource('study-grade', StudyGradeController::class);
     Route::post('application-menu/status/{id}', [ApplicationMenuController::class, 'status'])->name('application-menu.status');
+    Route::post('application-menu/update-order', [ApplicationMenuController::class, 'updateOrder'])->name('application-menu.update-order');
+    Route::post('application-menu/move-order', [ApplicationMenuController::class, 'moveOrder'])->name('application-menu.move-order');
     Route::get('application-menu/get-class-levels', [ApplicationMenuController::class, 'getClassLevels'])->name('application-menu.get-class-levels');
     Route::resource('application-menu', ApplicationMenuController::class);
 
