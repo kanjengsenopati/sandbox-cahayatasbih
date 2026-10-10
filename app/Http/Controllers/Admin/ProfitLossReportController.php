@@ -301,10 +301,65 @@ class ProfitLossReportController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Data pendukung modal handover
-        $allAdmins = Admin::orderBy('name')->get();
+        // Data pendukung modal handover:
+        // 1. Dapatkan user default Gus Maulana Rifqi
+        $gusMaulana = Admin::where('name', 'like', '%MAULANA RIFQI%')->first();
+        $defaultPenerimaId = $gusMaulana ? $gusMaulana->id : null;
+
+        // 2. List Pengelola / Penerima: GUS MAULANA RIFQI (default) + role Kasir Outlet (sembunyikan admin lain)
+        $kasirOutletAdmins = Admin::whereHas('roles', function($q) {
+            $q->whereIn('name', ['Kasir Outlet', 'Kasir Karyawan Outlet', 'Kasir']);
+        })->orderBy('name')->get();
+
+        if ($gusMaulana) {
+            $pengelolaPenerimaList = collect([$gusMaulana])->merge($kasirOutletAdmins)->unique('id');
+        } else {
+            $pengelolaPenerimaList = $kasirOutletAdmins;
+        }
+
+        // 3. List Kasir yang Menyerahkan Kas: HANYA role kasir (sembunyikan admin non-kasir)
+        $kasirList = Admin::whereHas('roles', function($q) {
+            $q->where('name', 'like', '%Kasir%')
+              ->orWhere('name', 'like', '%KASIR%');
+        })->orderBy('name')->get();
+
         $childOutlets = Outlet::where('id', '!=', $koperasiId)->orderBy('name')->get();
         $allOutlets = Outlet::orderBy('name')->get();
+
+        // 4. Default recipient outlet & nominal log untuk Modal Handover Saldo Koperasi
+        $defaultRecipientOutletId = null;
+        if ($selectedOutlet && $selectedOutlet->id !== $koperasiId) {
+            $defaultRecipientOutletId = $selectedOutlet->id;
+        } elseif ($childOutlets->isNotEmpty()) {
+            $defaultRecipientOutletId = $childOutlets->first()->id;
+        }
+
+        $defaultPendingSantriLog = 0;
+        if ($defaultRecipientOutletId) {
+            $childSales = PointOfSaleTransaction::where('outlet_id', $defaultRecipientOutletId)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->sum('pay_amount');
+            $childReceived = OutletHandover::where('recipient_outlet_id', $defaultRecipientOutletId)
+                ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                ->sum('amount');
+            $defaultPendingSantriLog = max(0, $childSales - $childReceived);
+        }
+
+        // 5. Default kasir & nominal log untuk Modal Setor Kasir Tunai
+        $defaultCashierId = $kasirList->isNotEmpty() ? $kasirList->first()->id : null;
+        $defaultCashierSales = 0;
+        $defaultPendingCashierLog = 0;
+        if ($defaultCashierId) {
+            $defaultCashierSales = PointOfSaleTransaction::where('admin_id', $defaultCashierId)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_UMUM)
+                ->sum('pay_amount');
+            $cashierHandovers = OutletHandover::where('cashier_id', $defaultCashierId)
+                ->where('handover_type', OutletHandover::TYPE_CASHIER_TO_MANAGEMENT)
+                ->sum('amount');
+            $defaultPendingCashierLog = max(0, $defaultCashierSales - $cashierHandovers);
+        }
 
         return view('admins.report-profit-loss.index', compact(
             'outlets',
@@ -339,7 +394,14 @@ class ProfitLossReportController extends Controller
             'expensesList',
             'handoversList',
             'expenseCategories',
-            'allAdmins'
+            'pengelolaPenerimaList',
+            'kasirList',
+            'defaultPenerimaId',
+            'defaultRecipientOutletId',
+            'defaultPendingSantriLog',
+            'defaultCashierId',
+            'defaultCashierSales',
+            'defaultPendingCashierLog'
         ));
     }
 
