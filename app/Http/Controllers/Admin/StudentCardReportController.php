@@ -8,6 +8,7 @@ use App\Models\StudentCardReport;
 use Milon\Barcode\DNS1D;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -208,7 +209,7 @@ class StudentCardReportController extends Controller
     }
 
     /**
-     * Store bulk reports submitted by Koordinator Pondok Mart.
+     * Store bulk reports submitted by Koordinator Pondok Mart with Auto-Lock guard.
      */
     public function store(Request $request)
     {
@@ -223,29 +224,66 @@ class StudentCardReportController extends Controller
             'issue_type.in' => 'Jenis kendala tidak valid.',
         ]);
 
-        $studentIds = $request->input('student_ids');
+        $studentIds = array_values(array_unique((array) $request->input('student_ids')));
         $issueType = $request->input('issue_type');
         $notes = $request->input('notes');
         $adminId = Auth::id();
 
-        $savedCount = 0;
-        foreach ($studentIds as $sId) {
-            // Update existing pending report or create new
-            StudentCardReport::create([
-                'student_id' => $sId,
-                'reported_by' => $adminId,
-                'issue_type' => $issueType,
-                'notes' => $notes,
-                'status' => StudentCardReport::STATUS_PENDING,
-            ]);
-            $savedCount++;
-        }
+        return DB::transaction(function () use ($studentIds, $issueType, $notes, $adminId) {
+            // Auto-Lock check: find students who already have an unresolved (pending) report
+            $lockedReports = StudentCardReport::with('student')
+                ->whereIn('student_id', $studentIds)
+                ->where('status', StudentCardReport::STATUS_PENDING)
+                ->lockForUpdate()
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => "Berhasil mengirim laporan kendala kartu untuk {$savedCount} santri ke Super Admin.",
-            'count' => $savedCount,
-        ]);
+            $lockedStudentIds = $lockedReports->pluck('student_id')->unique()->values()->toArray();
+            $lockedNames = $lockedReports->map(function ($report) {
+                return $report->student?->name ?? 'Santri';
+            })->unique()->values()->toArray();
+
+            $eligibleStudentIds = array_values(array_diff($studentIds, $lockedStudentIds));
+
+            // Jika seluruh santri yang dipilih sudah dilaporkan dan belum ada follow-up -> Tolak (Auto-Lock)
+            if (empty($eligibleStudentIds)) {
+                $namesList = implode(', ', $lockedNames);
+                return response()->json([
+                    'success' => false,
+                    'locked' => true,
+                    'message' => "Laporan ditolak (Auto-Lock): Kartu santri ({$namesList}) sudah dilaporkan sebelumnya dan belum ada update status tindak lanjut (follow-up).",
+                    'count' => 0,
+                    'locked_count' => count($lockedStudentIds),
+                    'locked_students' => $lockedNames,
+                ], 422);
+            }
+
+            $savedCount = 0;
+            foreach ($eligibleStudentIds as $sId) {
+                StudentCardReport::create([
+                    'student_id' => $sId,
+                    'reported_by' => $adminId,
+                    'issue_type' => $issueType,
+                    'notes' => $notes,
+                    'status' => StudentCardReport::STATUS_PENDING,
+                ]);
+                $savedCount++;
+            }
+
+            $lockedCount = count($lockedStudentIds);
+            $message = "Berhasil mengirim laporan kendala kartu untuk {$savedCount} santri ke Super Admin.";
+            if ($lockedCount > 0) {
+                $namesList = implode(', ', $lockedNames);
+                $message .= " ({$lockedCount} santri dilewati otomatis karena masih terkunci menunggu tindak lanjut: {$namesList}).";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => $savedCount,
+                'locked_count' => $lockedCount,
+                'locked_students' => $lockedNames,
+            ]);
+        });
     }
 
     /**

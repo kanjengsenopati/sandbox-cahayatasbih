@@ -104,7 +104,7 @@
                                     <i class="fa fa-trash me-2"></i> Hapus Terpilih
                                 </button>
                                 @endcan
-                                <button type="button" id="btn-bulk-report-card" class="btn btn-danger btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalBulkReportCard">
+                                <button type="button" id="btn-bulk-report-card" class="btn btn-danger btn-sm d-none">
                                     <i class="fa fa-id-card me-2"></i> Lapor Kendala Kartu (<span id="bulk_report_card_count">0</span>)
                                 </button>
                                 <a href="{{ route('student-barcode.index') }}" class="btn btn-primary btn-sm"><i
@@ -254,6 +254,14 @@
                         </div>
                     </div>
 
+                    <div id="modal_report_locked_alert" class="alert alert-light-warning d-none align-items-start p-3 mb-4 rounded border border-warning border-dashed">
+                        <i class="fa fa-lock text-warning fs-4 me-3 mt-1"></i>
+                        <div class="text-gray-800 fs-8">
+                            <div class="fw-bolder text-warning mb-1">Auto-Lock Aktif (Dilewati Otomatis):</div>
+                            <div id="modal_report_locked_list"></div>
+                        </div>
+                    </div>
+
                     <!-- Pilihan Kendala -->
                     <div class="mb-4">
                         <label class="form-label fw-bold required">Jenis Masalah Kartu</label>
@@ -333,8 +341,11 @@
                     sortable: false,
                     searchable: false,
                     render: function(data, type, row) {
+                        var hasPending = row.has_pending_card_report ? '1' : '0';
+                        var pendingLabel = row.pending_card_report_label ? String(row.pending_card_report_label).replace(/"/g, '&quot;') : '';
+                        var safeName = row.name ? String(row.name).replace(/"/g, '&quot;') : 'Santri';
                         return '<div class="form-check form-check-sm form-check-custom form-check-solid">' +
-                            '<input class="form-check-input student-checkbox" type="checkbox" value="' + data + '">' +
+                            '<input class="form-check-input student-checkbox" type="checkbox" value="' + data + '" data-pending-report="' + hasPending + '" data-pending-label="' + pendingLabel + '" data-student-name="' + safeName + '">' +
                             '</div>';
                     }
                 },
@@ -567,17 +578,59 @@
             }
         }
 
+        // Open Bulk Report Card Modal with Auto-Lock Guard
+        $('#btn-bulk-report-card').on('click', function() {
+            var eligibleIds = [];
+            var lockedItems = [];
+
+            $('.student-checkbox:checked').each(function() {
+                var isLocked = $(this).attr('data-pending-report') === '1';
+                var name = $(this).attr('data-student-name') || 'Santri';
+                var issueLabel = $(this).attr('data-pending-label') || 'Menunggu Tindak Lanjut';
+
+                if (isLocked) {
+                    lockedItems.push(name + ' <span class="badge badge-light-danger ms-1">' + issueLabel + '</span>');
+                } else {
+                    eligibleIds.push($(this).val());
+                }
+            });
+
+            if (eligibleIds.length === 0 && lockedItems.length > 0) {
+                Swal.fire({
+                    title: 'Laporan Kartu Terkunci (Auto-Lock)',
+                    html: 'Kartu santri berikut sudah dilaporkan dan belum ada update status tindak lanjut (follow-up):<br><br><div class="text-start p-3 bg-light-warning rounded border border-warning">' + lockedItems.join('<br>') + '</div><div class="text-muted fs-8 mt-3">Kartu yang masih berstatus <b>Menunggu Pembuatan</b> dikunci otomatis agar tidak terjadi laporan ganda (doubled report).</div>',
+                    icon: 'warning',
+                    confirmButtonText: 'Mengerti'
+                });
+                return;
+            }
+
+            $('#modal_report_card_count').text(eligibleIds.length);
+
+            if (lockedItems.length > 0) {
+                $('#modal_report_locked_list').html(lockedItems.join(', ') + ' (masih menunggu tindak lanjut).');
+                $('#modal_report_locked_alert').removeClass('d-none').addClass('d-flex');
+            } else {
+                $('#modal_report_locked_list').empty();
+                $('#modal_report_locked_alert').addClass('d-none').removeClass('d-flex');
+            }
+
+            $('#modalBulkReportCard').modal('show');
+        });
+
         // Handle Submit Bulk Report Card
         $('#formBulkReportCard').on('submit', function(e) {
             e.preventDefault();
 
             var selectedIds = [];
             $('.student-checkbox:checked').each(function() {
-                selectedIds.push($(this).val());
+                if ($(this).attr('data-pending-report') !== '1') {
+                    selectedIds.push($(this).val());
+                }
             });
 
             if (selectedIds.length === 0) {
-                Swal.fire('Peringatan', 'Pilih minimal satu santri yang ingin dilaporkan.', 'warning');
+                Swal.fire('Laporan Terkunci', 'Seluruh santri yang dipilih sedang dalam status menunggu tindak lanjut (Auto-Lock).', 'warning');
                 return;
             }
 
@@ -628,7 +681,7 @@
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         msg = xhr.responseJSON.message;
                     }
-                    Swal.fire('Gagal Mengirim', msg, 'error');
+                    Swal.fire('Laporan Terkunci / Gagal', msg, 'warning');
                 }
             });
         });
