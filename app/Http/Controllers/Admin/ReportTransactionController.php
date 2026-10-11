@@ -32,10 +32,29 @@ class ReportTransactionController extends Controller
         if (!Auth::user()->can('Manage Laporan Transaksi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+
+        $requestedSchoolId = (request()->filled('school_id') && request()->school_id !== 'null')
+            ? request()->school_id
+            : null;
+        $scopedSchoolIds = $this->resolveScopedSchoolIds($requestedSchoolId);
+        $allowedBillItemIds = $this->getBillItemIdsBySchoolIds($scopedSchoolIds);
+
         if (request()->ajax()) {
             session()->save();
+
+            $filterBillType = request()->filled('bill_type_id') ? request()->input('bill_type_id') : null;
+            $matchingInfo = $filterBillType
+                ? $this->getMatchingBillTypeInfo($filterBillType, $allowedBillItemIds)
+                : ['ids' => [], 'names' => []];
+            $matchedIds = $matchingInfo['ids'];
+
+            $txTypeFilter = request()->input('type_data') ?: request()->input('type');
+
             $data = Transaction::where('status', Transaction::STATUS_PAID)
                 ->with(['student.user', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
+                ->when(empty($scopedSchoolIds), function ($query) {
+                    $query->whereRaw('1 = 0');
+                })
                 ->when(request()->filled('start_date'), function ($query) {
                     $query->whereDate('created_at', '>=', request()->start_date);
                 })
@@ -44,6 +63,9 @@ class ReportTransactionController extends Controller
                 })
                 ->when(request()->filled('admin_id'), function ($query) {
                     $query->where('admin_id', request()->admin_id);
+                })
+                ->when(in_array($txTypeFilter, [Transaction::TYPE_BILL, Transaction::TYPE_SALDO, Transaction::TYPE_SAVING], true), function ($query) use ($txTypeFilter) {
+                    $query->where('type', $txTypeFilter);
                 })
                 ->when(request()->filled('student_name'), function ($query) {
                     $searchName = strtolower(trim(request()->student_name));
@@ -56,39 +78,52 @@ class ReportTransactionController extends Controller
                           });
                     });
                 })
-                ->schoolFilter('school_id', request()->school_id)
+                ->schoolFilter('school_id', $requestedSchoolId)
                 ->classroomFilter('classroom_id', request()->classroom_id)
-                ->when(request()->filled('bill_type_id'), function ($query) {
-                    $val = request()->input('bill_type_id');
-                    $matchingInfo = $this->getMatchingBillTypeInfo($val);
-                    $matchedIds = $matchingInfo['ids'];
-                    $matchedNames = $matchingInfo['names'];
+                ->where(function ($uptQuery) use ($allowedBillItemIds) {
+                    $uptQuery->where('type', '!=', Transaction::TYPE_BILL)
+                        ->orWhere(function ($billTxQuery) use ($allowedBillItemIds) {
+                            if ($allowedBillItemIds->isEmpty()) {
+                                $billTxQuery->whereRaw('1 = 0');
+                            } else {
+                                $billTxQuery->whereExists(function ($sub) use ($allowedBillItemIds) {
+                                    $sub->select(DB::raw(1))
+                                        ->from('transaction_details')
+                                        ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                                        ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
+                                        ->whereColumn('transaction_details.transaction_id', 'transactions.id')
+                                        ->whereNull('transaction_details.deleted_at')
+                                        ->whereNull('bills.deleted_at')
+                                        ->whereIn('bill_types.bill_item_id', $allowedBillItemIds);
+                                });
+                            }
+                        });
+                })
+                ->when(!empty($filterBillType), function ($query) use ($matchedIds, $allowedBillItemIds) {
+                    $query->where('type', Transaction::TYPE_BILL);
 
-                    $query->where('type', Transaction::TYPE_BILL)
-                        ->whereExists(function ($subQuery) use ($val, $matchedIds, $matchedNames) {
+                    if (empty($matchedIds)) {
+                        $query->whereRaw('1 = 0');
+                    } else {
+                        $query->whereExists(function ($subQuery) use ($matchedIds, $allowedBillItemIds) {
                             $subQuery->select(DB::raw(1))
                                 ->from('transaction_details')
                                 ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
                                 ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
                                 ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                                ->where(function($q) use ($val, $matchedIds, $matchedNames) {
-                                    if (!empty($matchedIds)) {
-                                        $q->whereIn('bill_types.id', $matchedIds)
-                                          ->orWhereIn('bill_types.name', $matchedNames);
-                                    } else {
-                                        if (is_array($val)) {
-                                            $q->whereIn('bill_types.id', $val)
-                                              ->orWhereIn('bill_types.name', $val);
-                                        } else {
-                                            $q->where('bill_types.id', $val)
-                                              ->orWhere('bill_types.name', $val);
-                                        }
-                                    }
-                                });
+                                ->whereNull('transaction_details.deleted_at')
+                                ->whereNull('bills.deleted_at')
+                                ->whereIn('bill_types.id', $matchedIds);
+
+                            if ($allowedBillItemIds->isNotEmpty()) {
+                                $subQuery->whereIn('bill_types.bill_item_id', $allowedBillItemIds);
+                            }
                         });
+                    }
                 })
                 ->hasSchool()
                 ->latest();
+
             if (request()->data == 'total') {
                 // Fetch all types of transactions and sum them in a single fast query
                 $totals = (clone $data)->selectRaw("
@@ -103,8 +138,34 @@ class ReportTransactionController extends Controller
                     'saldo_saving' => number_format($totals->saldo_saving ?? 0, 0, ',', '.'),
                 ]);
             } elseif (request()->data == 'table') {
+                $allowedBillItemIdsArray = $allowedBillItemIds->all();
+                $filterScopedBillDetails = function ($details) use ($allowedBillItemIdsArray, $filterBillType, $matchedIds) {
+                    return $details->filter(function ($detail) use ($allowedBillItemIdsArray, $filterBillType, $matchedIds) {
+                        $bt = $detail->bill?->billType;
+                        if (!$bt) {
+                            return false;
+                        }
+                        if (!empty($allowedBillItemIdsArray) && !in_array($bt->bill_item_id, $allowedBillItemIdsArray, true)) {
+                            return false;
+                        }
+                        if (!empty($filterBillType)) {
+                            return in_array($bt->id, $matchedIds, true);
+                        }
+                        return true;
+                    })->values();
+                };
+
                 return DataTables::of($data)
-                    ->addColumn('amount', function ($data) {
+                    ->addColumn('amount', function ($data) use ($filterScopedBillDetails, $filterBillType) {
+                        if ($data->type == Transaction::TYPE_BILL && !empty($filterBillType)) {
+                            $scopedDetails = $filterScopedBillDetails($data->transactionDetails ?? collect());
+                            if ($scopedDetails->isNotEmpty()) {
+                                $sum = $scopedDetails->sum(fn($d) => (int) ($d->amount ?: ($d->bill?->amount ?? 0)));
+                                if ($sum > 0) {
+                                    return number_format($sum, 0, ',', '.');
+                                }
+                            }
+                        }
                         return number_format($data->pay_amount, 0, ',', '.');
                     })
                     ->addColumn('date', function ($data) {
@@ -146,8 +207,12 @@ class ReportTransactionController extends Controller
                             return '-';
                         }
                     })
-                    ->addColumn('details', function ($data) {
-                        $mapped = $data->transactionDetails->map(function ($detail) use ($data) {
+                    ->addColumn('details', function ($data) use ($filterScopedBillDetails) {
+                        $detailsCollection = $data->type == Transaction::TYPE_BILL
+                            ? $filterScopedBillDetails($data->transactionDetails ?? collect())
+                            : ($data->transactionDetails ?? collect());
+
+                        $mapped = $detailsCollection->map(function ($detail) use ($data) {
                             if ($data->type == Transaction::TYPE_BILL) {
                                 $bill = $detail->bill;
                                 $billType = $bill?->billType?->name ?? 'Lain-lain';
@@ -202,8 +267,10 @@ class ReportTransactionController extends Controller
 
                         return array_values($mapped);
                     })
-                    ->addColumn('item', function ($data) {
-                        $details = $data->transactionDetails;
+                    ->addColumn('item', function ($data) use ($filterScopedBillDetails) {
+                        $details = $data->type == Transaction::TYPE_BILL
+                            ? $filterScopedBillDetails($data->transactionDetails ?? collect())
+                            : ($data->transactionDetails ?? collect());
                         $totalCount = $details->count();
                         if ($totalCount == 0) {
                             return '<span class="text-muted fs-7">-</span>';
@@ -265,49 +332,44 @@ class ReportTransactionController extends Controller
             }
         }
 
-        $schoolId = request()->school_id;
-        if (!$schoolId) {
-            $admin = Auth::user();
-            if ($admin && !$admin->hasRole('Super Admin')) {
-                $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : [];
-                $schoolId = $schoolIds[0] ?? null;
-            }
+        // Ambil list petugas yang berhak akses Entri Data Pembayaran atau memiliki riwayat transaksi sesuai scope UPT
+        $admins = $this->getPaymentOfficers($scopedSchoolIds);
+
+        // Hanya tampilkan lembaga operasional (PONDOK, MA, SMP) yang berada dalam cakupan hak akses admin (hasSchool)
+        $schools = School::hasSchool()
+            ->whereIn('type', [School::TYPE_PONDOK, School::TYPE_MA, School::TYPE_SMP])
+            ->select('id', 'name', 'type')
+            ->orderBy('name')
+            ->get();
+
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])
+            ->select('id', 'name', 'academic_year_id', 'bill_item_id')
+            ->whereNotIn('id', $this->getExcludedBillTypeIds());
+
+        // Fail-Closed: jika $allowedBillItemIds kosong, paksa hasil kosong agar tidak bocor lintas UPT
+        if ($allowedBillItemIds->isNotEmpty()) {
+            $billTypesQuery->whereIn('bill_item_id', $allowedBillItemIds);
+        } else {
+            $billTypesQuery->whereRaw('1 = 0');
         }
 
-        // Ambil list petugas yang berhak akses Entri Data Pembayaran atau memiliki riwayat transaksi
-        $admins = $this->getPaymentOfficers($schoolId);
-        $schools = School::select('id', 'name', 'type')->orderBy('name')->get();
-        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
-            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
-            '615a34af-be2d-45f2-9830-720fea341a0c',
-            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
-            'ce389861-40ab-4523-9364-3458e9dfda1d'
-        ]);
-
-        if ($schoolId) {
-            $school = \App\Models\School::find($schoolId);
-            if ($school) {
-                // Database-driven: filter bill_types berdasarkan Pos Bayar (bill_item_id)
-                // Mapping School.type -> BillItem.name
-                $billItemIds = $this->getBillItemIdsBySchoolType($school->type);
-                if ($billItemIds->isNotEmpty()) {
-                    $billTypesQuery->whereIn('bill_item_id', $billItemIds);
-                }
-            }
-        }
-        $billTypes = $billTypesQuery->get()->map(function($item) {
+        $billTypes = $billTypesQuery->get()->map(function ($item) {
             $posName = $item->billItem->name ?? null;
             $canonicalName = $this->getCanonicalBillTypeName($item->name, $posName);
-            return (object)[
+            return (object) [
                 'id' => $canonicalName,
                 'name' => $canonicalName,
             ];
         })->unique('name')->sortBy('name')->values();
+
         $classroomsQuery = Classroom::select('id', 'name', 'school_id');
-        if (!empty($schoolId)) {
-            $classroomsQuery->where('school_id', $schoolId);
+        if (!empty($scopedSchoolIds)) {
+            $classroomsQuery->whereIn('school_id', $scopedSchoolIds);
+        } else {
+            $classroomsQuery->whereRaw('1 = 0');
         }
         $classrooms = $classroomsQuery->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
+
         return view('admins.report-transaction.index', compact('schools', 'classrooms', 'admins', 'billTypes'));
     }
 
@@ -405,33 +467,29 @@ class ReportTransactionController extends Controller
     }
 
     /**
-     * Get dynamic filters based on school_id
+     * Get dynamic filters based on school_id with strict UPT scope isolation (Zero Filter Leakage)
      */
     public function getFilters(Request $request)
     {
-        $schoolId = $request->school_id;
+        $requestedSchoolId = ($request->filled('school_id') && $request->school_id !== 'null')
+            ? $request->school_id
+            : null;
+        $scopedSchoolIds = $this->resolveScopedSchoolIds($requestedSchoolId);
+        $allowedBillItemIds = $this->getBillItemIdsBySchoolIds($scopedSchoolIds);
 
-        // 1. Dapatkan Jenis Tagihan yang valid untuk Lembaga ini
-        // Database-driven: filter berdasarkan Pos Bayar (bill_item_id)
-        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
-            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
-            '615a34af-be2d-45f2-9830-720fea341a0c',
-            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
-            'ce389861-40ab-4523-9364-3458e9dfda1d'
-        ]);
+        // 1. Dapatkan Jenis Tagihan yang valid untuk cakupan Lembaga ini
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])
+            ->select('id', 'name', 'academic_year_id', 'bill_item_id')
+            ->whereNotIn('id', $this->getExcludedBillTypeIds());
 
-        if ($schoolId) {
-            $school = \App\Models\School::find($schoolId);
-            if ($school) {
-                // Database-driven: filter bill_types berdasarkan Pos Bayar (bill_item_id)
-                $billItemIds = $this->getBillItemIdsBySchoolType($school->type);
-                if ($billItemIds->isNotEmpty()) {
-                    $billTypesQuery->whereIn('bill_item_id', $billItemIds);
-                }
-            }
+        // Fail-Closed: jika $allowedBillItemIds kosong, paksa hasil 0 agar tidak bocor lintas UPT / DEMO
+        if ($allowedBillItemIds->isNotEmpty()) {
+            $billTypesQuery->whereIn('bill_item_id', $allowedBillItemIds);
+        } else {
+            $billTypesQuery->whereRaw('1 = 0');
         }
 
-        $billTypes = $billTypesQuery->get()->map(function($item) {
+        $billTypes = $billTypesQuery->get()->map(function ($item) {
             $posName = $item->billItem->name ?? null;
             $canonicalName = $this->getCanonicalBillTypeName($item->name, $posName);
             return [
@@ -440,8 +498,8 @@ class ReportTransactionController extends Controller
             ];
         })->unique('name')->sortBy('name')->values();
 
-        // 2. Dapatkan Petugas yang valid untuk Lembaga ini (hanya yang berhak akses Entri Data Pembayaran / memiliki riwayat transaksi)
-        $admins = $this->getPaymentOfficers($schoolId);
+        // 2. Dapatkan Petugas yang valid untuk cakupan Lembaga ini
+        $admins = empty($scopedSchoolIds) ? collect() : $this->getPaymentOfficers($scopedSchoolIds);
 
         return response()->json([
             'bill_types' => $billTypes,
@@ -451,13 +509,17 @@ class ReportTransactionController extends Controller
 
     /**
      * Dapatkan daftar petugas yang berhak mengakses Entri Data Pembayaran
-     * atau yang memiliki riwayat transaksi pembayaran.
+     * atau yang memiliki riwayat transaksi pembayaran pada cakupan UPT terkait.
      *
-     * @param string|null $schoolId
+     * @param string|array|null $schoolScope
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    private function getPaymentOfficers(?string $schoolId = null)
+    private function getPaymentOfficers($schoolScope = null)
     {
+        $schoolIds = is_array($schoolScope)
+            ? array_values(array_filter($schoolScope))
+            : (!empty($schoolScope) && $schoolScope !== 'null' ? [$schoolScope] : []);
+
         $adminsQuery = Admin::select('admins.id', 'admins.name');
 
         $paymentPermissions = [
@@ -479,21 +541,34 @@ class ReportTransactionController extends Controller
             'Keuangan',
         ];
 
-        $adminsQuery->where(function ($q) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+        $txAdminIdsQuery = DB::table('transactions')
+            ->whereNotNull('transactions.admin_id')
+            ->whereNull('transactions.deleted_at');
+
+        if (!empty($schoolIds)) {
+            $classroomIds = Classroom::whereIn('school_id', $schoolIds)->pluck('id')->toArray();
+            if (empty($classroomIds)) {
+                $txAdminIds = [];
+            } else {
+                $txAdminIds = $txAdminIdsQuery
+                    ->join('students', 'transactions.student_id', '=', 'students.id')
+                    ->whereIn('students.classroom_id', $classroomIds)
+                    ->distinct()
+                    ->pluck('transactions.admin_id')
+                    ->toArray();
+            }
+        } else {
+            $txAdminIds = $txAdminIdsQuery->distinct()->pluck('transactions.admin_id')->toArray();
+        }
+
+        $adminsQuery->where(function ($q) use ($paymentPermissions, $paymentRoleNames, $schoolIds, $txAdminIds) {
             // 1. Pernah mencatat transaksi (riwayat transaksi nyata)
-            $q->whereExists(function ($tq) use ($schoolId) {
-                $tq->select(DB::raw(1))
-                    ->from('transactions')
-                    ->whereColumn('transactions.admin_id', 'admins.id');
-                if ($schoolId) {
-                    $tq->join('students', 'transactions.student_id', '=', 'students.id')
-                       ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
-                       ->where('classrooms.school_id', $schoolId);
-                }
-            });
+            if (!empty($txAdminIds)) {
+                $q->whereIn('admins.id', $txAdminIds);
+            }
 
             // 2. Memiliki hak akses ke Entri Data Pembayaran
-            $q->orWhere(function ($accessQ) use ($paymentPermissions, $paymentRoleNames, $schoolId) {
+            $q->orWhere(function ($accessQ) use ($paymentPermissions, $paymentRoleNames, $schoolIds) {
                 // Pastikan user masih aktif jika belum ada riwayat transaksi
                 $accessQ->where('admins.is_active', true);
 
@@ -524,12 +599,12 @@ class ReportTransactionController extends Controller
                     });
                 });
 
-                // Jika filter lembaga aktif, batasi petugas pembayaran sesuai lembaganya
-                if ($schoolId) {
-                    $accessQ->where(function ($sq) use ($schoolId) {
-                        $sq->where('admins.school_id', $schoolId)
-                           ->orWhereHas('adminSchool', function ($asq) use ($schoolId) {
-                               $asq->where('school_id', $schoolId);
+                // Batasi petugas pembayaran sesuai cakupan lembaga
+                if (!empty($schoolIds)) {
+                    $accessQ->where(function ($sq) use ($schoolIds) {
+                        $sq->whereIn('admins.school_id', $schoolIds)
+                           ->orWhereHas('adminSchool', function ($asq) use ($schoolIds) {
+                               $asq->whereIn('school_id', $schoolIds);
                            })
                            ->orWhere('admins.access_scope', 'all')
                            ->orWhereHas('roles', function ($rq) {
@@ -547,28 +622,5 @@ class ReportTransactionController extends Controller
         });
 
         return $adminsQuery->orderBy('admins.name')->get();
-    }
-
-    /**
-     * Map School.type ke BillItem IDs (Pos Bayar/UPT) untuk database-driven filtering.
-     * Relasi: School.type -> BillItem.name -> bill_types.bill_item_id
-     */
-    private function getBillItemIdsBySchoolType(?string $schoolType)
-    {
-        // Mapping School.type ke nama Pos Bayar (BillItem) yang sesuai
-        $mapping = [
-            School::TYPE_PONDOK => ['PONDOK'],
-            School::TYPE_MA     => ['MADRASAH ALIYAH'],
-            School::TYPE_SMP    => ['SMP'],
-        ];
-
-        $type = strtoupper($schoolType ?? '');
-        $billItemNames = $mapping[$type] ?? [];
-
-        if (empty($billItemNames)) {
-            return collect();
-        }
-
-        return BillItem::whereIn('name', $billItemNames)->pluck('id');
     }
 }
