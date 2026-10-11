@@ -552,7 +552,10 @@
         $('#filter_school_id').on('change', function() {
             let school_id = $(this).val();
 
-            // Reset state Jenis Tagihan ke default "" saat ganti Lembaga
+            // Reset state Kelas, Petugas, dan Jenis Tagihan ke default "" saat ganti Lembaga
+            $('#filter_classroom_id').val('');
+            $('#filter_classroom_btn_text').text('Semua Kelas');
+            $('#filter_admin').val('').trigger('change.select2');
             $('#filter_tipe_tagihan').val('').trigger('change.select2');
 
             $.ajax({
@@ -570,14 +573,18 @@
             $.ajax({
                 url: "{{ route('report-transaction.get-filters') }}",
                 type: "GET",
-                data: { school_id: school_id },
+                data: {
+                    school_id: school_id,
+                    start_date: $('#start_date').val(),
+                    end_date: $('#end_date').val()
+                },
                 success: function(response) {
                     // Update Petugas Select
                     $('#filter_admin').empty().append('<option value="">Semua</option>');
                     $.each(response.admins, function(key, admin) {
                         $('#filter_admin').append('<option value="' + admin.id + '">' + admin.name + '</option>');
                     });
-                    $('#filter_admin').trigger('change.select2');
+                    $('#filter_admin').val('').trigger('change.select2');
 
                     // Update Jenis Tagihan Select (Single Select, Grouped by Name)
                     $('#filter_tipe_tagihan').empty().append('<option value="">Semua Tagihan</option>');
@@ -586,8 +593,19 @@
                     });
                     // Pastikan state langsung default ke Semua Tagihan
                     $('#filter_tipe_tagihan').val('').trigger('change.select2');
+
+                    if (saldoTable) {
+                        reloadTable();
+                    }
                 }
             });
+        });
+
+        // Dynamic reload on Jenis Tagihan, Tipe Transaksi, or Petugas change
+        $('#filter_tipe_tagihan, #filter_status, #filter_admin').on('change', function() {
+            if (saldoTable) {
+                reloadTable();
+            }
         });
 
         // Trigger change on load if a school is already selected (e.g. for restricted admins)
@@ -643,6 +661,9 @@
             $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
             $('#start_date').val(start.format('YYYY-MM-DD'));
             $('#end_date').val(end.format('YYYY-MM-DD'));
+            if (saldoTable) {
+                reloadTable();
+            }
         });
 
         // Set initial values

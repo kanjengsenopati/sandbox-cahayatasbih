@@ -850,11 +850,20 @@ class ReportBillController extends Controller
 
     public function getClassroom(Request $request)
     {
-        $schoolId = $request->school_id;
+        $schoolId = (!empty($request->school_id) && $request->school_id !== 'null') ? $request->school_id : null;
+        $allowedSchoolIds = School::hasSchool()->pluck('id')->toArray();
+
         $query = Classroom::query();
-        if (!empty($schoolId)) {
-            $query->where('school_id', $schoolId);
+        if ($schoolId) {
+            if (!empty($allowedSchoolIds) && !in_array($schoolId, $allowedSchoolIds, true)) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->where('school_id', $schoolId);
+            }
+        } elseif (!empty($allowedSchoolIds)) {
+            $query->whereIn('school_id', $allowedSchoolIds);
         }
+
         $classrooms = $query->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         return $this->getSuccessResponse($classrooms);
     }
