@@ -90,6 +90,46 @@
     .product-info {
         padding: 12px !important;
     }
+
+    /* Premium POS Card Lock Modal Styles */
+    .swal2-popup .swal2-html-container {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .pos-premium-modal.swal2-popup {
+        border-radius: 24px !important;
+        padding: 28px 24px 24px !important;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16) !important;
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    .pos-premium-modal .swal2-html-container {
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .pos-premium-modal .swal2-actions {
+        margin: 20px 0 0 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    .pos-premium-modal .btn-pos-modal-close {
+        width: 100% !important;
+        border-radius: 14px !important;
+        padding: 12px 24px !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    .pos-premium-modal .btn-pos-modal-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35) !important;
+    }
 </style>
 @endpush
 @section('content')
@@ -1725,31 +1765,87 @@
                     if (student.is_card_reported) {
                         resetSelectedStudentOnPos();
                         var issueLabel = student.card_report?.issue_label || 'Kendala Kartu';
+                        var studentNis = student.nis ? `NIS: ${student.nis}` : '';
+                        var studentBarcode = student.barcode || barcode || '-';
                         var reportNotes = student.card_report?.notes
-                            ? `<div class="mt-2 text-gray-600 fst-italic fs-8">Catatan: "${student.card_report.notes}"</div>`
+                            ? `
+                                <div style="margin-top: 10px; padding: 9px 12px; background: #FFFFFF; border: 1px dashed #CBD5E1; border-radius: 10px; font-size: 12px; color: #475569; line-height: 1.45;">
+                                    <span style="font-weight: 700; color: #334155;">Catatan Pelapor:</span> "${student.card_report.notes}"
+                                </div>
+                              `
                             : '';
 
                         Swal.fire({
-                            icon: 'error',
-                            title: '<h2 class="fw-bolder text-danger mb-0">KARTU TERKUNCI!</h2>',
+                            width: 460,
+                            buttonsStyling: false,
+                            customClass: {
+                                popup: 'pos-premium-modal',
+                                confirmButton: 'btn-pos-modal-close'
+                            },
                             html: `
-                                <div class="text-start mt-4 bg-light-danger p-4 rounded-3 border border-danger border-dashed">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span class="text-gray-600 fw-bold">Nama Santri:</span>
-                                        <span class="fw-bolder text-gray-800">${student.name}</span>
+                                <div style="text-align: center;">
+                                    <div style="width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.18); display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-user-lock" style="font-size: 26px; color: #DC2626;"></i>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span class="text-gray-600 fw-bold">Status Laporan:</span>
-                                        <span class="badge badge-danger fw-bold">${issueLabel} (Menunggu Tindak Lanjut)</span>
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #DC2626; display: inline-block;"></span>
+                                        Transaksi Ditolak &bull; Auto-Lock
                                     </div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #0F172A; margin-top: 10px; line-height: 1.3;">
+                                        Kartu Santri Sedang Dilaporkan
+                                    </div>
+                                    <div style="font-size: 13px; font-weight: 500; color: #64748B; margin-top: 4px; line-height: 1.45;">
+                                        Kartu ini tidak dapat digunakan bertransaksi karena terdaftar dalam laporan kendala aktif.
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 18px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 14px 16px; text-align: left;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Nama Santri</span>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 14px; font-weight: 700; color: #0F172A;">${student.name}</div>
+                                            ${studentNis ? `<div style="font-size: 11.5px; font-weight: 500; color: #64748B;">${studentNis}</div>` : ''}
+                                        </div>
+                                    </div>
+
+                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">ID Barcode</span>
+                                        <span style="font-size: 13px; font-weight: 700; color: #334155; font-family: monospace; background: #FFFFFF; padding: 2px 8px; border-radius: 6px; border: 1px solid #E2E8F0;">${studentBarcode}</span>
+                                    </div>
+
+                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Jenis Kendala</span>
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(220, 38, 38, 0.1); color: #DC2626; font-size: 12px; font-weight: 700; line-height: 1.3;">
+                                            <i class="fas fa-exclamation-circle" style="font-size: 11px;"></i>
+                                            <span>${issueLabel}</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Status Laporan</span>
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: #FEF3C7; color: #B45309; font-size: 12px; font-weight: 700; line-height: 1.3;">
+                                            <i class="fas fa-clock" style="font-size: 11px;"></i>
+                                            <span>Menunggu Tindak Lanjut</span>
+                                        </span>
+                                    </div>
+
                                     ${reportNotes}
                                 </div>
-                                <div class="mt-4 text-gray-700 fs-7 text-center fw-semibold">
-                                    Kartu santri ini sedang dilaporkan bermasalah dan <strong>dikunci otomatis dari transaksi POS</strong> hingga ditindaklanjuti oleh Admin.
+
+                                <div style="margin-top: 14px; padding: 11px 14px; border-radius: 12px; background: #FEF2F2; border: 1px solid #FECACA; display: flex; align-items: flex-start; gap: 10px; text-align: left;">
+                                    <i class="fas fa-shield-alt" style="color: #DC2626; font-size: 15px; margin-top: 2px; flex-shrink: 0;"></i>
+                                    <div style="font-size: 12px; line-height: 1.45; color: #991B1B; font-weight: 500;">
+                                        Kartu akan <strong>terbuka otomatis</strong> setelah laporan kendala diselesaikan oleh Admin pada menu <strong>Monitoring Kendala Kartu</strong>.
+                                    </div>
                                 </div>
                             `,
-                            confirmButtonText: 'Mengerti',
-                            confirmButtonColor: '#d33'
+                            confirmButtonText: 'Mengerti & Tutup'
                         });
                         e.target.value = '';
                         return;
