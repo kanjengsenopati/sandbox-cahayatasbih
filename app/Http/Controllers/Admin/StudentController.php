@@ -154,10 +154,16 @@ class StudentController extends Controller
                     }
 
                     if ($data->pendingCardReport) {
-                        $html .= '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1" title="' . e($data->pendingCardReport->notes ?? '') . '"><i class="fa fa-exclamation-triangle text-danger me-1"></i>Kendala: ' . e($data->pendingCardReport->issue_label) . '</span></div>';
+                        $html .= '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1" title="Laporan terkunci menunggu tindak lanjut Super Admin. Catatan: ' . e($data->pendingCardReport->notes ?? '-') . '"><i class="fa fa-lock text-danger me-1"></i>Terkunci: ' . e($data->pendingCardReport->issue_label) . '</span></div>';
                     }
 
                     return $html;
+                })
+                ->addColumn('has_pending_card_report', function ($data) {
+                    return (bool) $data->pendingCardReport;
+                })
+                ->addColumn('pending_card_report_label', function ($data) {
+                    return $data->pendingCardReport ? $data->pendingCardReport->issue_label : null;
                 })
                 ->addColumn('student', function ($data) {
                     $studentName = $data?->name ? $data->name : '-';
