@@ -1,29 +1,56 @@
-@extends('layouts.master', ['title' => $isOutletUser ? 'Dashboard Outlet' : 'Dashboard Utama'])
+@extends('layouts.master', ['title' => $isOutletUser ? 'Dashboard Outlet' : 'Dashboard Business Intelligence'])
 
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
-    <div class="toolbar" id="kt_toolbar">
+    <div class="toolbar" id="kt_toolbar" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.85);">
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
-            <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">
-                    {{ $isOutletUser ? 'Dashboard Outlet' : 'Dashboard Utama' }}
-                </h1>
+            <div class="page-title d-flex align-items-center flex-wrap me-3 mb-2 mb-lg-0">
+                <x-text.h1 class="my-1 d-flex align-items-center gap-2">
+                    {{ $isOutletUser ? 'Dashboard Outlet' : 'Executive Business Intelligence' }}
+                </x-text.h1>
+                @if(!$isOutletUser && isset($activeAcademicYearName))
+                    <span class="h-20px border-gray-300 border-start mx-3"></span>
+                    <span class="badge rounded-pill px-3 py-2" style="background-color: rgba(37, 99, 235, 0.1); color: #2563EB; font-weight: 700; font-size: 11px;">
+                        TA: {{ $activeAcademicYearName }}
+                    </span>
+                @endif
             </div>
             @if($isOutletUser)
                 @include('layouts.partials.outlet_switcher')
+            @else
+                <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 my-1">
+                    @if(isset($schools) && $schools->count() > 1)
+                        <select name="school_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 170px; height: 36px;">
+                            <option value="all">Semua Unit (UPT)</option>
+                            @foreach($schools as $s)
+                                <option value="{{ $s->id }}" {{ ($selectedSchoolId ?? null) === $s->id ? 'selected' : '' }}>
+                                    {{ $s->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+                    @if(isset($academicYears) && $academicYears->count() > 0)
+                        <select name="academic_year_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 165px; height: 36px;">
+                            <option value="all" {{ ($selectedAcademicYearId ?? '') === 'all' ? 'selected' : '' }}>Semua Tahun Ajaran</option>
+                            @foreach($academicYears as $ay)
+                                <option value="{{ $ay->id }}" {{ ($selectedAcademicYearId ?? '') === $ay->id ? 'selected' : '' }}>
+                                    TA {{ $ay->name }}{{ $ay->is_active ? ' (Aktif)' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+                </form>
             @endif
         </div>
     </div>
 
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <div id="kt_content_container" class="container-xxl px-5">
-            
             @if($isOutletUser)
                 @include('admins.dashboard.outlet')
             @else
                 @include('admins.dashboard.academic')
             @endif
-
         </div>
     </div>
 </div>
