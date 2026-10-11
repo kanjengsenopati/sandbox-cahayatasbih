@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentCardReport;
+use Milon\Barcode\DNS1D;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -63,7 +65,58 @@ class StudentCardReportController extends Controller
                         "<div class='text-muted fs-8'>NIS: {$nis} | {$class} ({$school})</div>";
                 })
                 ->addColumn('barcode', function ($data) {
-                    $barcode = $data->student?->barcode;
+                    if (!$data->student) {
+                        return "<span class='badge badge-light-danger fs-8'>Data santri tidak ditemukan</span>";
+                    }
+
+                    $barcode = $data->student->barcode;
+
+                    // 1. Opsi Kendala Kartu Tidak Terbaca / Tidak Bisa Transaksi: Edit Inline pada deretan angka barcode (Tanpa Download)
+                    if ($data->issue_type === StudentCardReport::ISSUE_TIDAK_BISA_TRANSAKSI) {
+                        $studentId = $data->student_id;
+                        $safeBarcode = e($barcode ?? '');
+                        $displayBarcode = $barcode
+                            ? "<span class='font-monospace fw-bold text-gray-800 fs-7 inline-barcode-text'>{$safeBarcode}</span>"
+                            : "<span class='badge badge-light-danger fs-8 inline-barcode-text'>Belum ada barcode</span>";
+
+                        return "<div class='inline-barcode-wrapper' data-student-id='{$studentId}' data-barcode='{$safeBarcode}'>" .
+                            "<div class='inline-barcode-view d-inline-flex align-items-center gap-2 px-2 py-1 rounded border border-gray-300 border-dashed bg-light-warning bg-opacity-25 bg-hover-light-primary cursor-pointer' title='Klik untuk edit angka barcode secara langsung'>" .
+                                $displayBarcode .
+                                "<i class='fas fa-pen text-primary fs-8 ms-1'></i>" .
+                            "</div>" .
+                            "<div class='inline-barcode-edit d-none'>" .
+                                "<div class='d-flex align-items-center gap-1'>" .
+                                    "<input type='text' class='form-control form-control-sm font-monospace py-1 px-2 fs-7 w-160px inline-barcode-input' value='{$safeBarcode}' placeholder='Ketik / scan barcode...' autocomplete='off' />" .
+                                    "<button type='button' class='btn btn-icon btn-sm btn-success w-28px h-28px btn-save-inline-barcode' title='Simpan (Enter)'>" .
+                                        "<i class='fa fa-check fs-8'></i>" .
+                                    "</button>" .
+                                    "<button type='button' class='btn btn-icon btn-sm btn-light-danger w-28px h-28px btn-cancel-inline-barcode' title='Batal (Esc)'>" .
+                                        "<i class='fa fa-times fs-8'></i>" .
+                                    "</button>" .
+                                "</div>" .
+                                "<div class='text-muted fs-9 mt-1'>Enter: Simpan &bull; Esc: Batal</div>" .
+                            "</div>" .
+                        "</div>";
+                    }
+
+                    // 2. Opsi Kendala Kartu Rusak atau Hilang: Tampilkan Gambar Barcode di bawah angka + Download PNG (HD Quality)
+                    if ($barcode && in_array($data->issue_type, [StudentCardReport::ISSUE_RUSAK, StudentCardReport::ISSUE_HILANG], true)) {
+                        $dns1d = new DNS1D();
+                        $barcodeBase64 = $dns1d->getBarcodePNG($barcode, 'C128', 4, 60);
+                        $downloadUrl = route('student-barcode.download-png', $data->student_id);
+                        $safeBarcode = e($barcode);
+
+                        return "<div class='d-inline-flex flex-column align-items-start'>" .
+                            "<span class='font-monospace fw-bold text-gray-800 fs-7 mb-1'>{$safeBarcode}</span>" .
+                            "<a href='{$downloadUrl}' class='d-inline-block bg-white border border-gray-300 rounded px-2 py-1 shadow-xs text-decoration-none' title='Klik untuk Download Barcode PNG (HD)'>" .
+                                "<img src='data:image/png;base64,{$barcodeBase64}' alt='Barcode {$safeBarcode}' style='height: 32px; width: auto; max-width: 175px; display: block; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;' />" .
+                            "</a>" .
+                            "<a href='{$downloadUrl}' class='text-primary fw-bold fs-9 mt-1 text-hover-underline d-inline-flex align-items-center'>" .
+                                "<i class='fas fa-download text-primary fs-9 me-1'></i>Download PNG (HD)" .
+                            "</a>" .
+                        "</div>";
+                    }
+
                     if ($barcode) {
                         return "<span class='font-monospace fw-bold text-gray-800 fs-7'>" . e($barcode) . "</span>";
                     }
@@ -156,7 +209,7 @@ class StudentCardReportController extends Controller
     }
 
     /**
-     * Store bulk reports submitted by Koordinator Pondok Mart.
+     * Store bulk reports submitted by Koordinator Pondok Mart with Auto-Lock guard.
      */
     public function store(Request $request)
     {
@@ -171,29 +224,66 @@ class StudentCardReportController extends Controller
             'issue_type.in' => 'Jenis kendala tidak valid.',
         ]);
 
-        $studentIds = $request->input('student_ids');
+        $studentIds = array_values(array_unique((array) $request->input('student_ids')));
         $issueType = $request->input('issue_type');
         $notes = $request->input('notes');
         $adminId = Auth::id();
 
-        $savedCount = 0;
-        foreach ($studentIds as $sId) {
-            // Update existing pending report or create new
-            StudentCardReport::create([
-                'student_id' => $sId,
-                'reported_by' => $adminId,
-                'issue_type' => $issueType,
-                'notes' => $notes,
-                'status' => StudentCardReport::STATUS_PENDING,
-            ]);
-            $savedCount++;
-        }
+        return DB::transaction(function () use ($studentIds, $issueType, $notes, $adminId) {
+            // Auto-Lock check: find students who already have an unresolved (pending) report
+            $lockedReports = StudentCardReport::with('student')
+                ->whereIn('student_id', $studentIds)
+                ->where('status', StudentCardReport::STATUS_PENDING)
+                ->lockForUpdate()
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => "Berhasil mengirim laporan kendala kartu untuk {$savedCount} santri ke Super Admin.",
-            'count' => $savedCount,
-        ]);
+            $lockedStudentIds = $lockedReports->pluck('student_id')->unique()->values()->toArray();
+            $lockedNames = $lockedReports->map(function ($report) {
+                return $report->student?->name ?? 'Santri';
+            })->unique()->values()->toArray();
+
+            $eligibleStudentIds = array_values(array_diff($studentIds, $lockedStudentIds));
+
+            // Jika seluruh santri yang dipilih sudah dilaporkan dan belum ada follow-up -> Tolak (Auto-Lock)
+            if (empty($eligibleStudentIds)) {
+                $namesList = implode(', ', $lockedNames);
+                return response()->json([
+                    'success' => false,
+                    'locked' => true,
+                    'message' => "Laporan ditolak (Auto-Lock): Kartu santri ({$namesList}) sudah dilaporkan sebelumnya dan belum ada update status tindak lanjut (follow-up).",
+                    'count' => 0,
+                    'locked_count' => count($lockedStudentIds),
+                    'locked_students' => $lockedNames,
+                ], 422);
+            }
+
+            $savedCount = 0;
+            foreach ($eligibleStudentIds as $sId) {
+                StudentCardReport::create([
+                    'student_id' => $sId,
+                    'reported_by' => $adminId,
+                    'issue_type' => $issueType,
+                    'notes' => $notes,
+                    'status' => StudentCardReport::STATUS_PENDING,
+                ]);
+                $savedCount++;
+            }
+
+            $lockedCount = count($lockedStudentIds);
+            $message = "Berhasil mengirim laporan kendala kartu untuk {$savedCount} santri ke Super Admin.";
+            if ($lockedCount > 0) {
+                $namesList = implode(', ', $lockedNames);
+                $message .= " ({$lockedCount} santri dilewati otomatis karena masih terkunci menunggu tindak lanjut: {$namesList}).";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => $savedCount,
+                'locked_count' => $lockedCount,
+                'locked_students' => $lockedNames,
+            ]);
+        });
     }
 
     /**

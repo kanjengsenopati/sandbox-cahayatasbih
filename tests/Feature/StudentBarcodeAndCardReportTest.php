@@ -62,6 +62,21 @@ class StudentBarcodeAndCardReportTest extends TestCase
         ]);
     }
 
+    protected function tearDown(): void
+    {
+        $testStudentIds = Student::withTrashed()
+            ->whereIn('name', ['Santri Test One', 'Santri Test Two'])
+            ->pluck('id');
+
+        if ($testStudentIds->isNotEmpty()) {
+            StudentCardReport::whereIn('student_id', $testStudentIds)->delete();
+            StudentBarcodeHistory::whereIn('student_id', $testStudentIds)->delete();
+            Student::withTrashed()->whereIn('id', $testStudentIds)->forceDelete();
+        }
+
+        parent::tearDown();
+    }
+
     public function test_barcode_generation_is_unique()
     {
         $barcode1 = Student::generateUniqueBarcode();
@@ -180,5 +195,121 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertEquals('completed', $report->status);
         $this->assertEquals((string) $this->admin->id, $report->processed_by);
         $this->assertNotNull($report->processed_at);
+    }
+
+    public function test_barcode_column_rendering_by_issue_type_and_hd_png_download()
+    {
+        // Report 1: Kartu Rusak -> should show barcode image & download PNG link
+        StudentCardReport::create([
+            'student_id' => $this->student1->id,
+            'reported_by' => (string) $this->admin->id,
+            'issue_type' => StudentCardReport::ISSUE_RUSAK,
+            'status' => StudentCardReport::STATUS_PENDING,
+        ]);
+
+        // Report 2: Tidak Bisa Transaksi -> should show inline edit without download
+        StudentCardReport::create([
+            'student_id' => $this->student2->id,
+            'reported_by' => (string) $this->admin->id,
+            'issue_type' => StudentCardReport::ISSUE_TIDAK_BISA_TRANSAKSI,
+            'status' => StudentCardReport::STATUS_PENDING,
+        ]);
+
+        $dtResponse = $this->actingAs($this->admin, 'web')
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('student-card-reports.index', ['status' => 'pending']));
+
+        $dtResponse->assertStatus(200);
+        $rows = collect($dtResponse->json('data'));
+
+        $rusakRow = $rows->first(fn ($r) => str_contains($r['student_info'] ?? '', $this->student1->nis));
+        $this->assertNotNull($rusakRow);
+        $this->assertStringContainsString('data:image/png;base64,', $rusakRow['barcode']);
+        $this->assertStringContainsString('Download PNG (HD)', $rusakRow['barcode']);
+
+        $unreadableRow = $rows->first(fn ($r) => str_contains($r['student_info'] ?? '', $this->student2->nis));
+        $this->assertNotNull($unreadableRow);
+        $this->assertStringContainsString('inline-barcode-wrapper', $unreadableRow['barcode']);
+        $this->assertStringContainsString('inline-barcode-input', $unreadableRow['barcode']);
+        $this->assertStringNotContainsString('Download PNG (HD)', $unreadableRow['barcode']);
+
+        // Verify HD PNG Download resolution
+        $pngResponse = $this->actingAs($this->admin, 'web')
+            ->get(route('student-barcode.download-png', $this->student1->id));
+
+        $pngResponse->assertStatus(200);
+        $pngResponse->assertHeader('Content-Type', 'image/png');
+        $imageSize = getimagesizefromstring($pngResponse->getContent());
+        $this->assertNotFalse($imageSize);
+        $this->assertGreaterThanOrEqual(1000, $imageSize[0]); // HD width > 1000px
+        $this->assertEquals(220, $imageSize[1]); // HD height = 220px
+    }
+
+    public function test_auto_lock_prevents_duplicate_pending_card_report()
+    {
+        // 1. Report student1 for the first time -> should succeed
+        $firstResponse = $this->actingAs($this->admin, 'web')
+            ->postJson(route('student-card-reports.store'), [
+                'student_ids' => [$this->student1->id],
+                'issue_type' => 'rusak',
+                'notes' => 'Laporan pertama',
+            ]);
+
+        $firstResponse->assertStatus(200);
+        $firstResponse->assertJson(['success' => true, 'count' => 1, 'locked_count' => 0]);
+
+        // 2. Attempt to report student1 again while still pending -> should be Auto-Locked (422)
+        $duplicateResponse = $this->actingAs($this->admin, 'web')
+            ->postJson(route('student-card-reports.store'), [
+                'student_ids' => [$this->student1->id],
+                'issue_type' => 'hilang',
+                'notes' => 'Laporan ganda',
+            ]);
+
+        $duplicateResponse->assertStatus(422);
+        $duplicateResponse->assertJson([
+            'success' => false,
+            'locked' => true,
+            'count' => 0,
+            'locked_count' => 1,
+        ]);
+
+        // Ensure only 1 pending report exists for student1
+        $this->assertEquals(
+            1,
+            StudentCardReport::where('student_id', $this->student1->id)->where('status', 'pending')->count()
+        );
+
+        // 3. Bulk report both student1 (locked) and student2 (unlocked) -> only student2 should be saved
+        $mixedResponse = $this->actingAs($this->admin, 'web')
+            ->postJson(route('student-card-reports.store'), [
+                'student_ids' => [$this->student1->id, $this->student2->id],
+                'issue_type' => 'tidak_bisa_transaksi',
+                'notes' => 'Laporan campuran',
+            ]);
+
+        $mixedResponse->assertStatus(200);
+        $mixedResponse->assertJson([
+            'success' => true,
+            'count' => 1,
+            'locked_count' => 1,
+        ]);
+
+        // 4. Complete student1's pending report -> unlocks student1 for future reports
+        $report1 = StudentCardReport::where('student_id', $this->student1->id)->where('status', 'pending')->first();
+        $this->actingAs($this->admin, 'web')
+            ->postJson(route('student-card-reports.complete', $report1->id))
+            ->assertStatus(200);
+
+        // 5. Report student1 again after follow-up completed -> should succeed
+        $unlockedResponse = $this->actingAs($this->admin, 'web')
+            ->postJson(route('student-card-reports.store'), [
+                'student_ids' => [$this->student1->id],
+                'issue_type' => 'hilang',
+                'notes' => 'Laporan baru setelah kartu lama selesai',
+            ]);
+
+        $unlockedResponse->assertStatus(200);
+        $unlockedResponse->assertJson(['success' => true, 'count' => 1, 'locked_count' => 0]);
     }
 }
