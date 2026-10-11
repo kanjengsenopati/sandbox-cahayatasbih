@@ -424,7 +424,7 @@ class StudentBarcodeController extends Controller
     }
 
     /**
-     * Download barcode PNG for student.
+     * Download barcode PNG for student in HD quality (Best Resolution).
      */
     public function downloadBarcodePng($id)
     {
@@ -435,20 +435,18 @@ class StudentBarcodeController extends Controller
         }
 
         $dns1d = new DNS1D;
-        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128');
+        // Native high-resolution C128 barcode (w=12px per module, h=220px ~ 630 DPI print quality, zero interpolation blur)
+        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128', 12, 220);
         $imageData = base64_decode($barcodeImage);
 
-        $image = Image::make($imageData);
+        $rawName = $student->nis ?: $student->name;
+        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.png';
 
-        $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels
-        $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels
-        $image->resize($widthInPixels, $heightInPixels);
-
-        $fileName = ($student->nis ?: $student->name) . '.png';
-        $tempPath = storage_path('app/public/') . $fileName;
-        $image->save($tempPath);
-
-        return response()->download($tempPath)->deleteFileAfterSend(true);
+        return response($imageData, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
     }
 
 
