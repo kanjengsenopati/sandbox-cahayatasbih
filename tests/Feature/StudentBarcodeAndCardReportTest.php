@@ -312,4 +312,108 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $unlockedResponse->assertStatus(200);
         $unlockedResponse->assertJson(['success' => true, 'count' => 1, 'locked_count' => 0]);
     }
+
+    public function test_pos_locks_student_card_with_pending_report_and_unlocks_after_followup()
+    {
+        Permission::firstOrCreate(['name' => 'Create Pos Kasir', 'guard_name' => 'web']);
+        $this->admin->givePermissionTo('Create Pos Kasir');
+
+        // Create 2 pending reports for student1 (simulating legacy duplicate + active report like in Gambar 1)
+        $reportA = StudentCardReport::create([
+            'student_id' => $this->student1->id,
+            'reported_by' => (string) $this->admin->id,
+            'issue_type' => StudentCardReport::ISSUE_TIDAK_BISA_TRANSAKSI,
+            'notes' => 'Kartu rusak tidak terbaca scanner',
+            'status' => StudentCardReport::STATUS_PENDING,
+        ]);
+        $reportB = StudentCardReport::create([
+            'student_id' => $this->student1->id,
+            'reported_by' => (string) $this->admin->id,
+            'issue_type' => StudentCardReport::ISSUE_TIDAK_BISA_TRANSAKSI,
+            'notes' => 'Duplikat lama sebelum fitur auto-lock',
+            'status' => StudentCardReport::STATUS_PENDING,
+        ]);
+
+        // 1. POS Search Student by Barcode -> should flag is_card_reported = true
+        $searchResponse = $this->actingAs($this->admin, 'web')
+            ->postJson(route('order-item.search-student'), [
+                'barcode' => $this->student1->barcode,
+            ]);
+
+        $searchResponse->assertStatus(200);
+        $searchResponse->assertJsonPath('data.is_card_reported', true);
+        $searchResponse->assertJsonPath('data.card_report.issue_type', StudentCardReport::ISSUE_TIDAK_BISA_TRANSAKSI);
+
+        // 2. Attempt POS Transaction (Saldo) while card is reported (pending) -> MUST BE REJECTED & Saldo unchanged
+        $outletId = $this->admin->getEffectiveOutletId(null);
+        $item = \App\Models\Item::first();
+        $createdTempItem = false;
+        if (!$item) {
+            $category = \App\Models\CategoryItem::first() ?? \App\Models\CategoryItem::create(['name' => 'Test Cat']);
+            $item = \App\Models\Item::create([
+                'category_item_id' => $category->id,
+                'outlet_id' => $outletId,
+                'code' => 'TST-' . rand(1000, 9999),
+                'name' => 'Item Test POS Lock',
+                'price' => 10000,
+                'selling_price' => 12000,
+                'profit' => 2000,
+                'stock' => 50,
+                'is_active' => true,
+            ]);
+            $createdTempItem = true;
+        }
+
+        $cart = \App\Models\PointOfSaleCart::create([
+            'admin_id' => $this->admin->id,
+            'outlet_id' => $outletId,
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'price' => 12000,
+            'total' => 12000,
+        ]);
+
+        try {
+            $initialSaldo = $this->student1->saldo;
+
+            $posResponse = $this->actingAs($this->admin, 'web')
+                ->from(route('order-item.index'))
+                ->post(route('order-item.store'), [
+                    'payment_method' => 'Saldo',
+                    'barcode' => $this->student1->barcode,
+                ]);
+
+            $posResponse->assertRedirect(route('order-item.index'));
+            $posResponse->assertSessionHas('error');
+            $this->assertStringContainsString('sedang terkunci', session('error'));
+
+            // Ensure student saldo was NOT deducted
+            $this->student1->refresh();
+            $this->assertEquals($initialSaldo, $this->student1->saldo);
+
+            // 3. Complete reportA -> should resolve ALL pending reports for student1 (including duplicate reportB)
+            $this->actingAs($this->admin, 'web')
+                ->postJson(route('student-card-reports.complete', $reportA->id))
+                ->assertStatus(200);
+
+            $this->assertEquals(
+                0,
+                StudentCardReport::where('student_id', $this->student1->id)->where('status', 'pending')->count()
+            );
+
+            // 4. POS Search Student after follow-up -> should now have is_card_reported = false
+            $unlockedSearchResponse = $this->actingAs($this->admin, 'web')
+                ->postJson(route('order-item.search-student'), [
+                    'barcode' => $this->student1->barcode,
+                ]);
+
+            $unlockedSearchResponse->assertStatus(200);
+            $unlockedSearchResponse->assertJsonPath('data.is_card_reported', false);
+        } finally {
+            \App\Models\PointOfSaleCart::withTrashed()->where('id', $cart->id)->forceDelete();
+            if ($createdTempItem) {
+                $item->forceDelete();
+            }
+        }
+    }
 }

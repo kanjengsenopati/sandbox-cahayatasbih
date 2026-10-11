@@ -287,16 +287,24 @@ class StudentCardReportController extends Controller
     }
 
     /**
-     * Mark a single report as completed.
+     * Mark a single report as completed (and sync any duplicate pending reports for the same student).
      */
     public function complete($id)
     {
         $report = StudentCardReport::findOrFail($id);
-        $report->update([
-            'status' => StudentCardReport::STATUS_COMPLETED,
-            'processed_by' => Auth::id(),
-            'processed_at' => now(),
-        ]);
+        $now = now();
+        $adminId = Auth::id();
+
+        StudentCardReport::where(function ($query) use ($report) {
+                $query->where('id', $report->id)
+                      ->orWhere('student_id', $report->student_id);
+            })
+            ->where('status', '!=', StudentCardReport::STATUS_COMPLETED)
+            ->update([
+                'status' => StudentCardReport::STATUS_COMPLETED,
+                'processed_by' => $adminId,
+                'processed_at' => $now,
+            ]);
 
         return response()->json([
             'success' => true,
@@ -305,7 +313,7 @@ class StudentCardReportController extends Controller
     }
 
     /**
-     * Mark multiple reports as completed in bulk.
+     * Mark multiple reports as completed in bulk (and sync any duplicate pending reports for the same students).
      */
     public function bulkComplete(Request $request)
     {
@@ -314,7 +322,16 @@ class StudentCardReportController extends Controller
             'ids.*' => 'required|exists:student_card_reports,id',
         ]);
 
-        $count = StudentCardReport::whereIn('id', $request->ids)
+        $studentIds = StudentCardReport::whereIn('id', $request->ids)
+            ->pluck('student_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $count = StudentCardReport::where(function ($query) use ($request, $studentIds) {
+                $query->whereIn('id', $request->ids)
+                      ->orWhereIn('student_id', $studentIds);
+            })
             ->where('status', '!=', StudentCardReport::STATUS_COMPLETED)
             ->update([
                 'status' => StudentCardReport::STATUS_COMPLETED,
