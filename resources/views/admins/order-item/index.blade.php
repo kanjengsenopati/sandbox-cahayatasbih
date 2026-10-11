@@ -1685,6 +1685,30 @@
     });
 </script>
 <script>
+    function resetSelectedStudentOnPos() {
+        var studentNameEl = document.getElementById('student-name');
+        var saldoEl = document.getElementById('saldo');
+        var remainingSaldoEl = document.getElementById('remaining-saldo');
+        var formPaymentEl = document.getElementById('form-payment');
+
+        if (studentNameEl) studentNameEl.value = '';
+        if (saldoEl) saldoEl.value = '';
+        if (remainingSaldoEl) remainingSaldoEl.value = 'Rp. 0';
+        if (formPaymentEl) {
+            formPaymentEl.querySelectorAll('input[name="barcode"]').forEach(function (el) {
+                el.remove();
+            });
+        }
+
+        window.currentStudentLimit = 0;
+        window.currentStudentRemainingLimit = 0;
+        window.currentStudentTotalThisDay = 0;
+        window.isLimitAlertShown = false;
+
+        var curTotal = parseInt((document.getElementById('total-price')?.value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
+    }
+
     // Trigger search on Enter key press
     document.getElementById('scan-card').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
@@ -1697,8 +1721,43 @@
             }).then(function (response) {
                 var student = response.data.data;
                 if (student) {
-                    // Check if card is blocked by Wali
+                    // 1. Check if card is locked due to an active Card Problem Report (pending)
+                    if (student.is_card_reported) {
+                        resetSelectedStudentOnPos();
+                        var issueLabel = student.card_report?.issue_label || 'Kendala Kartu';
+                        var reportNotes = student.card_report?.notes
+                            ? `<div class="mt-2 text-gray-600 fst-italic fs-8">Catatan: "${student.card_report.notes}"</div>`
+                            : '';
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: '<h2 class="fw-bolder text-danger mb-0">KARTU TERKUNCI!</h2>',
+                            html: `
+                                <div class="text-start mt-4 bg-light-danger p-4 rounded-3 border border-danger border-dashed">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-gray-600 fw-bold">Nama Santri:</span>
+                                        <span class="fw-bolder text-gray-800">${student.name}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-gray-600 fw-bold">Status Laporan:</span>
+                                        <span class="badge badge-danger fw-bold">${issueLabel} (Menunggu Tindak Lanjut)</span>
+                                    </div>
+                                    ${reportNotes}
+                                </div>
+                                <div class="mt-4 text-gray-700 fs-7 text-center fw-semibold">
+                                    Kartu santri ini sedang dilaporkan bermasalah dan <strong>dikunci otomatis dari transaksi POS</strong> hingga ditindaklanjuti oleh Admin.
+                                </div>
+                            `,
+                            confirmButtonText: 'Mengerti',
+                            confirmButtonColor: '#d33'
+                        });
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // 2. Check if card is blocked by Wali
                     if (student.is_blocked) {
+                        resetSelectedStudentOnPos();
                         Swal.fire({
                             icon: 'error',
                             title: 'KARTU DIBLOKIR!',
@@ -1712,9 +1771,13 @@
                     // Replace name, saldo, and update total price
                     document.getElementById('student-name').value = student.name;
                     document.getElementById('saldo').value = 'Rp. ' + Number(student.saldo).toLocaleString('id-ID');
-                    // Add student id to form-payment
-                    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
-                        value="${student.barcode}">`);
+
+                    // Clear any previous hidden barcode input before adding current student barcode
+                    var formPaymentEl = document.getElementById('form-payment');
+                    formPaymentEl.querySelectorAll('input[name="barcode"]').forEach(function (el) {
+                        el.remove();
+                    });
+                    formPaymentEl.insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode" value="${student.barcode}">`);
                         
                     // Set global limits for alert logic
                     window.currentStudentLimit = student.effective_daily_limit || 0;
@@ -1727,6 +1790,7 @@
                     // Clear input
                     e.target.value = '';
                 } else {
+                    resetSelectedStudentOnPos();
                     Swal.fire({
                         icon: 'error',
                         title: 'Santri tidak ditemukan',
