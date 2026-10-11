@@ -1766,7 +1766,6 @@
                         resetSelectedStudentOnPos();
                         var issueLabel = student.card_report?.issue_label || 'Kendala Kartu';
                         var studentNis = student.nis ? `NIS: ${student.nis}` : '';
-                        var studentBarcode = student.barcode || barcode || '-';
                         var reportNotes = student.card_report?.notes
                             ? `
                                 <div style="margin-top: 10px; padding: 9px 12px; background: #FFFFFF; border: 1px dashed #CBD5E1; border-radius: 10px; font-size: 12px; color: #475569; line-height: 1.45;">
@@ -1806,13 +1805,6 @@
                                             <div style="font-size: 14px; font-weight: 700; color: #0F172A;">${student.name}</div>
                                             ${studentNis ? `<div style="font-size: 11.5px; font-weight: 500; color: #64748B;">${studentNis}</div>` : ''}
                                         </div>
-                                    </div>
-
-                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
-
-                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">ID Barcode</span>
-                                        <span style="font-size: 13px; font-weight: 700; color: #334155; font-family: monospace; background: #FFFFFF; padding: 2px 8px; border-radius: 6px; border: 1px solid #E2E8F0;">${studentBarcode}</span>
                                     </div>
 
                                     <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
