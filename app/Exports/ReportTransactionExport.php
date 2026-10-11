@@ -25,14 +25,62 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
 {
     use CanonicalBillTypeTrait;
     private $rowNumber = 0;
+    private ?array $memoizedScopedSchoolIds = null;
+    private ?\Illuminate\Support\Collection $memoizedAllowedBillItemIds = null;
+    private ?array $memoizedMatchingInfo = null;
+
+    protected function getScopedContext(): array
+    {
+        $requestedSchoolId = (request()->filled('school_id') && request()->school_id !== 'null')
+            ? request()->school_id
+            : null;
+
+        if ($this->memoizedScopedSchoolIds === null) {
+            $this->memoizedScopedSchoolIds = $this->resolveScopedSchoolIds($requestedSchoolId);
+        }
+
+        if ($this->memoizedAllowedBillItemIds === null) {
+            $this->memoizedAllowedBillItemIds = $this->getBillItemIdsBySchoolIds($this->memoizedScopedSchoolIds);
+        }
+
+        $filterTagihan = request()->filled('bill_type_id') ? request()->input('bill_type_id') : null;
+        if ($this->memoizedMatchingInfo === null) {
+            $this->memoizedMatchingInfo = $filterTagihan
+                ? $this->getMatchingBillTypeInfo($filterTagihan, $this->memoizedAllowedBillItemIds)
+                : ['ids' => [], 'names' => []];
+        }
+
+        return [
+            $requestedSchoolId,
+            $this->memoizedScopedSchoolIds,
+            $this->memoizedAllowedBillItemIds,
+            $filterTagihan,
+            $this->memoizedMatchingInfo['ids'],
+        ];
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function baseQuery()
     {
+        [$requestedSchoolId, $scopedSchoolIds, $allowedBillItemIds, $filterTagihan, $matchedIds] = $this->getScopedContext();
+
+        $txTypeFilter = request()->input('type_data');
+        if (!in_array($txTypeFilter, [Transaction::TYPE_BILL, Transaction::TYPE_SALDO, Transaction::TYPE_SAVING], true)) {
+            $reqType = request()->input('type');
+            if (in_array($reqType, [Transaction::TYPE_BILL, Transaction::TYPE_SALDO, Transaction::TYPE_SAVING], true)) {
+                $txTypeFilter = $reqType;
+            } else {
+                $txTypeFilter = null;
+            }
+        }
+
         return Transaction::where('status', Transaction::STATUS_PAID)
             ->with('student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType')
+            ->when(empty($scopedSchoolIds), function ($query) {
+                $query->whereRaw('1 = 0');
+            })
             ->when(request()->filled('start_date'), function ($query) {
                 $query->whereDate('created_at', '>=', request()->start_date);
             })
@@ -50,37 +98,49 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
                        ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $searchName . '%']);
                 });
             })
-            ->schoolFilter('school_id', request()->school_id)
+            ->schoolFilter('school_id', $requestedSchoolId)
             ->classroomFilter('classroom_id', request()->classroom_id)
-            ->filter('type', request()->type_data)
-            ->when(request()->filled('bill_type_id'), function ($query) {
-                $val = request()->input('bill_type_id');
-                $matchingInfo = $this->getMatchingBillTypeInfo($val);
-                $matchedIds = $matchingInfo['ids'];
-                $matchedNames = $matchingInfo['names'];
+            ->filter('type', $txTypeFilter)
+            ->where(function ($uptQuery) use ($allowedBillItemIds) {
+                $uptQuery->where('type', '!=', Transaction::TYPE_BILL)
+                    ->orWhere(function ($billTxQuery) use ($allowedBillItemIds) {
+                        if ($allowedBillItemIds->isEmpty()) {
+                            $billTxQuery->whereRaw('1 = 0');
+                        } else {
+                            $billTxQuery->whereExists(function ($sub) use ($allowedBillItemIds) {
+                                $sub->select(DB::raw(1))
+                                    ->from('transaction_details')
+                                    ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                                    ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
+                                    ->whereColumn('transaction_details.transaction_id', 'transactions.id')
+                                    ->whereNull('transaction_details.deleted_at')
+                                    ->whereNull('bills.deleted_at')
+                                    ->whereIn('bill_types.bill_item_id', $allowedBillItemIds);
+                            });
+                        }
+                    });
+            })
+            ->when(!empty($filterTagihan), function ($query) use ($matchedIds, $allowedBillItemIds) {
+                $query->where('type', \App\Models\Transaction::TYPE_BILL);
 
-                $query->where('type', \App\Models\Transaction::TYPE_BILL)
-                    ->whereExists(function ($subQuery) use ($val, $matchedIds, $matchedNames) {
+                if (empty($matchedIds)) {
+                    $query->whereRaw('1 = 0');
+                } else {
+                    $query->whereExists(function ($subQuery) use ($matchedIds, $allowedBillItemIds) {
                         $subQuery->select(DB::raw(1))
                             ->from('transaction_details')
                             ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
                             ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
                             ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                            ->where(function($q) use ($val, $matchedIds, $matchedNames) {
-                                if (!empty($matchedIds)) {
-                                    $q->whereIn('bill_types.id', $matchedIds)
-                                      ->orWhereIn('bill_types.name', $matchedNames);
-                                } else {
-                                    if (is_array($val)) {
-                                        $q->whereIn('bill_types.id', $val)
-                                          ->orWhereIn('bill_types.name', $val);
-                                    } else {
-                                        $q->where('bill_types.id', $val)
-                                          ->orWhere('bill_types.name', $val);
-                                    }
-                                }
-                            });
+                            ->whereNull('transaction_details.deleted_at')
+                            ->whereNull('bills.deleted_at')
+                            ->whereIn('bill_types.id', $matchedIds);
+
+                        if ($allowedBillItemIds->isNotEmpty()) {
+                            $subQuery->whereIn('bill_types.bill_item_id', $allowedBillItemIds);
+                        }
                     });
+                }
             })
             ->hasSchool()
             ->orderBy('student_id')
@@ -130,10 +190,8 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
     public function map($transactions): array
     {
         $this->rowNumber++;
-        $filterTagihan = request()->input('bill_type_id');
-        $matchingInfo = $filterTagihan ? $this->getMatchingBillTypeInfo($filterTagihan) : ['ids' => [], 'names' => []];
-        $matchedIds = $matchingInfo['ids'];
-        $matchedNames = $matchingInfo['names'];
+        [, , $allowedBillItemIds, $filterTagihan, $matchedIds] = $this->getScopedContext();
+        $allowedBillItemIdsArray = $allowedBillItemIds->all();
 
         // Gunakan transaksi pertama untuk data siswa, dll
         $firstTx = $transactions[0];
@@ -145,20 +203,19 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
 
         foreach ($transactions as $tx) {
             $details = $tx->transactionDetails ?? collect();
-            if (!empty($filterTagihan) && $tx->type === Transaction::TYPE_BILL) {
-                $details = $details->filter(function ($detail) use ($filterTagihan, $matchedIds, $matchedNames) {
+            if ($tx->type === Transaction::TYPE_BILL) {
+                $details = $details->filter(function ($detail) use ($allowedBillItemIdsArray, $filterTagihan, $matchedIds) {
                     $bt = $detail->bill?->billType;
-                    $btId = $detail->bill?->bill_type_id;
-                    $btName = $bt?->name;
-
-                    if (!empty($matchedIds)) {
-                        return in_array($btId, $matchedIds) || in_array($btName, $matchedNames);
+                    if (!$bt) {
+                        return false;
                     }
-
-                    if (is_array($filterTagihan)) {
-                        return in_array($btName, $filterTagihan) || in_array($btId, $filterTagihan);
+                    if (!empty($allowedBillItemIdsArray) && !in_array($bt->bill_item_id, $allowedBillItemIdsArray, true)) {
+                        return false;
                     }
-                    return $btName === $filterTagihan || $btId === $filterTagihan;
+                    if (!empty($filterTagihan)) {
+                        return in_array($bt->id, $matchedIds, true);
+                    }
+                    return true;
                 });
             }
 
@@ -202,7 +259,7 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
             $lastTx->admin?->name ?? '-',
         ];
 
-        $monthlyColumns = $this->getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, $matchedNames);
+        $monthlyColumns = $this->getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, $allowedBillItemIdsArray);
 
         return array_merge($baseRow, $monthlyColumns);
     }
@@ -220,7 +277,7 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
     /**
      * Breakdown nominal pembayaran ke 12 kolom bulan (Juli s/d Juni).
      */
-    private function getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, $matchedNames): array
+    private function getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, array $allowedBillItemIdsArray = []): array
     {
         $monthMap = [
             7  => 0, // Juli
@@ -243,22 +300,20 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
             if ($tx->type === Transaction::TYPE_BILL) {
                 $details = $tx->transactionDetails ?? collect();
                 
-                // Terapkan filter yang sama jika ada filter jenis tagihan
-                if (!empty($filterTagihan)) {
-                    $details = $details->filter(function ($detail) use ($filterTagihan, $matchedIds, $matchedNames) {
-                        $bt = $detail->bill?->billType;
-                        $btId = $detail->bill?->bill_type_id;
-                        $btName = $bt?->name;
-
-                        if (!empty($matchedIds)) {
-                            return in_array($btId, $matchedIds) || in_array($btName, $matchedNames);
-                        }
-                        if (is_array($filterTagihan)) {
-                            return in_array($btName, $filterTagihan) || in_array($btId, $filterTagihan);
-                        }
-                        return $btName === $filterTagihan || $btId === $filterTagihan;
-                    });
-                }
+                // Terapkan filter UPT & Jenis Tagihan yang ketat
+                $details = $details->filter(function ($detail) use ($allowedBillItemIdsArray, $filterTagihan, $matchedIds) {
+                    $bt = $detail->bill?->billType;
+                    if (!$bt) {
+                        return false;
+                    }
+                    if (!empty($allowedBillItemIdsArray) && !in_array($bt->bill_item_id, $allowedBillItemIdsArray, true)) {
+                        return false;
+                    }
+                    if (!empty($filterTagihan)) {
+                        return in_array($bt->id, $matchedIds, true);
+                    }
+                    return true;
+                });
 
                 $detailCount = $details->count();
                 if ($detailCount > 0) {
