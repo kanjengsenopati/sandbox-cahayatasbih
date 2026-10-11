@@ -469,6 +469,101 @@
                 Swal.fire('Validasi Gagal', msg, 'error');
             });
         });
+
+        // Edit Inline Barcode (Khusus Kendala Kartu Tidak Terbaca / Tidak Bisa Transaksi - Tanpa Download)
+        $(document).on('click', '.inline-barcode-view', function() {
+            var wrapper = $(this).closest('.inline-barcode-wrapper');
+            var currentBarcode = wrapper.attr('data-barcode') || '';
+
+            wrapper.find('.inline-barcode-view').addClass('d-none');
+            wrapper.find('.inline-barcode-edit').removeClass('d-none');
+
+            var input = wrapper.find('.inline-barcode-input');
+            input.val(currentBarcode);
+            setTimeout(function() {
+                input.focus().select();
+            }, 50);
+        });
+
+        $(document).on('click', '.btn-cancel-inline-barcode', function() {
+            var wrapper = $(this).closest('.inline-barcode-wrapper');
+            var currentBarcode = wrapper.attr('data-barcode') || '';
+
+            wrapper.find('.inline-barcode-input').val(currentBarcode);
+            wrapper.find('.inline-barcode-edit').addClass('d-none');
+            wrapper.find('.inline-barcode-view').removeClass('d-none');
+        });
+
+        function saveInlineBarcode(wrapper) {
+            var studentId = wrapper.attr('data-student-id');
+            var currentBarcode = wrapper.attr('data-barcode') || '';
+            var input = wrapper.find('.inline-barcode-input');
+            var newBarcode = (input.val() || '').trim();
+            var btnSave = wrapper.find('.btn-save-inline-barcode');
+            var btnCancel = wrapper.find('.btn-cancel-inline-barcode');
+
+            if (!newBarcode) {
+                Swal.fire('Peringatan', 'Angka barcode tidak boleh kosong.', 'warning');
+                return;
+            }
+
+            if (newBarcode === currentBarcode) {
+                wrapper.find('.inline-barcode-edit').addClass('d-none');
+                wrapper.find('.inline-barcode-view').removeClass('d-none');
+                return;
+            }
+
+            var updateUrl = '{{ route('student-barcode.update-barcode', ':id') }}'.replace(':id', studentId);
+
+            input.prop('disabled', true);
+            btnCancel.prop('disabled', true);
+            btnSave.prop('disabled', true).html('<i class="fas fa-spinner fa-spin fs-8"></i>');
+
+            $.post(updateUrl, {
+                _token: '{{ csrf_token() }}',
+                barcode: newBarcode
+            }, function(res) {
+                // Tidak memicu download PNG sesuai spesifikasi kendala Kartu Tidak Terbaca
+                table.ajax.reload(null, false);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Tersimpan!',
+                    text: res.message,
+                    timer: 1800,
+                    showConfirmButton: false
+                });
+            }).fail(function(xhr) {
+                input.prop('disabled', false);
+                btnCancel.prop('disabled', false);
+                btnSave.prop('disabled', false).html('<i class="fa fa-check fs-8"></i>');
+
+                var msg = 'Gagal menyimpan barcode.';
+                if (xhr.responseJSON && xhr.responseJSON.errors && xhr.responseJSON.errors.barcode) {
+                    msg = xhr.responseJSON.errors.barcode[0];
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                }
+                Swal.fire('Validasi Gagal', msg, 'error').then(function() {
+                    input.focus().select();
+                });
+            });
+        }
+
+        $(document).on('click', '.btn-save-inline-barcode', function() {
+            var wrapper = $(this).closest('.inline-barcode-wrapper');
+            saveInlineBarcode(wrapper);
+        });
+
+        $(document).on('keydown', '.inline-barcode-input', function(e) {
+            var wrapper = $(this).closest('.inline-barcode-wrapper');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveInlineBarcode(wrapper);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                wrapper.find('.btn-cancel-inline-barcode').trigger('click');
+            }
+        });
     });
 </script>
 @endpush
