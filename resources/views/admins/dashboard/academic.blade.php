@@ -55,11 +55,12 @@
         color: #DC2626 !important; /* Red-600 */
     }
     .typography-label {
-        font-size: 11px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.08em !important;
-        color: #94a3b8 !important; /* Slate-400 */
+        letter-spacing: 0.02em !important;
+        color: #334155 !important; /* Slate-700: Darker gray & prominent */
+        line-height: 1.3;
     }
     .typography-body {
         font-size: 14px !important;
@@ -237,18 +238,20 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
-                    <div>
-                        <x-text.label>TARGET PEMBAYARAN TAGIHAN</x-text.label>
-                        <x-text.caption class="d-block mt-1">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
+                <div>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <x-text.label class="text-nowrap">TARGET PEMBAYARAN TAGIHAN</x-text.label>
+                        <div class="action-cluster">
+                            <a href="{{ route('report-bill.index') }}" class="action-icon-btn" title="Laporan Tagihan">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="action-cluster">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
+                        <x-text.caption class="mb-0 text-nowrap">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
                         <span class="badge tint-primary rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
                             {{ number_format($summary['total_bill_items']) }} Tagihan
                         </span>
-                        <a href="{{ route('report-bill.index') }}" class="action-icon-btn" title="Laporan Tagihan">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-                        </a>
                     </div>
                 </div>
                 <div>
@@ -271,18 +274,20 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
-                    <div>
-                        <x-text.label>REALISASI PEMBAYARAN</x-text.label>
-                        <x-text.caption class="d-block mt-1">Akumulasi Tagihan Terbayar</x-text.caption>
+                <div>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <x-text.label class="text-nowrap">REALISASI PEMBAYARAN</x-text.label>
+                        <div class="action-cluster">
+                            <a href="{{ route('report-transaction.index') }}" class="action-icon-btn" title="Laporan Transaksi">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="action-cluster">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
+                        <x-text.caption class="mb-0 text-nowrap">Akumulasi Tagihan Terbayar</x-text.caption>
                         <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
                             {{ $summary['realisasi_percentage'] }}% Tercapai
                         </span>
-                        <a href="{{ route('report-transaction.index') }}" class="action-icon-btn" title="Laporan Transaksi">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                        </a>
                     </div>
                 </div>
                 <div>
@@ -302,18 +307,20 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
-                    <div>
-                        <x-text.label>SISA TUNGGAKAN TAGIHAN</x-text.label>
-                        <x-text.caption class="d-block mt-1">Piutang Santri Belum Lunas</x-text.caption>
+                <div>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <x-text.label class="text-nowrap">SISA TUNGGAKAN TAGIHAN</x-text.label>
+                        <div class="action-cluster">
+                            <a href="{{ route('report-bill-student.index') }}" class="action-icon-btn" title="Rincian Tunggakan Santri">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="action-cluster">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
+                        <x-text.caption class="mb-0 text-nowrap">Piutang Santri Belum Lunas</x-text.caption>
                         <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
                             {{ max(0, round(100 - $summary['realisasi_percentage'], 1)) }}% Outstanding
                         </span>
-                        <a href="{{ route('report-bill-student.index') }}" class="action-icon-btn" title="Rincian Tunggakan Santri">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        </a>
                     </div>
                 </div>
                 <div>
@@ -333,16 +340,18 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
-                    <div>
-                        <x-text.label>SALDO MASUK & DOMPET</x-text.label>
-                        <x-text.caption class="d-block mt-1">Top-Up Bulan Berjalan & Saldo Aktif</x-text.caption>
+                <div>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <x-text.label class="text-nowrap">SALDO MASUK & DOMPET</x-text.label>
+                        <div class="action-cluster">
+                            <a href="{{ route('report-saldo.index') }}" class="action-icon-btn" title="Laporan Saldo Santri">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <div class="action-cluster">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
+                        <x-text.caption class="mb-0 text-nowrap">Top-Up & Saldo Aktif</x-text.caption>
                         <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">Top-Up Bulan Ini</span>
-                        <a href="{{ route('report-saldo.index') }}" class="action-icon-btn" title="Laporan Saldo Santri">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-                        </a>
                     </div>
                 </div>
                 <div>
