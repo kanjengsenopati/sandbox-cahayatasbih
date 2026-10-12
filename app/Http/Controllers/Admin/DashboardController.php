@@ -112,6 +112,29 @@ class DashboardController extends Controller
                 ));
             }
 
+            $canViewBiDashboard = $user && method_exists($user, 'canAccessBiDashboard') && $user->canAccessBiDashboard();
+
+            if (!$canViewBiDashboard) {
+                $activeAcademicYear = AcademicYear::orderByDesc('is_active')
+                    ->orderByDesc('start_year')
+                    ->orderByDesc('name')
+                    ->first(['id', 'name', 'is_active']);
+
+                $activeAcademicYearName = $activeAcademicYear?->name ?? '-';
+                $upcomingSchedules = Schedule::with('school:id,name')
+                    ->whereDate('start_date', '>=', Carbon::today())
+                    ->orderBy('start_date', 'asc')
+                    ->limit(6)
+                    ->get();
+
+                return view('admins.dashboard.index', [
+                    'isOutletUser' => false,
+                    'canViewBiDashboard' => false,
+                    'activeAcademicYearName' => $activeAcademicYearName,
+                    'upcomingSchedules' => $upcomingSchedules,
+                ]);
+            }
+
             // =====================================================================
             // BUSINESS INTELLIGENCE (BI) MAIN DASHBOARD
             // =====================================================================
@@ -573,6 +596,7 @@ class DashboardController extends Controller
 
             return view('admins.dashboard.index', compact(
                 'isOutletUser',
+                'canViewBiDashboard',
                 'schools',
                 'academicYears',
                 'selectedSchoolId',

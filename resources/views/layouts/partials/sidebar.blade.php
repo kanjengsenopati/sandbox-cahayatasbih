@@ -90,7 +90,9 @@
             $permissions = array_filter(explode(',', $menu->permission ?? ''));
             $hasAccess = false;
             
-            if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
+            if ($menu->name === 'Dashboard') {
+                $hasAccess = $currentUser && method_exists($currentUser, 'canAccessBiDashboard') && $currentUser->canAccessBiDashboard();
+            } elseif ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
                 $hasAccess = in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList);
             } elseif ($currentUser->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
                 $hasAccess = false;

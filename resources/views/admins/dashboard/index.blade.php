@@ -1,4 +1,10 @@
-@extends('layouts.master', ['title' => $isOutletUser ? 'Dashboard Outlet' : 'Dashboard Business Intelligence'])
+@php
+    $showBiDashboard = !$isOutletUser && ($canViewBiDashboard ?? (auth()->check() && method_exists(auth()->user(), 'canAccessBiDashboard') && auth()->user()->canAccessBiDashboard()));
+    $pageTitle = $isOutletUser
+        ? 'Dashboard Outlet'
+        : ($showBiDashboard ? 'Dashboard Business Intelligence' : 'Dashboard Operasional');
+@endphp
+@extends('layouts.master', ['title' => $pageTitle])
 
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -6,7 +12,7 @@
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
             <div class="page-title d-flex align-items-center flex-wrap me-3 mb-2 mb-lg-0">
                 <x-text.h1 class="my-1 d-flex align-items-center gap-2">
-                    {{ $isOutletUser ? 'Dashboard Outlet' : 'Executive Business Intelligence' }}
+                    {{ $isOutletUser ? 'Dashboard Outlet' : ($showBiDashboard ? 'Executive Business Intelligence' : 'Workspace Operasional') }}
                 </x-text.h1>
                 @if(!$isOutletUser && isset($activeAcademicYearName))
                     <span class="h-20px border-gray-300 border-start mx-3"></span>
@@ -17,7 +23,7 @@
             </div>
             @if($isOutletUser)
                 @include('layouts.partials.outlet_switcher')
-            @else
+            @elseif($showBiDashboard)
                 <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 my-1">
                     @if(isset($schools) && $schools->count() > 1)
                         <select name="school_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 170px; height: 36px;">
@@ -48,8 +54,25 @@
         <div id="kt_content_container" class="container-xxl px-5">
             @if($isOutletUser)
                 @include('admins.dashboard.outlet')
-            @else
+            @elseif($showBiDashboard)
                 @include('admins.dashboard.academic')
+            @else
+                <div class="card border-0 mb-5" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0, 0, 0, 0.04); background: #ffffff;">
+                    <div class="card-body p-5">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <x-text.label>BACKOFFICE WORKSPACE</x-text.label>
+                                <x-text.h1 class="mt-1">Selamat Datang, {{ auth()->user()->name ?? 'Pengguna' }}</x-text.h1>
+                                <x-text.body class="mt-1">
+                                    Anda masuk menggunakan hak akses <strong>{{ auth()->user()->role_name ?? 'Staff' }}</strong>. Silakan gunakan navigasi menu di sebelah kiri sesuai otorisasi tugas Anda.
+                                </x-text.body>
+                            </div>
+                            <span class="badge rounded-pill px-3 py-2" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981; font-weight: 700; font-size: 11.5px;">
+                                Status Akun: Aktif & Terverifikasi
+                            </span>
+                        </div>
+                    </div>
+                </div>
             @endif
         </div>
     </div>
