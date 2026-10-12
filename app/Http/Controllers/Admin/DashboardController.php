@@ -158,7 +158,7 @@ class DashboardController extends Controller
             }
 
             $excludedBillTypeIds = $this->getExcludedBillTypeIds();
-            $cacheKey = 'bi_dashboard_v3_' . md5(json_encode([
+            $cacheKey = 'bi_dashboard_v4_' . md5(json_encode([
                 'schools' => $scopedSchoolIds,
                 'ay' => $selectedAcademicYearId,
                 'date' => Carbon::today()->toDateString(),
@@ -218,6 +218,38 @@ class DashboardController extends Controller
                 $realisasiPercentage = $targetPembayaran > 0
                     ? round(($realisasiPembayaran / $targetPembayaran) * 100, 1)
                     : 0;
+
+                // Kanal Pembayaran Tagihan (Aplikasi Bukti Bayar Approval vs Entry Data Langsung)
+                $channelTotals = (clone $billBaseQuery)
+                    ->join('transaction_details', 'transaction_details.bill_id', '=', 'bills.id')
+                    ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
+                    ->leftJoin('payment_methods', 'payment_methods.id', '=', 'transactions.payment_method_id')
+                    ->whereNull('transaction_details.deleted_at')
+                    ->whereNull('transactions.deleted_at')
+                    ->where('transactions.status', Transaction::STATUS_PAID)
+                    ->where('transactions.type', Transaction::TYPE_BILL)
+                    ->selectRaw("
+                        COALESCE(SUM(CASE WHEN payment_methods.type = 'TRANSFER' THEN (CASE WHEN transaction_details.amount > 0 THEN transaction_details.amount ELSE bills.paid_amount END) ELSE 0 END), 0) as app_amount,
+                        COALESCE(SUM(CASE WHEN payment_methods.type != 'TRANSFER' OR payment_methods.type IS NULL THEN (CASE WHEN transaction_details.amount > 0 THEN transaction_details.amount ELSE bills.paid_amount END) ELSE 0 END), 0) as direct_amount,
+                        COUNT(DISTINCT CASE WHEN payment_methods.type = 'TRANSFER' THEN transactions.id END) as app_count,
+                        COUNT(DISTINCT CASE WHEN payment_methods.type != 'TRANSFER' OR payment_methods.type IS NULL THEN transactions.id END) as direct_count
+                    ")
+                    ->first();
+
+                $appAmount = (int) ($channelTotals->app_amount ?? 0);
+                $directAmount = (int) ($channelTotals->direct_amount ?? 0);
+                $appCount = (int) ($channelTotals->app_count ?? 0);
+                $directCount = (int) ($channelTotals->direct_count ?? 0);
+                $totalChannelAmount = $appAmount + $directAmount;
+
+                $paymentChannelRatio = [
+                    'app_amount' => $appAmount,
+                    'direct_amount' => $directAmount,
+                    'app_count' => $appCount,
+                    'direct_count' => $directCount,
+                    'app_pct' => $totalChannelAmount > 0 ? round(($appAmount / $totalChannelAmount) * 100, 1) : 0,
+                    'direct_pct' => $totalChannelAmount > 0 ? round(($directAmount / $totalChannelAmount) * 100, 1) : 0,
+                ];
 
                 // Per-School Breakdown (Populasi + Realisasi Tagihan per Unit)
                 $schoolBillsMap = (clone $billBaseQuery)
@@ -418,6 +450,7 @@ class DashboardController extends Controller
                     'totalKelas',
                     'schoolData',
                     'genderRatio',
+                    'paymentChannelRatio',
                     'biSummary',
                     'billTrendChart',
                     'inflowTrendChart',
@@ -506,6 +539,7 @@ class DashboardController extends Controller
                 'totalKelas',
                 'schoolData',
                 'genderRatio',
+                'paymentChannelRatio',
                 'biSummary',
                 'billTrendChart',
                 'inflowTrendChart',
@@ -530,6 +564,14 @@ class DashboardController extends Controller
                 'totalKelas' => 0,
                 'schoolData' => collect([]),
                 'genderRatio' => ['l' => 0, 'p' => 0],
+                'paymentChannelRatio' => [
+                    'app_amount' => 0,
+                    'direct_amount' => 0,
+                    'app_count' => 0,
+                    'direct_count' => 0,
+                    'app_pct' => 0,
+                    'direct_pct' => 0,
+                ],
                 'biSummary' => [
                     'target_pembayaran' => 0,
                     'realisasi_pembayaran' => 0,

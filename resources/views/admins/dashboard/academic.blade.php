@@ -696,29 +696,66 @@
                     </div>
                 </div>
 
-                <!-- Compact Gender Ratio Doughnut -->
-                <div class="pt-3" style="border-top: 1px dashed #f1f5f9;">
-                    <div class="row align-items-center g-2">
-                        <div class="col-5">
-                            <div class="position-relative" style="height: 115px;">
-                                <canvas id="genderChart"></canvas>
+                <div>
+                    <!-- Compact Payment Channel Ratio Doughnut (Aplikasi Approval vs Entry Langsung) -->
+                    <div class="pt-3 mb-3" style="border-top: 1px dashed #f1f5f9;">
+                        <div class="row align-items-center g-2">
+                            <div class="col-5">
+                                <div class="position-relative" style="height: 115px;">
+                                    <canvas id="paymentChannelChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-7">
+                                <x-text.label class="d-block mb-2">KANAL PEMBAYARAN TAGIHAN</x-text.label>
+                                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #2563EB; display: inline-block; flex-shrink: 0;"></span>
+                                        <x-text.body style="font-size: 13px !important;">Aplikasi (Approval)</x-text.body>
+                                    </span>
+                                    <x-text.body class="fw-bold text-dark" style="font-size: 12.5px !important;">{{ number_format($paymentChannelRatio['app_count'] ?? 0) }} Tx ({{ $paymentChannelRatio['app_pct'] ?? 0 }}%)</x-text.body>
+                                </div>
+                                <x-text.caption class="d-block mb-2 ps-4 fst-normal">
+                                    Rp {{ number_format($paymentChannelRatio['app_amount'] ?? 0, 0, ',', '.') }}
+                                </x-text.caption>
+
+                                <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block; flex-shrink: 0;"></span>
+                                        <x-text.body style="font-size: 13px !important;">Entry Langsung</x-text.body>
+                                    </span>
+                                    <x-text.body class="fw-bold text-dark" style="font-size: 12.5px !important;">{{ number_format($paymentChannelRatio['direct_count'] ?? 0) }} Tx ({{ $paymentChannelRatio['direct_pct'] ?? 0 }}%)</x-text.body>
+                                </div>
+                                <x-text.caption class="d-block ps-4 fst-normal">
+                                    Rp {{ number_format($paymentChannelRatio['direct_amount'] ?? 0, 0, ',', '.') }}
+                                </x-text.caption>
                             </div>
                         </div>
-                        <div class="col-7">
-                            <x-text.label class="d-block mb-2">KOMPOSISI SANTRI</x-text.label>
-                            <div class="d-flex justify-content-between align-items-center mb-1.5">
-                                <span class="d-flex align-items-center gap-2">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #2563EB; display: inline-block;"></span>
-                                    <x-text.body style="font-size: 13px !important;">Putra (L)</x-text.body>
-                                </span>
-                                <x-text.body class="fw-bold text-dark">{{ number_format($genderRatio['l'] ?? 0) }}</x-text.body>
+                    </div>
+
+                    <!-- Compact Gender Ratio Doughnut -->
+                    <div class="pt-3" style="border-top: 1px dashed #f1f5f9;">
+                        <div class="row align-items-center g-2">
+                            <div class="col-5">
+                                <div class="position-relative" style="height: 115px;">
+                                    <canvas id="genderChart"></canvas>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="d-flex align-items-center gap-2">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
-                                    <x-text.body style="font-size: 13px !important;">Putri (P)</x-text.body>
-                                </span>
-                                <x-text.body class="fw-bold text-dark">{{ number_format($genderRatio['p'] ?? 0) }}</x-text.body>
+                            <div class="col-7">
+                                <x-text.label class="d-block mb-2">KOMPOSISI SANTRI</x-text.label>
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #2563EB; display: inline-block;"></span>
+                                        <x-text.body style="font-size: 13px !important;">Putra (L)</x-text.body>
+                                    </span>
+                                    <x-text.body class="fw-bold text-dark">{{ number_format($genderRatio['l'] ?? 0) }}</x-text.body>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                                        <x-text.body style="font-size: 13px !important;">Putri (P)</x-text.body>
+                                    </span>
+                                    <x-text.body class="fw-bold text-dark">{{ number_format($genderRatio['p'] ?? 0) }}</x-text.body>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1132,7 +1169,55 @@
             });
         }
 
-        // 3. Chart Komposisi Putra vs Putri
+        // 3. Chart Kanal Pembayaran Tagihan (Aplikasi Approval vs Entry Langsung)
+        const paymentChannelCtxEl = document.getElementById('paymentChannelChart');
+        if (paymentChannelCtxEl) {
+            const appAmt = {{ $paymentChannelRatio['app_amount'] ?? 0 }};
+            const directAmt = {{ $paymentChannelRatio['direct_amount'] ?? 0 }};
+            const appCnt = {{ $paymentChannelRatio['app_count'] ?? 0 }};
+            const directCnt = {{ $paymentChannelRatio['direct_count'] ?? 0 }};
+            const appPct = {{ $paymentChannelRatio['app_pct'] ?? 0 }};
+            const directPct = {{ $paymentChannelRatio['direct_pct'] ?? 0 }};
+            const hasChannelData = (appAmt + directAmt) > 0;
+
+            new Chart(paymentChannelCtxEl.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: hasChannelData ? ['Aplikasi (Approval)', 'Entry Langsung'] : ['Belum Ada Data'],
+                    datasets: [{
+                        data: hasChannelData ? [appAmt, directAmt] : [1],
+                        backgroundColor: hasChannelData ? ['#2563EB', '#10B981'] : ['#e2e8f0'],
+                        borderWidth: 0,
+                        hoverOffset: hasChannelData ? 4 : 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: hasChannelData,
+                            backgroundColor: '#0f172a',
+                            padding: 10,
+                            cornerRadius: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    const idx = context.dataIndex;
+                                    const cnt = idx === 0 ? appCnt : directCnt;
+                                    const pct = idx === 0 ? appPct : directPct;
+                                    const amt = Number(context.parsed || 0).toLocaleString('id-ID');
+                                    return ' ' + context.label + ': Rp ' + amt + ' (' + cnt + ' Tx • ' + pct + '%)';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '72%'
+                }
+            });
+        }
+
+        // 4. Chart Komposisi Putra vs Putri
         const genderCtxEl = document.getElementById('genderChart');
         if (genderCtxEl) {
             new Chart(genderCtxEl.getContext('2d'), {
