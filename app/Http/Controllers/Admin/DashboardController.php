@@ -158,7 +158,7 @@ class DashboardController extends Controller
             }
 
             $excludedBillTypeIds = $this->getExcludedBillTypeIds();
-            $cacheKey = 'bi_dashboard_v2_' . md5(json_encode([
+            $cacheKey = 'bi_dashboard_v3_' . md5(json_encode([
                 'schools' => $scopedSchoolIds,
                 'ay' => $selectedAcademicYearId,
                 'date' => Carbon::today()->toDateString(),
@@ -189,12 +189,16 @@ class DashboardController extends Controller
                     'p' => $totalPerempuan,
                 ];
 
-                // --- B. Tagihan & Realisasi Pembayaran (Scoped by School & Academic Year) ---
+                // --- B. Tagihan & Realisasi Pembayaran (Scoped by School, Active Student & Visible Non-Deleted BillType) ---
                 $billBaseQuery = DB::table('bills')
+                    ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
                     ->join('students', 'students.id', '=', 'bills.student_id')
                     ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
                     ->whereNull('bills.deleted_at')
+                    ->whereNull('bill_types.deleted_at')
                     ->whereNull('students.deleted_at')
+                    ->where('bill_types.is_visible', 1)
+                    ->where('students.status', Student::STATUS_ACTIVE)
                     ->whereNotIn('bills.bill_type_id', $excludedBillTypeIds)
                     ->when(!empty($scopedSchoolIds), fn($q) => $q->whereIn('classrooms.school_id', $scopedSchoolIds), fn($q) => $q->whereRaw('1 = 0'))
                     ->when($selectedAcademicYearId && $selectedAcademicYearId !== 'all', fn($q) => $q->where('bills.academic_year_id', $selectedAcademicYearId));

@@ -42,9 +42,11 @@
         font-weight: 700 !important;
         color: #10B981 !important; /* Emerald-600 */
         line-height: 1.25;
+        white-space: nowrap !important;
     }
     .typography-amount.amount-lg {
-        font-size: 22px !important;
+        font-size: clamp(17px, 1.35vw, 21px) !important;
+        white-space: nowrap !important;
     }
     .typography-amount.amount-primary {
         color: #2563EB !important; /* Blue-600 */
@@ -95,6 +97,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        flex-shrink: 0;
     }
     .action-icon-btn {
         width: 34px;
@@ -107,6 +110,7 @@
         color: #94a3b8;
         transition: all 0.2s ease;
         text-decoration: none;
+        flex-shrink: 0;
     }
     .action-icon-btn:hover {
         background: rgba(37, 99, 235, 0.1);
@@ -233,30 +237,30 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between mb-3">
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div>
                         <x-text.label>TARGET PEMBAYARAN TAGIHAN</x-text.label>
                         <x-text.caption class="d-block mt-1">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
                     </div>
                     <div class="action-cluster">
+                        <span class="badge tint-primary rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
+                            {{ number_format($summary['total_bill_items']) }} Tagihan
+                        </span>
                         <a href="{{ route('report-bill.index') }}" class="action-icon-btn" title="Laporan Tagihan">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
                         </a>
                     </div>
                 </div>
                 <div>
-                    <div class="d-flex align-items-baseline justify-content-between mb-2">
-                        <x-text.amount class="amount-lg amount-primary">Rp {{ number_format($summary['target_pembayaran'], 0, ',', '.') }}</x-text.amount>
-                        <span class="badge tint-primary rounded-pill px-2 py-1 fw-bold" style="font-size: 11px;">
-                            {{ number_format($summary['total_bill_items']) }} Tagihan
-                        </span>
+                    <div class="mb-2">
+                        <x-text.amount class="amount-lg amount-primary text-nowrap d-block">Rp {{ number_format($summary['target_pembayaran'], 0, ',', '.') }}</x-text.amount>
                     </div>
                     <div class="w-100 rounded-pill mb-2" style="height: 6px; background-color: #f1f5f9;">
                         <div class="rounded-pill" style="height: 6px; width: {{ min(100, $summary['realisasi_percentage']) }}%; background-color: #2563EB;"></div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <x-text.caption>Lunas: {{ number_format($summary['paid_bill_items']) }} item</x-text.caption>
-                        <x-text.caption>Cicilan: {{ number_format($summary['partial_bill_items']) }} item</x-text.caption>
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <x-text.caption class="text-nowrap">Lunas: <strong class="text-dark">{{ number_format($summary['paid_bill_items']) }} item</strong></x-text.caption>
+                        <x-text.caption class="text-nowrap">Cicilan: <strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
                     </div>
                 </div>
             </div>
@@ -267,13 +271,13 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between mb-3">
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div>
                         <x-text.label>REALISASI PEMBAYARAN</x-text.label>
                         <x-text.caption class="d-block mt-1">Akumulasi Tagihan Terbayar</x-text.caption>
                     </div>
                     <div class="action-cluster">
-                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
                             {{ $summary['realisasi_percentage'] }}% Tercapai
                         </span>
                         <a href="{{ route('report-transaction.index') }}" class="action-icon-btn" title="Laporan Transaksi">
@@ -283,11 +287,11 @@
                 </div>
                 <div>
                     <div class="mb-2">
-                        <x-text.amount class="amount-lg">Rp {{ number_format($summary['realisasi_pembayaran'], 0, ',', '.') }}</x-text.amount>
+                        <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['realisasi_pembayaran'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption>Hari Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
-                        <x-text.caption>Bulan Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_bulan_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <x-text.caption class="text-nowrap">Hari Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        <x-text.caption class="text-nowrap">Bulan Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_bulan_ini'], 0, ',', '.') }}</strong></x-text.caption>
                     </div>
                 </div>
             </div>
@@ -298,13 +302,13 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between mb-3">
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div>
                         <x-text.label>SISA TUNGGAKAN TAGIHAN</x-text.label>
                         <x-text.caption class="d-block mt-1">Piutang Santri Belum Lunas</x-text.caption>
                     </div>
                     <div class="action-cluster">
-                        <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                        <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
                             {{ max(0, round(100 - $summary['realisasi_percentage'], 1)) }}% Outstanding
                         </span>
                         <a href="{{ route('report-bill-student.index') }}" class="action-icon-btn" title="Rincian Tunggakan Santri">
@@ -314,11 +318,11 @@
                 </div>
                 <div>
                     <div class="mb-2">
-                        <x-text.amount class="amount-lg amount-error">Rp {{ number_format($summary['sisa_tunggakan'], 0, ',', '.') }}</x-text.amount>
+                        <x-text.amount class="amount-lg amount-error text-nowrap d-block">Rp {{ number_format($summary['sisa_tunggakan'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption>Belum Bayar: <strong style="color: #DC2626;">{{ number_format($summary['unpaid_bill_items']) }} item</strong></x-text.caption>
-                        <x-text.caption>Angsuran: <strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <x-text.caption class="text-nowrap">Belum Bayar: <strong style="color: #DC2626;">{{ number_format($summary['unpaid_bill_items']) }} item</strong></x-text.caption>
+                        <x-text.caption class="text-nowrap">Angsuran: <strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
                     </div>
                 </div>
             </div>
@@ -329,25 +333,25 @@
     <div class="col-xl-3 col-md-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
-                <div class="d-flex align-items-start justify-content-between mb-3">
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
                     <div>
                         <x-text.label>SALDO MASUK & DOMPET</x-text.label>
                         <x-text.caption class="d-block mt-1">Top-Up Bulan Berjalan & Saldo Aktif</x-text.caption>
                     </div>
                     <div class="action-cluster">
+                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">Top-Up Bulan Ini</span>
                         <a href="{{ route('report-saldo.index') }}" class="action-icon-btn" title="Laporan Saldo Santri">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                         </a>
                     </div>
                 </div>
                 <div>
-                    <div class="d-flex align-items-baseline justify-content-between mb-2">
-                        <x-text.amount class="amount-lg">Rp {{ number_format($summary['saldo_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
-                        <span class="badge tint-emerald rounded-pill px-2 py-1 fw-bold" style="font-size: 11px;">Top-Up Bulan Ini</span>
+                    <div class="mb-2">
+                        <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['saldo_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption>Hari Ini: <strong style="color: #10B981;">Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
-                        <x-text.caption>Saldo Aktif: <strong class="text-dark">Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <x-text.caption class="text-nowrap">Hari Ini: <strong style="color: #10B981;">Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        <x-text.caption class="text-nowrap">Saldo Aktif: <strong class="text-dark">Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}</strong></x-text.caption>
                     </div>
                 </div>
             </div>
@@ -544,8 +548,7 @@
                                 <th class="ps-2">Santri & Unit</th>
                                 <th>Kategori & Item</th>
                                 <th>Metode & Petugas</th>
-                                <th>Waktu Lunas</th>
-                                <th class="text-end pe-2">Nominal</th>
+                                <th class="text-end pe-2 text-nowrap" style="min-width: 170px;">Nominal</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -603,24 +606,19 @@
                                         </x-text.caption>
                                     </td>
                                     <td>
-                                        <x-text.body class="fw-semibold" style="font-size: 13px !important;">
+                                        <x-text.body class="fw-semibold text-dark" style="font-size: 13px !important;">
                                             {{ $tx->paymentMethod->name ?? 'Manual / Tunai' }}
                                         </x-text.body>
                                         <x-text.caption class="d-block">
                                             Oleh: {{ $tx->admin->name ?? 'Sistem / Wali' }}
                                         </x-text.caption>
-                                    </td>
-                                    <td>
-                                        <x-text.body class="fw-semibold" style="font-size: 12.5px !important;">
-                                            {{ $txTime ? $txTime->translatedFormat('d M Y, H:i') : '-' }}
-                                        </x-text.body>
-                                        <x-text.caption class="d-block">
-                                            {{ $txTime ? $txTime->diffForHumans() : '' }}
+                                        <x-text.caption class="d-block fst-normal mt-0.5" style="font-size: 11px !important; color: #64748b !important;">
+                                            {{ $txTime ? $txTime->translatedFormat('d M Y, H:i') : '-' }}{{ $txTime ? ' • ' . $txTime->diffForHumans() : '' }}
                                         </x-text.caption>
                                     </td>
-                                    <td class="text-end pe-2">
-                                        <div class="d-flex align-items-center justify-content-end gap-2">
-                                            <x-text.amount>Rp {{ number_format($tx->pay_amount, 0, ',', '.') }}</x-text.amount>
+                                    <td class="text-end pe-2 text-nowrap" style="min-width: 170px;">
+                                        <div class="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
+                                            <x-text.amount class="text-nowrap">Rp {{ number_format($tx->pay_amount, 0, ',', '.') }}</x-text.amount>
                                             <a href="{{ route('transaction.invoice', $tx->id) }}" target="_blank" class="action-icon-btn" title="Cetak Kwitansi / Invoice">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                             </a>
@@ -629,7 +627,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-8">
+                                    <td colspan="4" class="text-center py-8">
                                         <x-text.body>Belum ada aktivitas pembayaran terverifikasi.</x-text.body>
                                     </td>
                                 </tr>
