@@ -766,21 +766,34 @@
 </div>
 
 <!-- =====================================================================
-     SECTION 4: AKTIVITAS LOGIN WALI SANTRI & USER BACKOFFICE
+     SECTION 4: AKTIVITAS LOGIN WALI SANTRI & USER BACKOFFICE (3 COLUMNS)
      ===================================================================== -->
+@php
+    $waliPwaChartAll = $loginActivity['wali_pwa_chart']['all'] ?? [
+        'total' => $loginActivity['wali_total'] ?? 0,
+        'total_pct' => 100,
+        'login' => $loginActivity['wali_ever'] ?? 0,
+        'login_pct' => 0,
+        'not_login' => ($loginActivity['wali_total'] ?? 0) - ($loginActivity['wali_ever'] ?? 0),
+        'not_login_pct' => 0,
+    ];
+    $activeSchoolFilterName = isset($schools, $selectedSchoolId) && $selectedSchoolId
+        ? ($schools->firstWhere('id', $selectedSchoolId)->name ?? 'Unit Terpilih')
+        : 'Semua Unit';
+@endphp
 <div class="row g-4 mb-5">
-    <!-- Panel A: Aktivitas Login User Backoffice -->
-    <div class="col-xl-6">
+    <!-- Kolom 1: Aktivitas Login User Backoffice -->
+    <div class="col-xl-4 col-lg-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4">
                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
                     <div>
                         <x-text.label>BACKOFFICE ACCESS TELEMETRY</x-text.label>
                         <x-text.h2 class="mt-1">Aktivitas Login User Backoffice</x-text.h2>
-                        <x-text.caption>Monitoring kehadiran digital pengurus, bendahara, kasir & staff</x-text.caption>
+                        <x-text.caption>Kehadiran digital pengurus, bendahara, kasir & staff</x-text.caption>
                     </div>
                     <div class="action-cluster">
-                        <span class="badge tint-primary rounded-pill px-3 py-1.5 fw-bold" style="font-size: 11px;">
+                        <span class="badge tint-primary rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
                             Hari Ini: {{ $loginActivity['staff_count'] ?? 0 }} / {{ $loginActivity['staff_total'] ?? 0 }} ({{ $loginActivity['staff_percentage'] ?? 0 }}%)
                         </span>
                     </div>
@@ -788,9 +801,9 @@
 
                 <!-- Progress Strip -->
                 <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border-radius: 16px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
                         <x-text.caption class="fst-normal fw-bold text-dark">Keaktifan Hari Ini: {{ $loginActivity['staff_percentage'] ?? 0 }}%</x-text.caption>
-                        <x-text.caption class="fst-normal">7 Hari Terakhir: <strong>{{ $loginActivity['staff_7d'] ?? 0 }} Staff ({{ $loginActivity['staff_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
+                        <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['staff_7d'] ?? 0 }} Staff ({{ $loginActivity['staff_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
                     </div>
                     <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
                         <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['staff_percentage'] ?? 0) }}%; background: #2563EB;"></div>
@@ -803,16 +816,16 @@
                         @php
                             $isLoggedToday = $staff->last_login_at && $staff->last_login_at->isToday();
                         @endphp
-                        <div class="d-flex align-items-center justify-content-between py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="position-relative">
+                        <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
+                            <div class="d-flex align-items-start gap-2.5 min-w-0">
+                                <div class="position-relative flex-shrink-0">
                                     <img src="{{ $staff->avatar_url }}" alt="{{ $staff->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
                                     <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
                                           style="width: 10px; height: 10px; background-color: {{ $isLoggedToday ? '#10B981' : '#94a3b8' }};"></span>
                                 </div>
-                                <div>
-                                    <x-text.body class="fw-bold text-dark">{{ $staff->name }}</x-text.body>
-                                    <div class="d-flex flex-wrap align-items-center gap-1.5 mt-0.5">
+                                <div class="min-w-0">
+                                    <x-text.body class="fw-bold text-dark d-block text-truncate">{{ $staff->name }}</x-text.body>
+                                    <div class="d-flex flex-wrap align-items-center gap-1 mt-0.5">
                                         <span class="badge tint-primary rounded-pill px-2 py-0.5" style="font-size: 10px; font-weight: 700;">
                                             {{ $staff->role_name }}
                                         </span>
@@ -822,11 +835,11 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <span class="badge {{ $isLoggedToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10.5px;">
+                            <div class="text-end flex-shrink-0">
+                                <span class="badge {{ $isLoggedToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
                                     {{ $staff->last_login_at ? $staff->last_login_at->diffForHumans() : '-' }}
                                 </span>
-                                <x-text.caption class="d-block mt-1">
+                                <x-text.caption class="d-block mt-1 text-nowrap">
                                     {{ $staff->last_login_at ? $staff->last_login_at->translatedFormat('d M Y, H:i') : '-' }}
                                 </x-text.caption>
                             </div>
@@ -841,8 +854,8 @@
         </div>
     </div>
 
-    <!-- Panel B: Aktivitas Login Wali Santri -->
-    <div class="col-xl-6">
+    <!-- Kolom 2: Aktivitas Login Wali Santri (Vertical Stack Siswa) -->
+    <div class="col-xl-4 col-lg-6">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4">
                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
@@ -852,7 +865,7 @@
                         <x-text.caption>Monitoring akses aplikasi CT-Mobile / Portal oleh Wali Santri</x-text.caption>
                     </div>
                     <div class="action-cluster">
-                        <span class="badge tint-emerald rounded-pill px-3 py-1.5 fw-bold" style="font-size: 11px;">
+                        <span class="badge tint-emerald rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
                             Hari Ini: {{ $loginActivity['wali_count'] ?? 0 }} / {{ $loginActivity['wali_total'] ?? 0 }} ({{ $loginActivity['wali_percentage'] ?? 0 }}%)
                         </span>
                     </div>
@@ -860,9 +873,9 @@
 
                 <!-- Progress Strip -->
                 <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border-radius: 16px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
                         <x-text.caption class="fst-normal fw-bold text-dark">Akses Hari Ini: {{ $loginActivity['wali_percentage'] ?? 0 }}%</x-text.caption>
-                        <x-text.caption class="fst-normal">7 Hari Terakhir: <strong>{{ $loginActivity['wali_7d'] ?? 0 }} Wali ({{ $loginActivity['wali_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
+                        <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['wali_7d'] ?? 0 }} Wali ({{ $loginActivity['wali_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
                     </div>
                     <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
                         <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['wali_percentage'] ?? 0) }}%; background: #10B981;"></div>
@@ -874,29 +887,43 @@
                     @forelse($recentWaliLogins ?? [] as $wali)
                         @php
                             $isWaliToday = $wali->last_login && $wali->last_login->isToday();
-                            $studentLabels = $wali->student
-                                ? $wali->student->map(fn($st) => $st->name . ($st->classroom ? ' (' . $st->classroom->name . ')' : ''))->take(2)->implode(', ')
-                                : '-';
                         @endphp
-                        <div class="d-flex align-items-center justify-content-between py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="position-relative">
+                        <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
+                            <div class="d-flex align-items-start gap-2.5 min-w-0">
+                                <div class="position-relative flex-shrink-0 mt-0.5">
                                     <img src="{{ $wali->avatar_url }}" alt="{{ $wali->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
                                     <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
                                           style="width: 10px; height: 10px; background-color: {{ $isWaliToday ? '#10B981' : '#94a3b8' }};"></span>
                                 </div>
-                                <div>
-                                    <x-text.body class="fw-bold text-dark">{{ $wali->name }}</x-text.body>
-                                    <x-text.caption class="d-block fst-normal">
-                                        Wali dari: <strong class="text-dark">{{ \Illuminate\Support\Str::limit($studentLabels ?: '-', 38) }}</strong>
-                                    </x-text.caption>
+                                <div class="min-w-0">
+                                    <x-text.body class="fw-bold text-dark d-block">{{ $wali->name }}</x-text.body>
+                                    <div class="mt-0.5">
+                                        <x-text.caption class="d-block fst-normal mb-0.5" style="font-size: 11px; color: #94a3b8;">Wali dari :</x-text.caption>
+                                        @if($wali->student && $wali->student->isNotEmpty())
+                                            <div class="d-flex flex-column gap-1">
+                                                @foreach($wali->student as $st)
+                                                    <div class="d-flex align-items-start gap-1.5" style="line-height: 1.25;">
+                                                        <span class="rounded-circle flex-shrink-0" style="width: 5px; height: 5px; background-color: #10B981; margin-top: 5px;"></span>
+                                                        <span class="text-dark fw-bold" style="font-size: 11.5px;">
+                                                            {{ $st->name }}
+                                                            @if($st->classroom)
+                                                                <span class="fw-semibold" style="color: #64748b;">({{ $st->classroom->name }})</span>
+                                                            @endif
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <x-text.caption class="d-block fst-normal">-</x-text.caption>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <span class="badge {{ $isWaliToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10.5px;">
+                            <div class="text-end flex-shrink-0">
+                                <span class="badge {{ $isWaliToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
                                     {{ $wali->last_login ? $wali->last_login->diffForHumans() : '-' }}
                                 </span>
-                                <x-text.caption class="d-block mt-1">
+                                <x-text.caption class="d-block mt-1 text-nowrap">
                                     {{ $wali->last_login ? $wali->last_login->translatedFormat('d M Y, H:i') : '-' }}
                                 </x-text.caption>
                             </div>
@@ -906,6 +933,83 @@
                             <x-text.body>Belum ada riwayat login Wali Santri.</x-text.body>
                         </div>
                     @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom 3: Bar Chart Statistik Akses PWA Wali Santri (Filter-Driven, Angka & Persentase) -->
+    <div class="col-xl-4 col-lg-12">
+        <div class="card bi-card h-100">
+            <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                        <div>
+                            <x-text.label>PWA ADOPTION ANALYTICS</x-text.label>
+                            <x-text.h2 class="mt-1">Statistik Akses PWA Wali</x-text.h2>
+                            <x-text.caption id="waliPwaChartSubtitle">Proporsi Wali Santri pernah login vs belum login ke PWA</x-text.caption>
+                        </div>
+                        <div class="action-cluster">
+                            <button type="button" id="btnWaliPwaAll" class="bi-pill-btn active" onclick="switchWaliPwaChart('all')" style="padding: 4px 10px; font-size: 11px;">Semua</button>
+                            <button type="button" id="btnWaliPwa30d" class="bi-pill-btn" onclick="switchWaliPwaChart('30d')" style="padding: 4px 10px; font-size: 11px;">30H</button>
+                            <button type="button" id="btnWaliPwa7d" class="bi-pill-btn" onclick="switchWaliPwaChart('7d')" style="padding: 4px 10px; font-size: 11px;">7H</button>
+                            <button type="button" id="btnWaliPwaToday" class="bi-pill-btn" onclick="switchWaliPwaChart('today')" style="padding: 4px 10px; font-size: 11px;">Hari Ini</button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Scope Strip -->
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-4 mb-3" style="background: #f8fafc; border-radius: 14px;">
+                        <x-text.caption class="fst-normal fw-semibold text-dark">
+                            Filter Unit: <strong style="color: #2563EB;">{{ $activeSchoolFilterName }}</strong>
+                        </x-text.caption>
+                        <span id="waliPwaPeriodBadge" class="badge tint-primary rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
+                            Semua Waktu
+                        </span>
+                    </div>
+
+                    <!-- Bar Chart Container -->
+                    <div class="position-relative w-100 mb-3" style="height: 225px;">
+                        <canvas id="waliPwaBarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Summary Breakdown (Angka & Prosentase) -->
+                <div class="d-flex flex-column gap-2 pt-2" style="border-top: 1px dashed #e2e8f0;">
+                    <!-- Row 1: Total Wali Santri -->
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background: #f8fafc; border-radius: 14px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle flex-shrink-0" style="width: 10px; height: 10px; background: #2563EB;"></span>
+                            <x-text.body class="fw-bold text-dark mb-0" style="font-size: 13px;">Total Wali Santri</x-text.body>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="waliStatTotalCount" class="fw-bold text-dark" style="font-size: 14px;">{{ number_format($waliPwaChartAll['total'], 0, ',', '.') }}</span>
+                            <span id="waliStatTotalPct" class="badge tint-primary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10.5px;">{{ $waliPwaChartAll['total_pct'] }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Wali Santri Login PWA -->
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background: #f8fafc; border-radius: 14px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle flex-shrink-0" style="width: 10px; height: 10px; background: #10B981;"></span>
+                            <x-text.body class="fw-bold text-dark mb-0" style="font-size: 13px;">Wali Santri Login PWA</x-text.body>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="waliStatLoginCount" class="fw-bold" style="font-size: 14px; color: #10B981;">{{ number_format($waliPwaChartAll['login'], 0, ',', '.') }}</span>
+                            <span id="waliStatLoginPct" class="badge tint-emerald rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10.5px;">{{ $waliPwaChartAll['login_pct'] }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Wali Santri Tidak Login PWA -->
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3" style="background: #f8fafc; border-radius: 14px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rounded-circle flex-shrink-0" style="width: 10px; height: 10px; background: #DC2626;"></span>
+                            <x-text.body class="fw-bold text-dark mb-0" style="font-size: 13px;">Wali Santri Tidak Login</x-text.body>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="waliStatNotLoginCount" class="fw-bold" style="font-size: 14px; color: #DC2626;">{{ number_format($waliPwaChartAll['not_login'], 0, ',', '.') }}</span>
+                            <span id="waliStatNotLoginPct" class="badge tint-red rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10.5px;">{{ $waliPwaChartAll['not_login_pct'] }}%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -968,7 +1072,15 @@
 <script>
     const biBillTrendData = {!! json_encode($billTrendChart ?? ['labels' => [], 'target' => [], 'realisasi' => [], 'tunggakan' => [], 'percentage' => []]) !!};
     const biInflowData = {!! json_encode($inflowTrendChart ?? ['daily_30' => ['labels' => [], 'saldo_in' => [], 'bill_paid' => [], 'saving_in' => []], 'monthly_12' => ['labels' => [], 'saldo_in' => [], 'bill_paid' => [], 'saving_in' => []]]) !!};
+    const biWaliPwaData = {!! json_encode($loginActivity['wali_pwa_chart'] ?? [
+        'all' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
+        '30d' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
+        '7d' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
+        'today' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
+    ]) !!};
     let biInflowChartInstance = null;
+    let biWaliPwaChartInstance = null;
+    let currentWaliPwaMode = 'all';
 
     function formatRupiahCompact(value) {
         const num = Number(value) || 0;
@@ -1239,7 +1351,167 @@
                 }
             });
         }
+
+        // 5. Bar Chart Statistik Akses PWA Wali Santri (Total, Login, Tidak Login)
+        const waliPwaCtxEl = document.getElementById('waliPwaBarChart');
+        if (waliPwaCtxEl) {
+            const initialWali = biWaliPwaData.all || { total: 0, total_pct: 0, login: 0, login_pct: 0, not_login: 0, not_login_pct: 0 };
+
+            const waliBarDataLabelPlugin = {
+                id: 'waliBarDataLabelPlugin',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const activeData = biWaliPwaData[currentWaliPwaMode] || initialWali;
+                    const pcts = [activeData.total_pct, activeData.login_pct, activeData.not_login_pct];
+                    const colors = ['#1e293b', '#059669', '#dc2626'];
+                    const meta = chart.getDatasetMeta(0);
+
+                    ctx.save();
+                    ctx.font = '700 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+
+                    meta.data.forEach((bar, index) => {
+                        const rawVal = Number(chart.data.datasets[0].data[index] || 0);
+                        const pctVal = pcts[index] ?? 0;
+                        const labelText = rawVal.toLocaleString('id-ID') + ' (' + pctVal + '%)';
+                        ctx.fillStyle = colors[index] || '#0f172a';
+                        ctx.fillText(labelText, bar.x, bar.y - 6);
+                    });
+                    ctx.restore();
+                }
+            };
+
+            biWaliPwaChartInstance = new Chart(waliPwaCtxEl.getContext('2d'), {
+                type: 'bar',
+                plugins: [waliBarDataLabelPlugin],
+                data: {
+                    labels: ['Total Wali', 'Login PWA', 'Tidak Login'],
+                    datasets: [{
+                        label: 'Jumlah Wali Santri',
+                        data: [initialWali.total, initialWali.login, initialWali.not_login],
+                        backgroundColor: [
+                            'rgba(37, 99, 235, 0.88)',
+                            'rgba(16, 185, 129, 0.88)',
+                            'rgba(220, 38, 38, 0.88)'
+                        ],
+                        borderColor: ['#2563EB', '#10B981', '#DC2626'],
+                        borderWidth: 1.5,
+                        borderRadius: 10,
+                        maxBarThickness: 54
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 26,
+                            right: 8,
+                            left: 4,
+                            bottom: 0
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            padding: 10,
+                            cornerRadius: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    const activeData = biWaliPwaData[currentWaliPwaMode] || initialWali;
+                                    const pcts = [activeData.total_pct, activeData.login_pct, activeData.not_login_pct];
+                                    const val = Number(context.parsed.y || 0).toLocaleString('id-ID');
+                                    const pct = pcts[context.dataIndex] ?? 0;
+                                    return ' ' + context.label + ': ' + val + ' Wali (' + pct + '%)';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Inter', size: 11.5, weight: '700' },
+                                color: '#334155'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(148, 163, 184, 0.12)', drawBorder: false },
+                            ticks: {
+                                precision: 0,
+                                font: { family: 'Inter', size: 10.5 },
+                                color: '#64748b',
+                                callback: function(value) {
+                                    return Number(value).toLocaleString('id-ID');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     });
+
+    function switchWaliPwaChart(mode) {
+        if (!biWaliPwaChartInstance || !biWaliPwaData[mode]) return;
+        currentWaliPwaMode = mode;
+        const metric = biWaliPwaData[mode];
+
+        biWaliPwaChartInstance.data.datasets[0].data = [metric.total, metric.login, metric.not_login];
+        biWaliPwaChartInstance.update();
+
+        const modeMap = {
+            all: {
+                btnId: 'btnWaliPwaAll',
+                badge: 'Semua Waktu',
+                subtitle: 'Proporsi Wali Santri pernah login vs belum login ke PWA'
+            },
+            '30d': {
+                btnId: 'btnWaliPwa30d',
+                badge: '30 Hari Terakhir',
+                subtitle: 'Proporsi Wali Santri aktif login PWA dalam 30 hari terakhir'
+            },
+            '7d': {
+                btnId: 'btnWaliPwa7d',
+                badge: '7 Hari Terakhir',
+                subtitle: 'Proporsi Wali Santri aktif login PWA dalam 7 hari terakhir'
+            },
+            today: {
+                btnId: 'btnWaliPwaToday',
+                badge: 'Hari Ini',
+                subtitle: 'Proporsi Wali Santri aktif login PWA pada hari ini'
+            }
+        };
+
+        ['btnWaliPwaAll', 'btnWaliPwa30d', 'btnWaliPwa7d', 'btnWaliPwaToday'].forEach(id => {
+            document.getElementById(id)?.classList.remove('active');
+        });
+        const cfg = modeMap[mode] || modeMap.all;
+        document.getElementById(cfg.btnId)?.classList.add('active');
+
+        const badgeEl = document.getElementById('waliPwaPeriodBadge');
+        if (badgeEl) badgeEl.textContent = cfg.badge;
+
+        const subtitleEl = document.getElementById('waliPwaChartSubtitle');
+        if (subtitleEl) subtitleEl.textContent = cfg.subtitle;
+
+        const totalCntEl = document.getElementById('waliStatTotalCount');
+        const totalPctEl = document.getElementById('waliStatTotalPct');
+        const loginCntEl = document.getElementById('waliStatLoginCount');
+        const loginPctEl = document.getElementById('waliStatLoginPct');
+        const notLoginCntEl = document.getElementById('waliStatNotLoginCount');
+        const notLoginPctEl = document.getElementById('waliStatNotLoginPct');
+
+        if (totalCntEl) totalCntEl.textContent = Number(metric.total || 0).toLocaleString('id-ID');
+        if (totalPctEl) totalPctEl.textContent = (metric.total_pct ?? 0) + '%';
+        if (loginCntEl) loginCntEl.textContent = Number(metric.login || 0).toLocaleString('id-ID');
+        if (loginPctEl) loginPctEl.textContent = (metric.login_pct ?? 0) + '%';
+        if (notLoginCntEl) notLoginCntEl.textContent = Number(metric.not_login || 0).toLocaleString('id-ID');
+        if (notLoginPctEl) notLoginPctEl.textContent = (metric.not_login_pct ?? 0) + '%';
+    }
 
     function switchInflowChart(mode) {
         if (!biInflowChartInstance || !biInflowData[mode]) return;

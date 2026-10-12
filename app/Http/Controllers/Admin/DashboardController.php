@@ -483,44 +483,89 @@ class DashboardController extends Controller
             // 4. Real-Time Query: Aktivitas Login Wali Santri & User Backoffice
             $today = Carbon::today();
             $sevenDaysAgo = Carbon::today()->subDays(6)->startOfDay();
+            $thirtyDaysAgo = Carbon::today()->subDays(29)->startOfDay();
 
-            $staffLoginToday = Admin::where('is_active', 1)->whereDate('last_login_at', $today)->count();
-            $staffLogin7d = Admin::where('is_active', 1)->where('last_login_at', '>=', $sevenDaysAgo)->count();
+            $isSchoolFiltered = !empty($selectedSchoolId) || count($scopedSchoolIds) < count($allAllowedSchoolIds);
+            $waliScopedClassrooms = !empty($scopedSchoolIds)
+                ? Classroom::whereIn('school_id', $scopedSchoolIds)->pluck('id')->toArray()
+                : [];
 
-            $waliLoginToday = User::where('is_active', 1)->whereDate('last_login', $today)->count();
-            $waliLogin7d = User::where('is_active', 1)->where('last_login', '>=', $sevenDaysAgo)->count();
+            $staffBaseQuery = Admin::where('is_active', 1)
+                ->when(!empty($selectedSchoolId), fn($q) => $q->whereIn('school_id', $scopedSchoolIds));
+            $scopedTotalStaff = (clone $staffBaseQuery)->count();
+            $staffLoginToday = (clone $staffBaseQuery)->whereDate('last_login_at', $today)->count();
+            $staffLogin7d = (clone $staffBaseQuery)->where('last_login_at', '>=', $sevenDaysAgo)->count();
+
+            $waliBaseQuery = User::where('is_active', 1)
+                ->when($isSchoolFiltered, function ($query) use ($waliScopedClassrooms) {
+                    $query->whereHas('student', function ($q) use ($waliScopedClassrooms) {
+                        $q->where('status', Student::STATUS_ACTIVE)
+                            ->whereIn('classroom_id', $waliScopedClassrooms);
+                    });
+                });
+
+            $scopedTotalWali = (clone $waliBaseQuery)->count();
+            $totalWali = $scopedTotalWali;
+            $waliLoginEver = (clone $waliBaseQuery)->whereNotNull('last_login')->count();
+            $waliLogin30d = (clone $waliBaseQuery)->where('last_login', '>=', $thirtyDaysAgo)->count();
+            $waliLogin7d = (clone $waliBaseQuery)->where('last_login', '>=', $sevenDaysAgo)->count();
+            $waliLoginToday = (clone $waliBaseQuery)->whereDate('last_login', $today)->count();
+
+            $buildWaliPwaMetric = function (int $totalCount, int $loginCount): array {
+                $notLoginCount = max(0, $totalCount - $loginCount);
+                $loginPct = $totalCount > 0 ? round(($loginCount / $totalCount) * 100, 1) : 0.0;
+                $notLoginPct = $totalCount > 0 ? round(100 - $loginPct, 1) : 0.0;
+
+                return [
+                    'total' => $totalCount,
+                    'total_pct' => $totalCount > 0 ? 100.0 : 0.0,
+                    'login' => $loginCount,
+                    'login_pct' => $loginPct,
+                    'not_login' => $notLoginCount,
+                    'not_login_pct' => $notLoginPct,
+                ];
+            };
 
             $loginActivity = [
                 'staff_count' => $staffLoginToday,
                 'staff_7d' => $staffLogin7d,
-                'staff_total' => $totalStaff,
-                'staff_percentage' => $totalStaff > 0 ? round(($staffLoginToday / $totalStaff) * 100, 1) : 0,
-                'staff_7d_percentage' => $totalStaff > 0 ? round(($staffLogin7d / $totalStaff) * 100, 1) : 0,
+                'staff_total' => $scopedTotalStaff,
+                'staff_percentage' => $scopedTotalStaff > 0 ? round(($staffLoginToday / $scopedTotalStaff) * 100, 1) : 0,
+                'staff_7d_percentage' => $scopedTotalStaff > 0 ? round(($staffLogin7d / $scopedTotalStaff) * 100, 1) : 0,
                 'wali_count' => $waliLoginToday,
                 'wali_7d' => $waliLogin7d,
-                'wali_total' => $totalWali,
-                'wali_percentage' => $totalWali > 0 ? round(($waliLoginToday / $totalWali) * 100, 1) : 0,
-                'wali_7d_percentage' => $totalWali > 0 ? round(($waliLogin7d / $totalWali) * 100, 1) : 0,
+                'wali_30d' => $waliLogin30d,
+                'wali_ever' => $waliLoginEver,
+                'wali_total' => $scopedTotalWali,
+                'wali_percentage' => $scopedTotalWali > 0 ? round(($waliLoginToday / $scopedTotalWali) * 100, 1) : 0,
+                'wali_7d_percentage' => $scopedTotalWali > 0 ? round(($waliLogin7d / $scopedTotalWali) * 100, 1) : 0,
+                'wali_pwa_chart' => [
+                    'all' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginEver),
+                    '30d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin30d),
+                    '7d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin7d),
+                    'today' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginToday),
+                ],
             ];
 
             $recentStaffLogins = Admin::with(['roles:id,name', 'school:id,name'])
                 ->where('is_active', 1)
                 ->whereNotNull('last_login_at')
+                ->when(!empty($selectedSchoolId), fn($q) => $q->whereIn('school_id', $scopedSchoolIds))
                 ->orderByDesc('last_login_at')
                 ->limit(10)
                 ->get(['id', 'name', 'email', 'phone', 'avatar', 'school_id', 'role_id', 'last_login_at', 'access_scope']);
 
             $recentWaliLogins = User::with([
-                    'student' => function ($q) {
+                    'student' => function ($q) use ($isSchoolFiltered, $waliScopedClassrooms) {
                         $q->where('status', Student::STATUS_ACTIVE)
+                            ->when($isSchoolFiltered, fn($sq) => $sq->whereIn('classroom_id', $waliScopedClassrooms))
                             ->with(['classroom:id,name,school_id', 'classroom.school:id,name']);
                     },
                 ])
                 ->where('is_active', 1)
                 ->whereNotNull('last_login')
-                ->when(!empty($scopedSchoolIds), function ($query) use ($scopedSchoolIds) {
-                    $classroomIds = Classroom::whereIn('school_id', $scopedSchoolIds)->pluck('id')->toArray();
-                    $query->whereHas('student', fn($q) => $q->whereIn('classroom_id', $classroomIds));
+                ->when(!empty($scopedSchoolIds), function ($query) use ($waliScopedClassrooms) {
+                    $query->whereHas('student', fn($q) => $q->whereIn('classroom_id', $waliScopedClassrooms));
                 })
                 ->orderByDesc('last_login')
                 ->limit(10)
