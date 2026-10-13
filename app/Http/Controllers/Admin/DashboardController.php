@@ -505,6 +505,8 @@ class DashboardController extends Controller
                 ->get();
 
             // 4. Real-Time Query: Aktivitas Login Wali Santri & User Backoffice
+            $isSuperAdmin = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
+
             if ($user instanceof Admin) {
                 Cache::forget('admin_logged_out_' . $user->id);
                 if (!$user->last_login_at || $user->last_login_at->diffInSeconds(now()) >= 120) {
@@ -540,8 +542,6 @@ class DashboardController extends Controller
 
             $scopedTotalWali = (clone $waliBaseQuery)->count();
             $totalWali = $scopedTotalWali;
-            $waliLoginEver = (clone $waliBaseQuery)->whereNotNull('last_login')->count();
-            $waliLogin30d = (clone $waliBaseQuery)->where('last_login', '>=', $thirtyDaysAgo)->count();
             $waliLogin7d = (clone $waliBaseQuery)->where('last_login', '>=', $sevenDaysAgo)->count();
             $waliLoginToday = (clone $waliBaseQuery)->whereDate('last_login', $today)->count();
 
@@ -560,29 +560,61 @@ class DashboardController extends Controller
                 ];
             };
 
-            $scopedStaffIds = !empty($selectedSchoolId)
-                ? (clone $staffBaseQuery)->pluck('id')->toArray()
-                : null;
+            if ($isSuperAdmin) {
+                $waliLoginEver = (clone $waliBaseQuery)->whereNotNull('last_login')->count();
+                $waliLogin30d = (clone $waliBaseQuery)->where('last_login', '>=', $thirtyDaysAgo)->count();
 
-            $staffActivityBaseQuery = Activity::where('causer_type', Admin::class)
-                ->whereNotNull('causer_id')
-                ->when($scopedStaffIds !== null, fn($q) => $q->whereIn('causer_id', $scopedStaffIds));
+                $scopedStaffIds = !empty($selectedSchoolId)
+                    ? (clone $staffBaseQuery)->pluck('id')->toArray()
+                    : null;
 
-            $staffActivityToday = (clone $staffActivityBaseQuery)->whereDate('created_at', $today)->count();
-            $staffActivity7d = (clone $staffActivityBaseQuery)->where('created_at', '>=', $sevenDaysAgo)->count();
+                $staffActivityBaseQuery = Activity::where('causer_type', Admin::class)
+                    ->whereNotNull('causer_id')
+                    ->when($scopedStaffIds !== null, fn($q) => $q->whereIn('causer_id', $scopedStaffIds));
 
-            // Hanya ambil User Backoffice yang SEDANG ONLINE (aktif dalam 15 menit terakhir & belum logout)
-            $recentStaffLogins = Admin::with(['roles:id,name', 'school:id,name'])
-                ->where('is_active', 1)
-                ->whereNotNull('last_login_at')
-                ->where('last_login_at', '>=', $onlineThreshold)
-                ->when(!empty($selectedSchoolId), fn($q) => $q->whereIn('school_id', $scopedSchoolIds))
-                ->orderByDesc('last_login_at')
-                ->get(['id', 'name', 'email', 'phone', 'avatar', 'school_id', 'role_id', 'last_login_at', 'access_scope'])
-                ->reject(fn($staff) => Cache::has('admin_logged_out_' . $staff->id))
-                ->values();
+                $staffActivityToday = (clone $staffActivityBaseQuery)->whereDate('created_at', $today)->count();
+                $staffActivity7d = (clone $staffActivityBaseQuery)->where('created_at', '>=', $sevenDaysAgo)->count();
 
-            $staffOnlineCount = $recentStaffLogins->count();
+                // Hanya ambil User Backoffice yang SEDANG ONLINE (aktif dalam 15 menit terakhir & belum logout)
+                $recentStaffLogins = Admin::with(['roles:id,name', 'school:id,name'])
+                    ->where('is_active', 1)
+                    ->whereNotNull('last_login_at')
+                    ->where('last_login_at', '>=', $onlineThreshold)
+                    ->when(!empty($selectedSchoolId), fn($q) => $q->whereIn('school_id', $scopedSchoolIds))
+                    ->orderByDesc('last_login_at')
+                    ->get(['id', 'name', 'email', 'phone', 'avatar', 'school_id', 'role_id', 'last_login_at', 'access_scope'])
+                    ->reject(fn($staff) => Cache::has('admin_logged_out_' . $staff->id))
+                    ->values();
+
+                $staffOnlineCount = $recentStaffLogins->count();
+
+                $recentStaffActivities = (clone $staffActivityBaseQuery)
+                    ->with(['causer.roles', 'causer.school'])
+                    ->orderByDesc('created_at')
+                    ->limit(15)
+                    ->get();
+
+                $waliPwaChart = [
+                    'all' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginEver),
+                    '30d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin30d),
+                    '7d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin7d),
+                    'today' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginToday),
+                ];
+            } else {
+                $waliLoginEver = 0;
+                $waliLogin30d = 0;
+                $staffActivityToday = 0;
+                $staffActivity7d = 0;
+                $staffOnlineCount = 0;
+                $recentStaffLogins = collect([]);
+                $recentStaffActivities = collect([]);
+                $waliPwaChart = [
+                    'all' => $buildWaliPwaMetric(0, 0),
+                    '30d' => $buildWaliPwaMetric(0, 0),
+                    '7d' => $buildWaliPwaMetric(0, 0),
+                    'today' => $buildWaliPwaMetric(0, 0),
+                ];
+            }
 
             $loginActivity = [
                 'staff_online_count' => $staffOnlineCount,
@@ -601,22 +633,12 @@ class DashboardController extends Controller
                 'wali_total' => $scopedTotalWali,
                 'wali_percentage' => $scopedTotalWali > 0 ? round(($waliLoginToday / $scopedTotalWali) * 100, 1) : 0,
                 'wali_7d_percentage' => $scopedTotalWali > 0 ? round(($waliLogin7d / $scopedTotalWali) * 100, 1) : 0,
-                'wali_pwa_chart' => [
-                    'all' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginEver),
-                    '30d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin30d),
-                    '7d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin7d),
-                    'today' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginToday),
-                ],
+                'wali_pwa_chart' => $waliPwaChart,
             ];
-
-            $recentStaffActivities = (clone $staffActivityBaseQuery)
-                ->with(['causer.roles', 'causer.school'])
-                ->orderByDesc('created_at')
-                ->limit(15)
-                ->get();
 
             return view('admins.dashboard.index', compact(
                 'isOutletUser',
+                'isSuperAdmin',
                 'canViewBiDashboard',
                 'schools',
                 'academicYears',
@@ -643,6 +665,7 @@ class DashboardController extends Controller
             Log::error('Dashboard BI Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return view('admins.dashboard.index', [
                 'isOutletUser' => false,
+                'isSuperAdmin' => false,
                 'schools' => collect([]),
                 'academicYears' => collect([]),
                 'selectedSchoolId' => null,

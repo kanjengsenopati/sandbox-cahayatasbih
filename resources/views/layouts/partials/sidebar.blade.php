@@ -149,6 +149,10 @@
                             return in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList) || $currentUser->can('Manage Menu Aplikasi');
                         }
 
+                        if (str_contains($sub->url, 'report-audit')) {
+                            return $currentUser && method_exists($currentUser, 'isSuperAdmin') && $currentUser->isSuperAdmin();
+                        }
+
                         if ($currentUser->isSuperAdmin()) {
                             return true;
                         }

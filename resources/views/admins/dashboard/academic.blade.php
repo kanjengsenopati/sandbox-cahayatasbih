@@ -767,7 +767,13 @@
 
 <!-- =====================================================================
      SECTION 4: BACKOFFICE ACCESS & ACTIVITY TELEMETRY + PWA ADOPTION (2 COLUMNS)
+     (RESTRICTED TO SUPER ADMIN ONLY)
      ===================================================================== -->
+@php
+    $canViewSuperAdminTelemetry = ($isSuperAdmin ?? false)
+        || (auth()->check() && method_exists(auth()->user(), 'isSuperAdmin') && auth()->user()->isSuperAdmin());
+@endphp
+@if($canViewSuperAdminTelemetry)
 @php
     $waliPwaChartAll = $loginActivity['wali_pwa_chart']['all'] ?? [
         'total' => $loginActivity['wali_total'] ?? 0,
@@ -1019,6 +1025,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <!-- =====================================================================
      SECTION 5: AGENDA & KEGIATAN MENDATANG
@@ -1076,12 +1083,12 @@
 <script>
     const biBillTrendData = {!! json_encode($billTrendChart ?? ['labels' => [], 'target' => [], 'realisasi' => [], 'tunggakan' => [], 'percentage' => []]) !!};
     const biInflowData = {!! json_encode($inflowTrendChart ?? ['daily_30' => ['labels' => [], 'saldo_in' => [], 'bill_paid' => [], 'saving_in' => []], 'monthly_12' => ['labels' => [], 'saldo_in' => [], 'bill_paid' => [], 'saving_in' => []]]) !!};
-    const biWaliPwaData = {!! json_encode($loginActivity['wali_pwa_chart'] ?? [
+    const biWaliPwaData = {!! json_encode($canViewSuperAdminTelemetry ? ($loginActivity['wali_pwa_chart'] ?? [
         'all' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
         '30d' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
         '7d' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
         'today' => ['total' => 0, 'total_pct' => 0, 'login' => 0, 'login_pct' => 0, 'not_login' => 0, 'not_login_pct' => 0],
-    ]) !!};
+    ]) : []) !!};
     let biInflowChartInstance = null;
     let biWaliPwaChartInstance = null;
     let currentWaliPwaMode = 'all';
