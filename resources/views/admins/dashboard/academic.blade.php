@@ -392,18 +392,38 @@
 
     <!-- Wali Santri -->
     <div class="col-xl-3 col-6">
-        <div class="card bi-card">
-            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+        <div class="card bi-card h-100">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
                 <div>
-                    <x-text.label>WALI SANTRI AKTIF</x-text.label>
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <x-text.label class="text-nowrap">WALI SANTRI AKTIF</x-text.label>
+                        <div class="action-cluster">
+                            <button type="button" class="action-icon-btn border-0" data-bs-toggle="modal" data-bs-target="#modalWaliSantriAudit" title="Audit & Rincian Status Wali Santri">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </button>
+                            <a href="{{ route('user.index') }}" class="action-icon-btn tint-emerald" title="Data Wali Santri">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </a>
+                        </div>
+                    </div>
                     <div class="d-flex align-items-baseline gap-2 mt-1">
                         <x-text.h1 class="mb-0">{{ number_format($totalWali) }}</x-text.h1>
-                        <x-text.caption>{{ $loginActivity['wali_count'] ?? 0 }} login hari ini</x-text.caption>
+                        <x-text.caption class="text-nowrap">{{ $loginActivity['wali_count'] ?? 0 }} login hari ini</x-text.caption>
                     </div>
                 </div>
-                <a href="{{ route('user.index') }}" class="action-icon-btn tint-emerald" title="Data Wali Santri">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </a>
+                <div class="d-flex flex-wrap align-items-center gap-1 mt-2 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                    <a href="{{ route('user.index', ['status' => 'ACTIVE']) }}" class="badge rounded-pill px-2 py-0.5 fw-bold text-decoration-none" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981; font-size: 10px;" title="Wali Aktif yang pernah login ke PWA">
+                        {{ number_format($loginActivity['wali_ever'] ?? 0) }} Login
+                    </a>
+                    <a href="{{ route('user.index', ['status' => 'INACTIVE']) }}" class="badge rounded-pill px-2 py-0.5 fw-bold text-decoration-none" style="background-color: rgba(245, 158, 11, 0.1); color: #D97706; font-size: 10px;" title="Wali Aktif yang belum pernah login (Hanya Terdaftar)">
+                        {{ number_format($loginActivity['wali_never'] ?? 0) }} Terdaftar
+                    </a>
+                    @if(($loginActivity['wali_inactive'] ?? 0) > 0)
+                        <button type="button" class="badge rounded-pill px-2 py-0.5 fw-bold border-0 text-decoration-none" style="background-color: rgba(220, 38, 38, 0.08); color: #DC2626; font-size: 10px;" data-bs-toggle="modal" data-bs-target="#modalWaliSantriAudit" title="{{ $loginActivity['wali_inactive'] }} Wali yang seluruh anaknya sudah keluar/lulus/pindah">
+                            +{{ number_format($loginActivity['wali_inactive']) }} Out
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -1073,6 +1093,201 @@
                         <x-text.body>Belum ada agenda mendatang yang terjadwal.</x-text.body>
                     </div>
                 @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     MODAL AUDIT STATUS & DISTRIBUSI WALI SANTRI (PAKRT NATIVE VITE)
+     ===================================================================== -->
+<div class="modal fade" id="modalWaliSantriAudit" tabindex="-1" aria-labelledby="modalWaliSantriAuditLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 p-2" style="border-radius: 24px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); background: #ffffff;">
+            <div class="modal-header border-0 pb-0 px-5 pt-4 d-flex align-items-center justify-content-between">
+                <div>
+                    <x-text.label>AUDIT BI DATA INTEGRITY</x-text.label>
+                    <x-text.h1 id="modalWaliSantriAuditLabel" class="mt-1 mb-0" style="font-size: 20px;">
+                        Distribusi & Status Akun Wali Santri
+                    </x-text.h1>
+                    <x-text.caption class="d-block mt-0.5">
+                        Rekonsiliasi data antara akun pengguna terdaftar, status keaktifan santri, dan aktivitas login portal.
+                    </x-text.caption>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="border-radius: 10px;"></button>
+            </div>
+
+            <div class="modal-body px-5 py-4">
+                <!-- Segmented Progress Bar -->
+                @php
+                    $registeredTotal = max(1, $loginActivity['wali_registered_total'] ?? ($totalWali + ($loginActivity['wali_inactive'] ?? 0) + ($loginActivity['wali_orphan'] ?? 0)));
+                    $pctActive = round(($totalWali / $registeredTotal) * 100, 1);
+                    $pctInactive = round((($loginActivity['wali_inactive'] ?? 0) / $registeredTotal) * 100, 1);
+                    $pctOrphan = max(0, round(100 - $pctActive - $pctInactive, 1));
+                @endphp
+                <div class="p-4 rounded-4 mb-4" style="background: #f8fafc; border-radius: 20px;">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <x-text.label>TOTAL AKUN TERDAFTAR DI DATABASE</x-text.label>
+                        <span class="badge tint-primary rounded-pill px-3 py-1 fw-bold" style="font-size: 12px;">
+                            {{ number_format($loginActivity['wali_registered_total'] ?? $registeredTotal) }} Total Akun
+                        </span>
+                    </div>
+                    <div class="progress w-100 mb-2" style="height: 10px; border-radius: 10px; background-color: #e2e8f0; overflow: hidden;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ $pctActive }}%; background-color: #10B981;" title="Santri Aktif: {{ $pctActive }}%"></div>
+                        <div class="progress-bar" role="progressbar" style="width: {{ $pctInactive }}%; background-color: #DC2626;" title="Santri Non-Aktif/Out: {{ $pctInactive }}%"></div>
+                        <div class="progress-bar" role="progressbar" style="width: {{ $pctOrphan }}%; background-color: #94a3b8;" title="Tanpa Santri / Orphan: {{ $pctOrphan }}%"></div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #10B981;"></span>
+                            <x-text.caption class="mb-0">Santri Aktif: <strong class="text-dark">{{ number_format($totalWali) }}</strong> ({{ $pctActive }}%)</x-text.caption>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #DC2626;"></span>
+                            <x-text.caption class="mb-0">Santri Out/Alumni: <strong class="text-dark">{{ number_format($loginActivity['wali_inactive'] ?? 0) }}</strong> ({{ $pctInactive }}%)</x-text.caption>
+                        </div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="d-inline-block rounded-circle" style="width: 8px; height: 8px; background-color: #94a3b8;"></span>
+                            <x-text.caption class="mb-0">Tanpa Santri: <strong class="text-dark">{{ number_format($loginActivity['wali_orphan'] ?? 0) }}</strong> ({{ $pctOrphan }}%)</x-text.caption>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 Pillars Cards Grid -->
+                <div class="row g-3">
+                    <!-- Pilar 1: Wali Santri Aktif Riil -->
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 p-3" style="border-radius: 18px; background: #ffffff; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); border: 1px solid rgba(16, 185, 129, 0.2) !important;">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: rgba(16, 185, 129, 0.1); color: #10B981; font-size: 11px;">
+                                    Santri Aktif
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <x-text.amount class="amount-lg d-block mb-1" style="color: #10B981 !important;">
+                                {{ number_format($totalWali) }} Wali
+                            </x-text.amount>
+                            <x-text.caption class="d-block mb-3" style="font-size: 11.5px; line-height: 1.35;">
+                                Memiliki minimal satu santri berstatus <strong>ACTIVE</strong> di unit pondok.
+                            </x-text.caption>
+                            
+                            <div class="pt-2 mb-3" style="border-top: 1px dashed #e2e8f0;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Pernah Login PWA</x-text.caption>
+                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ number_format($loginActivity['wali_ever'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Hanya Terdaftar</x-text.caption>
+                                    <span class="fw-bold" style="color: #D97706; font-size: 12px;">{{ number_format($loginActivity['wali_never'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Login 7 Hari Terakhir</x-text.caption>
+                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ number_format($loginActivity['wali_7d'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <x-text.caption>Login Hari Ini</x-text.caption>
+                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ number_format($loginActivity['wali_count'] ?? 0) }}</span>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('user.index', ['status' => 'ACTIVE']) }}" class="btn btn-sm w-100 fw-bold mt-auto" style="border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
+                                Buka Data Wali Aktif
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Pilar 2: Wali Santri Out / Alumni -->
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 p-3" style="border-radius: 18px; background: #ffffff; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); border: 1px solid rgba(220, 38, 38, 0.2) !important;">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: rgba(220, 38, 38, 0.1); color: #DC2626; font-size: 11px;">
+                                    Santri Non-Aktif
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            </div>
+                            <x-text.amount class="amount-lg d-block mb-1" style="color: #DC2626 !important;">
+                                {{ number_format($loginActivity['wali_inactive'] ?? 0) }} Wali
+                            </x-text.amount>
+                            <x-text.caption class="d-block mb-3" style="font-size: 11.5px; line-height: 1.35;">
+                                Seluruh santrinya sudah tidak aktif (lulus, keluar/DO, atau pindah).
+                            </x-text.caption>
+
+                            <div class="pt-2 mb-3" style="border-top: 1px dashed #e2e8f0;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Santri Lulus (Alumni)</x-text.caption>
+                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ number_format($loginActivity['wali_alumni'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Santri Keluar (DO)</x-text.caption>
+                                    <span class="fw-bold" style="color: #DC2626; font-size: 12px;">{{ number_format($loginActivity['wali_dropped_out'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Santri Pindah (Mutasi)</x-text.caption>
+                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ number_format($loginActivity['wali_transferred'] ?? 0) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <x-text.caption>Arsip Keuangan</x-text.caption>
+                                    <span class="badge tint-slate px-1.5 py-0.5 rounded-pill" style="font-size: 9.5px;">Tersimpan</span>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('student.index') }}" class="btn btn-sm w-100 fw-bold mt-auto" style="border-radius: 12px; background-color: rgba(220, 38, 38, 0.1); color: #DC2626;">
+                                Kelola Data Santri
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Pilar 3: Akun Tanpa Santri (Orphan) -->
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 p-3" style="border-radius: 18px; background: #ffffff; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0 !important;">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: rgba(148, 163, 184, 0.15); color: #475569; font-size: 11px;">
+                                    Tanpa Santri
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
+                            </div>
+                            <x-text.amount class="amount-lg d-block mb-1" style="color: #64748b !important;">
+                                {{ number_format($loginActivity['wali_orphan'] ?? 0) }} Akun
+                            </x-text.amount>
+                            <x-text.caption class="d-block mb-3" style="font-size: 11.5px; line-height: 1.35;">
+                                Akun terdaftar yang belum/tidak memiliki tautan data santri aktif maupun alumni.
+                            </x-text.caption>
+
+                            <div class="pt-2 mb-3" style="border-top: 1px dashed #e2e8f0;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Sumber Akun</x-text.caption>
+                                    <span class="badge tint-slate px-1.5 py-0.5 rounded-pill" style="font-size: 9.5px;">PPDB / Manual</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Status Akses</x-text.caption>
+                                    <span class="text-dark fw-bold" style="font-size: 12px;">is_active = 1</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <x-text.caption>Tautan Siswa</x-text.caption>
+                                    <span class="text-muted fw-bold" style="font-size: 12px;">0 Santri</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <x-text.caption>Rekomendasi</x-text.caption>
+                                    <span class="badge tint-primary px-1.5 py-0.5 rounded-pill" style="font-size: 9.5px;">Verifikasi</span>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('user.index') }}" class="btn btn-sm w-100 fw-bold mt-auto" style="border-radius: 12px; background-color: #f1f5f9; color: #475569;">
+                                Kelola Akun Pengguna
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 px-5 pb-4 pt-2 d-flex justify-content-between align-items-center">
+                <x-text.caption class="text-muted mb-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Data metrik Executive BI kini terisolasi akurat hanya untuk santri yang berstatus aktif.
+                </x-text.caption>
+                <button type="button" class="btn btn-sm btn-dark px-4 py-2 fw-bold" data-bs-dismiss="modal" style="border-radius: 12px;">
+                    Tutup
+                </button>
             </div>
         </div>
     </div>
