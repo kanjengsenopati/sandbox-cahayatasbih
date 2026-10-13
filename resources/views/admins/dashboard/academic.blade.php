@@ -789,14 +789,15 @@
                 <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-4">
                     <div>
                         <x-text.label>BACKOFFICE ACCESS & ACTIVITY TELEMETRY</x-text.label>
-                        <x-text.h2 class="mt-1">Aktivitas Login & Log Activity User Backoffice</x-text.h2>
-                        <x-text.caption>Kehadiran digital pengurus, bendahara, kasir & jejak audit aktivitas sistem secara real-time</x-text.caption>
+                        <x-text.h2 class="mt-1">User Backoffice Online & Log Activity</x-text.h2>
+                        <x-text.caption>Monitoring petugas yang sedang online aktif & jejak audit aktivitas sistem secara real-time</x-text.caption>
                     </div>
                     <div class="action-cluster flex-wrap">
-                        <span class="badge tint-primary rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
-                            Login Hari Ini: {{ $loginActivity['staff_count'] ?? 0 }} / {{ $loginActivity['staff_total'] ?? 0 }} ({{ $loginActivity['staff_percentage'] ?? 0 }}%)
+                        <span class="badge tint-emerald rounded-pill px-2.5 py-1.5 fw-bold text-nowrap d-inline-flex align-items-center gap-1.5" style="font-size: 10.5px;">
+                            <span class="rounded-circle" style="width: 7px; height: 7px; background-color: #10B981; display: inline-block;"></span>
+                            Sedang Online: {{ $loginActivity['staff_online_count'] ?? 0 }} / {{ $loginActivity['staff_total'] ?? 0 }} Staff
                         </span>
-                        <span class="badge tint-emerald rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
+                        <span class="badge tint-primary rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
                             Log Hari Ini: {{ number_format($loginActivity['staff_activity_today'] ?? 0, 0, ',', '.') }} Aksi
                         </span>
                         @if(Route::has('report-audit.index'))
@@ -808,31 +809,28 @@
                 </div>
 
                 <div class="row g-4">
-                    <!-- Sub-Kolom Kiri: Riwayat Login User Backoffice -->
+                    <!-- Sub-Kolom Kiri: User Backoffice Sedang Online -->
                     <div class="col-lg-5">
-                        <!-- Progress Strip Login -->
+                        <!-- Progress Strip User Online -->
                         <div class="p-3 rounded-4 mb-3" style="background: #f8fafc; border-radius: 16px;">
                             <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
-                                <x-text.caption class="fst-normal fw-bold text-dark">Keaktifan Login: {{ $loginActivity['staff_percentage'] ?? 0 }}%</x-text.caption>
-                                <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['staff_7d'] ?? 0 }} Staff ({{ $loginActivity['staff_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
+                                <x-text.caption class="fst-normal fw-bold text-dark">User Sedang Online: {{ $loginActivity['staff_online_count'] ?? 0 }} Staff</x-text.caption>
+                                <x-text.caption class="fst-normal">Hari Ini: <strong>{{ $loginActivity['staff_count'] ?? 0 }} Staff ({{ $loginActivity['staff_percentage'] ?? 0 }}%)</strong></x-text.caption>
                             </div>
                             <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
-                                <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['staff_percentage'] ?? 0) }}%; background: #2563EB;"></div>
+                                <div class="rounded-pill" style="height: 6px; width: {{ min(100, max(($loginActivity['staff_online_count'] ?? 0) > 0 ? 8 : 0, $loginActivity['staff_online_percentage'] ?? 0)) }}%; background: #10B981;"></div>
                             </div>
                         </div>
 
-                        <!-- Recent 10 Backoffice Logins Feed -->
+                        <!-- Currently Online Backoffice Users Feed -->
                         <div class="bi-feed-scroll">
                             @forelse($recentStaffLogins ?? [] as $staff)
-                                @php
-                                    $isLoggedToday = $staff->last_login_at && $staff->last_login_at->isToday();
-                                @endphp
                                 <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
                                     <div class="d-flex align-items-start gap-2.5 min-w-0">
                                         <div class="position-relative flex-shrink-0">
                                             <img src="{{ $staff->avatar_url }}" alt="{{ $staff->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
                                             <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
-                                                  style="width: 10px; height: 10px; background-color: {{ $isLoggedToday ? '#10B981' : '#94a3b8' }};"></span>
+                                                  style="width: 10px; height: 10px; background-color: #10B981;" title="Sedang Online"></span>
                                         </div>
                                         <div class="min-w-0">
                                             <x-text.body class="fw-bold text-dark d-block text-truncate">{{ $staff->name }}</x-text.body>
@@ -847,17 +845,18 @@
                                         </div>
                                     </div>
                                     <div class="text-end flex-shrink-0">
-                                        <span class="badge {{ $isLoggedToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
-                                            {{ $staff->last_login_at ? $staff->last_login_at->diffForHumans() : '-' }}
+                                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style="font-size: 10px;">
+                                            <span class="rounded-circle" style="width: 6px; height: 6px; background-color: #10B981; display: inline-block;"></span>
+                                            ONLINE
                                         </span>
                                         <x-text.caption class="d-block mt-1 text-nowrap">
-                                            {{ $staff->last_login_at ? $staff->last_login_at->translatedFormat('d M Y, H:i') : '-' }}
+                                            Aktif {{ $staff->last_login_at ? $staff->last_login_at->diffForHumans() : 'baru saja' }}
                                         </x-text.caption>
                                     </div>
                                 </div>
                             @empty
                                 <div class="text-center py-6">
-                                    <x-text.body>Belum ada riwayat login User Backoffice.</x-text.body>
+                                    <x-text.body>Tidak ada User Backoffice yang sedang online saat ini.</x-text.body>
                                 </div>
                             @endforelse
                         </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\Admin\AuthRequest;
 
 class AuthController extends Controller
@@ -32,6 +33,7 @@ class AuthController extends Controller
                     Auth::guard('web')->logout();
                     return back()->with(['warning' => 'Maaf, akun Anda dikonfigurasi hanya untuk akses PWA !!'])->withInput($request->only('email'));
                 }
+                Cache::forget('admin_logged_out_' . $user->id);
                 $user->update([
                     'last_login_at' => now(),
                 ]);
@@ -52,7 +54,11 @@ class AuthController extends Controller
 
     public function logout()
     {
+        $user = Auth::guard('web')->user();
+        if ($user) {
+            Cache::put('admin_logged_out_' . $user->id, true, now()->addMinutes(20));
+        }
         Auth::guard('web')->logout();
-        return  redirect('/');
+        return redirect('/');
     }
 }
