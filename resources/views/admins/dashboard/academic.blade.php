@@ -828,7 +828,7 @@
                                                         <div class="bi-nested-card h-100 d-flex flex-column justify-content-between">
                                                             <div>
                                                                 <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                                                                    <x-text.label>TAGIHAN BELUM LUNAS (TA INI)</x-text.label>
+                                                                    <x-text.label>TAGIHAN JATUH TEMPO (S.D. BULAN INI)</x-text.label>
                                                                     <span class="badge {{ $fin['unpaid_amount'] > 0 ? 'tint-red' : 'tint-emerald' }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
                                                                         {{ $fin['unpaid_count'] }} Item
                                                                     </span>
@@ -838,7 +838,7 @@
                                                                 </x-text.amount>
                                                             </div>
                                                             <x-text.caption class="mt-2 text-truncate">
-                                                                Sisa tunggakan periode aktif
+                                                                Kewajiban jatuh tempo s.d. {{ Carbon\Carbon::now()->translatedFormat('F Y') }}
                                                             </x-text.caption>
                                                         </div>
                                                     </div>
@@ -881,9 +881,9 @@
                                                             </div>
                                                             <x-text.caption class="mt-2">
                                                                 @if($fin['unpaid_amount'] === 0)
-                                                                    Likuiditas aman, tidak ada tunggakan
+                                                                    Likuiditas aman, tidak ada tunggakan jatuh tempo
                                                                 @elseif($fin['capability_ratio'] !== null)
-                                                                    Volume top-up = <strong>{{ $fin['capability_ratio'] }}%</strong> dari sisa tagihan
+                                                                    Volume top-up = <strong>{{ $fin['capability_ratio'] }}%</strong> dari tagihan jatuh tempo
                                                                 @else
                                                                     Perlu atensi, tanpa mutasi top-up 30 hari
                                                                 @endif
@@ -895,7 +895,7 @@
                                                 <!-- Row 3: Mini-Tabel Rincian Tagihan Belum Lunas -->
                                                 <div class="bg-white rounded-3 p-3" style="border: 1px solid #f1f5f9;">
                                                     <div class="d-flex align-items-center justify-content-between mb-2">
-                                                        <x-text.label style="font-size: 11px !important;">RINCIAN POS TAGIHAN BELUM LUNAS</x-text.label>
+                                                        <x-text.label style="font-size: 11px !important;">RINCIAN POS TAGIHAN JATUH TEMPO (S.D. BULAN INI)</x-text.label>
                                                         <a href="{{ route('report-bill.index', ['student_id' => $tx->student_id]) }}" class="text-primary fw-bold" style="font-size: 11px; text-decoration: none;">
                                                             Lihat Rekap Lengkap &rarr;
                                                         </a>
@@ -933,7 +933,7 @@
                                                         <div class="text-center py-3">
                                                             <svg class="text-success mb-1" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                                             <x-text.caption class="d-block fst-normal text-success fw-bold">
-                                                                Seluruh tagihan santri pada periode Tahun Ajaran ini telah terbayar lunas.
+                                                                Seluruh tagihan santri yang jatuh tempo s.d. bulan ini telah terbayar lunas.
                                                             </x-text.caption>
                                                         </div>
                                                     @endif

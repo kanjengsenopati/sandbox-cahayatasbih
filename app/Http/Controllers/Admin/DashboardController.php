@@ -515,7 +515,10 @@ class DashboardController extends Controller
 
             $studentFinancialProfiles = [];
             if ($recentStudentIds->isNotEmpty()) {
-                // Query unpaid bills scoped by selected academic year if not 'all'
+                // Query unpaid bills scoped by selected academic year and up to current month (jatuh tempo)
+                $currentYear = (int) Carbon::now()->year;
+                $currentMonth = (int) Carbon::now()->month;
+
                 $unpaidBillsQuery = DB::table('bills')
                     ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
                     ->whereIn('bills.student_id', $recentStudentIds)
@@ -524,7 +527,31 @@ class DashboardController extends Controller
                     ->where('bill_types.is_visible', 1)
                     ->whereNotIn('bills.bill_type_id', $excludedBillTypeIds ?? [])
                     ->whereIn('bills.status', [Bill::STATUS_UNPAID, Bill::STATUS_PARTIAL])
-                    ->when($selectedAcademicYearId && $selectedAcademicYearId !== 'all', fn($q) => $q->where('bills.academic_year_id', $selectedAcademicYearId));
+                    ->when($selectedAcademicYearId && $selectedAcademicYearId !== 'all', fn($q) => $q->where('bills.academic_year_id', $selectedAcademicYearId))
+                    ->where(function ($query) use ($currentYear, $currentMonth) {
+                        $query->where(function ($sub) use ($currentYear, $currentMonth) {
+                            $sub->whereNotNull('bills.year')
+                                ->whereNotNull('bills.month')
+                                ->where(function ($dateSub) use ($currentYear, $currentMonth) {
+                                    $dateSub->where('bills.year', '<', $currentYear)
+                                            ->orWhere(function ($sameYear) use ($currentYear, $currentMonth) {
+                                                $sameYear->where('bills.year', '=', $currentYear)
+                                                         ->where('bills.month', '<=', $currentMonth);
+                                            });
+                                });
+                        })
+                        ->orWhere(function ($sub) use ($currentYear) {
+                            $sub->whereNotNull('bills.year')
+                                ->where(function ($mSub) {
+                                    $mSub->whereNull('bills.month')->orWhere('bills.month', 0);
+                                })
+                                ->where('bills.year', '<=', $currentYear);
+                        })
+                        ->orWhere(function ($sub) {
+                            $sub->whereNull('bills.year')
+                                ->whereDate('bills.created_at', '<=', Carbon::now()->endOfMonth());
+                        });
+                    });
 
                 $unpaidTotals = (clone $unpaidBillsQuery)
                     ->selectRaw('bills.student_id, COUNT(bills.id) as unpaid_count, COALESCE(SUM(bills.amount - bills.paid_amount), 0) as total_unpaid_amount')
