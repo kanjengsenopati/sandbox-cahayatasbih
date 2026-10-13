@@ -182,7 +182,7 @@ class DashboardController extends Controller
             }
 
             $excludedBillTypeIds = $this->getExcludedBillTypeIds();
-            $cacheKey = 'bi_dashboard_v4_' . md5(json_encode([
+            $cacheKey = 'bi_dashboard_v5_' . md5(json_encode([
                 'schools' => $scopedSchoolIds,
                 'ay' => $selectedAcademicYearId,
                 'date' => Carbon::today()->toDateString(),
@@ -205,7 +205,12 @@ class DashboardController extends Controller
                 $tabunganMengendap = (int) (clone $studentBaseQuery)->sum('saving');
 
                 $totalStaff = Admin::where('is_active', 1)->count();
-                $totalWali = User::where('is_active', 1)->count();
+                $totalWali = User::where('is_active', 1)
+                    ->whereHas('student', function ($q) use ($scopedClassroomIds) {
+                        $q->where('status', Student::STATUS_ACTIVE)
+                            ->when(!empty($scopedClassroomIds), fn($sq) => $sq->whereIn('classroom_id', $scopedClassroomIds));
+                    })
+                    ->count();
                 $totalKelas = count($scopedClassroomIds);
 
                 $genderRatio = [
@@ -532,18 +537,39 @@ class DashboardController extends Controller
             $staffLoginToday = (clone $staffBaseQuery)->whereDate('last_login_at', $today)->count();
             $staffLogin7d = (clone $staffBaseQuery)->where('last_login_at', '>=', $sevenDaysAgo)->count();
 
+            // 1. Wali Santri Aktif Riil (Hanya menghitung wali yang memiliki santri berstatus ACTIVE)
             $waliBaseQuery = User::where('is_active', 1)
-                ->when($isSchoolFiltered, function ($query) use ($waliScopedClassrooms) {
-                    $query->whereHas('student', function ($q) use ($waliScopedClassrooms) {
-                        $q->where('status', Student::STATUS_ACTIVE)
-                            ->whereIn('classroom_id', $waliScopedClassrooms);
-                    });
+                ->whereHas('student', function ($q) use ($waliScopedClassrooms) {
+                    $q->where('status', Student::STATUS_ACTIVE)
+                        ->when(!empty($waliScopedClassrooms), fn($sq) => $sq->whereIn('classroom_id', $waliScopedClassrooms));
                 });
 
             $scopedTotalWali = (clone $waliBaseQuery)->count();
             $totalWali = $scopedTotalWali;
             $waliLogin7d = (clone $waliBaseQuery)->where('last_login', '>=', $sevenDaysAgo)->count();
             $waliLoginToday = (clone $waliBaseQuery)->whereDate('last_login', $today)->count();
+            $waliLogin30d = (clone $waliBaseQuery)->where('last_login', '>=', $thirtyDaysAgo)->count();
+            $waliLoginEver = (clone $waliBaseQuery)->whereNotNull('last_login')->count();
+            $waliNeverLogin = max(0, $scopedTotalWali - $waliLoginEver);
+
+            // 2. Audit: Wali Santri yang anaknya SUDAH NON-AKTIF (Lulus, DO, Pindah)
+            $waliInactiveBaseQuery = User::where('is_active', 1)
+                ->whereHas('student', function ($q) use ($waliScopedClassrooms) {
+                    $q->when(!empty($waliScopedClassrooms), fn($sq) => $sq->whereIn('classroom_id', $waliScopedClassrooms));
+                })
+                ->whereDoesntHave('student', function ($q) use ($waliScopedClassrooms) {
+                    $q->where('status', Student::STATUS_ACTIVE)
+                        ->when(!empty($waliScopedClassrooms), fn($sq) => $sq->whereIn('classroom_id', $waliScopedClassrooms));
+                });
+
+            $waliInactiveCount = (clone $waliInactiveBaseQuery)->count();
+            $waliAlumniCount = (clone $waliInactiveBaseQuery)->whereHas('student', fn($q) => $q->where('status', Student::STATUS_GRADUATED))->count();
+            $waliDroppedOutCount = (clone $waliInactiveBaseQuery)->whereHas('student', fn($q) => $q->where('status', Student::STATUS_DROPPED_OUT))->count();
+            $waliTransferredCount = (clone $waliInactiveBaseQuery)->whereHas('student', fn($q) => $q->where('status', Student::STATUS_TRANSFERRED))->count();
+
+            // 3. Audit: Akun terdaftar tanpa santri sama sekali (Orphan / Calon PPDB Batal / Uji Coba)
+            $waliOrphanCount = User::where('is_active', 1)->whereDoesntHave('student')->count();
+            $totalRegisteredUsers = User::where('is_active', 1)->count();
 
             $buildWaliPwaMetric = function (int $totalCount, int $loginCount): array {
                 $notLoginCount = max(0, $totalCount - $loginCount);
@@ -560,10 +586,14 @@ class DashboardController extends Controller
                 ];
             };
 
-            if ($isSuperAdmin) {
-                $waliLoginEver = (clone $waliBaseQuery)->whereNotNull('last_login')->count();
-                $waliLogin30d = (clone $waliBaseQuery)->where('last_login', '>=', $thirtyDaysAgo)->count();
+            $waliPwaChart = [
+                'all' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginEver),
+                '30d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin30d),
+                '7d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin7d),
+                'today' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginToday),
+            ];
 
+            if ($isSuperAdmin) {
                 $scopedStaffIds = !empty($selectedSchoolId)
                     ? (clone $staffBaseQuery)->pluck('id')->toArray()
                     : null;
@@ -593,27 +623,12 @@ class DashboardController extends Controller
                     ->orderByDesc('created_at')
                     ->limit(15)
                     ->get();
-
-                $waliPwaChart = [
-                    'all' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginEver),
-                    '30d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin30d),
-                    '7d' => $buildWaliPwaMetric($scopedTotalWali, $waliLogin7d),
-                    'today' => $buildWaliPwaMetric($scopedTotalWali, $waliLoginToday),
-                ];
             } else {
-                $waliLoginEver = 0;
-                $waliLogin30d = 0;
                 $staffActivityToday = 0;
                 $staffActivity7d = 0;
                 $staffOnlineCount = 0;
                 $recentStaffLogins = collect([]);
                 $recentStaffActivities = collect([]);
-                $waliPwaChart = [
-                    'all' => $buildWaliPwaMetric(0, 0),
-                    '30d' => $buildWaliPwaMetric(0, 0),
-                    '7d' => $buildWaliPwaMetric(0, 0),
-                    'today' => $buildWaliPwaMetric(0, 0),
-                ];
             }
 
             $loginActivity = [
@@ -630,9 +645,18 @@ class DashboardController extends Controller
                 'wali_7d' => $waliLogin7d,
                 'wali_30d' => $waliLogin30d,
                 'wali_ever' => $waliLoginEver,
+                'wali_never' => $waliNeverLogin,
                 'wali_total' => $scopedTotalWali,
+                'wali_inactive' => $waliInactiveCount,
+                'wali_alumni' => $waliAlumniCount,
+                'wali_dropped_out' => $waliDroppedOutCount,
+                'wali_transferred' => $waliTransferredCount,
+                'wali_orphan' => $waliOrphanCount,
+                'wali_registered_total' => $totalRegisteredUsers,
                 'wali_percentage' => $scopedTotalWali > 0 ? round(($waliLoginToday / $scopedTotalWali) * 100, 1) : 0,
                 'wali_7d_percentage' => $scopedTotalWali > 0 ? round(($waliLogin7d / $scopedTotalWali) * 100, 1) : 0,
+                'wali_ever_percentage' => $scopedTotalWali > 0 ? round(($waliLoginEver / $scopedTotalWali) * 100, 1) : 0,
+                'wali_never_percentage' => $scopedTotalWali > 0 ? round(($waliNeverLogin / $scopedTotalWali) * 100, 1) : 0,
                 'wali_pwa_chart' => $waliPwaChart,
             ];
 
