@@ -24,9 +24,9 @@
             @if($isOutletUser)
                 @include('layouts.partials.outlet_switcher')
             @elseif($showBiDashboard)
-                <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 my-1">
+                <form action="{{ route('dashboard') }}" method="GET" class="d-flex flex-nowrap align-items-center gap-2 my-1">
                     @if(isset($schools) && $schools->count() > 1)
-                        <select name="school_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 170px; height: 36px;">
+                        <select name="school_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold w-auto" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 180px; max-width: 260px; height: 36px; text-overflow: ellipsis;">
                             <option value="all">Semua Unit (UPT)</option>
                             @foreach($schools as $s)
                                 <option value="{{ $s->id }}" {{ ($selectedSchoolId ?? null) === $s->id ? 'selected' : '' }}>
@@ -36,7 +36,7 @@
                         </select>
                     @endif
                     @if(isset($academicYears) && $academicYears->count() > 0)
-                        <select name="academic_year_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 165px; height: 36px;">
+                        <select name="academic_year_id" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold w-auto" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 175px; max-width: 220px; height: 36px; text-overflow: ellipsis;">
                             <option value="all" {{ ($selectedAcademicYearId ?? '') === 'all' ? 'selected' : '' }}>Semua Tahun Ajaran</option>
                             @foreach($academicYears as $ay)
                                 <option value="{{ $ay->id }}" {{ ($selectedAcademicYearId ?? '') === $ay->id ? 'selected' : '' }}>
