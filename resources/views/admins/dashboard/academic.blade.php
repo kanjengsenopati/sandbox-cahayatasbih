@@ -888,21 +888,11 @@
                                     $causerAvatar = $causer->avatar_url ?? asset('assets/media/avatars/blank.png');
                                     $actTime = $act->created_at;
                                     $isActToday = $actTime && $actTime->isToday();
-                                    $eventRaw = strtolower((string) ($act->event ?? ''));
 
-                                    if ($eventRaw === 'created') {
-                                        $eventBadgeClass = 'tint-emerald';
-                                        $eventLabel = 'CREATED';
-                                    } elseif ($eventRaw === 'deleted') {
-                                        $eventBadgeClass = 'tint-red';
-                                        $eventLabel = 'DELETED';
-                                    } elseif ($eventRaw === 'updated') {
-                                        $eventBadgeClass = 'tint-primary';
-                                        $eventLabel = 'UPDATED';
-                                    } else {
-                                        $eventBadgeClass = 'tint-slate';
-                                        $eventLabel = strtoupper($eventRaw ?: 'LOG');
-                                    }
+                                    $humanLog = \App\Traits\LogActivityTrait::humanizeActivity($act);
+                                    $eventBadgeClass = $humanLog['badge_class'] ?? 'tint-primary';
+                                    $eventLabel = $humanLog['badge_label'] ?? 'AKTIVITAS';
+                                    $humanDescription = $humanLog['description'] ?? $act->description;
 
                                     $device = method_exists($act, 'getExtraProperty') ? ($act->getExtraProperty('device') ?? 'Desktop') : 'Desktop';
                                     $ip = method_exists($act, 'getExtraProperty') ? $act->getExtraProperty('ip') : null;
@@ -925,7 +915,7 @@
                                                 </span>
                                             </div>
                                             <x-text.caption class="d-block fst-normal text-dark fw-semibold mt-1" style="line-height: 1.35;">
-                                                {{ \Illuminate\Support\Str::limit($act->description, 95) }}
+                                                {{ \Illuminate\Support\Str::limit($humanDescription, 115) }}
                                             </x-text.caption>
                                             <x-text.caption class="d-block fst-normal mt-0.5" style="font-size: 11px !important; color: #64748b !important;">
                                                 {{ $device }}{{ $ip ? ' • IP: ' . $ip : '' }}

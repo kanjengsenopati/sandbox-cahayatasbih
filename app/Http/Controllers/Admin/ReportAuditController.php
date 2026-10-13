@@ -41,7 +41,8 @@ class ReportAuditController extends Controller
                     return $row->causer ? ($row->causer->roles->first()->name ?? '-') : '-';
                 })
                 ->editColumn('description', function ($row) {
-                    return $row->description;
+                    $humanized = \App\Traits\LogActivityTrait::humanizeActivity($row);
+                    return $humanized['description'] ?? $row->description;
                 })
                 ->addColumn('date', function ($row) {
                     return $row->created_at->translatedFormat('d F Y H:i:s');
