@@ -92,6 +92,10 @@
         background-color: rgba(148, 163, 184, 0.12) !important;
         color: #475569 !important;
     }
+    .tint-warning {
+        background-color: rgba(245, 158, 11, 0.1) !important;
+        color: #d97706 !important;
+    }
 
     /* Top-Right Action Cluster */
     .action-cluster {
@@ -173,6 +177,72 @@
         border-radius: 12px;
         object-fit: cover;
         flex-shrink: 0;
+    }
+
+    /* Expandable Financial & Guardian Intelligence Panel */
+    .bi-expand-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2.5px 8px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .bi-expand-btn:hover, .bi-expand-btn[aria-expanded="true"] {
+        background: rgba(37, 99, 235, 0.08);
+        border-color: rgba(37, 99, 235, 0.2);
+        color: #2563EB;
+    }
+    .bi-expand-btn .bi-chevron-icon {
+        transition: transform 0.2s ease;
+    }
+    .bi-expand-btn[aria-expanded="true"] .bi-chevron-icon {
+        transform: rotate(180deg);
+    }
+    .bi-expand-row > td {
+        padding: 0 !important;
+        border-bottom: 1px dashed #f1f5f9 !important;
+    }
+    .bi-nested-panel {
+        background: #f8fafc;
+        border-radius: 20px;
+        border: 1px dashed #cbd5e1;
+        padding: 16px 18px;
+        margin: 6px 4px 14px 4px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+    .bi-nested-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 12px 14px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+    .bi-nested-table th {
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        color: #64748b !important;
+        padding: 6px 10px !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        background: #f8fafc;
+    }
+    .bi-nested-table td {
+        font-size: 12px !important;
+        padding: 7px 10px !important;
+        border-bottom: 1px dashed #f1f5f9 !important;
+        background: #ffffff;
+    }
+    .bi-nested-table tbody tr:last-child td {
+        border-bottom: 0 !important;
     }
 </style>
 @endpush
@@ -613,16 +683,65 @@
                                         $typeLabel = 'Tabungan';
                                         $itemSummary = 'Setoran Tabungan';
                                     }
+
+                                    $fin = $tx->financial_profile ?? [
+                                        'unpaid_amount' => 0,
+                                        'unpaid_count' => 0,
+                                        'topup_amount' => 0,
+                                        'topup_count' => 0,
+                                        'capability_status' => 'BEBAS_TUNGGAKAN',
+                                        'capability_label' => 'Bebas Tunggakan',
+                                        'capability_badge_class' => 'tint-emerald',
+                                        'capability_ratio' => null,
+                                        'unpaid_items' => collect([]),
+                                    ];
+
+                                    $waliUser = $tx->student?->user;
+                                    $waliName = $waliUser?->name;
+                                    $waliPhone = $waliUser?->phone;
+                                    $waliAvatar = $waliUser?->avatar_url;
+                                    $waliJamaah = $waliUser?->jamaah_status;
+                                    $studentSaldo = (int) ($tx->student?->saldo ?? 0);
+
+                                    $waLink = null;
+                                    if ($waliPhone) {
+                                        $cleanPhone = preg_replace('/[^0-9]/', '', $waliPhone);
+                                        if (str_starts_with($cleanPhone, '0')) {
+                                            $cleanPhone = '62' . substr($cleanPhone, 1);
+                                        }
+                                        if (strlen($cleanPhone) >= 9) {
+                                            $waLink = 'https://wa.me/' . $cleanPhone;
+                                        }
+                                    }
                                 @endphp
                                 <tr>
                                     <td class="ps-2">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="d-flex align-items-center justify-content-center fw-bold tint-primary" style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; font-size: 14px;">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="d-flex align-items-center justify-content-center fw-bold tint-primary mt-1" style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; font-size: 14px;">
                                                 {{ strtoupper(substr($studentName, 0, 1)) }}
                                             </div>
                                             <div>
                                                 <x-text.body class="fw-bold text-dark">{{ \Illuminate\Support\Str::limit($studentName, 26) }}</x-text.body>
                                                 <x-text.caption class="d-block fst-normal">{{ $studentNis }} • {{ $className }} ({{ $schoolName }})</x-text.caption>
+                                                <button type="button" 
+                                                        class="bi-expand-btn mt-1.5" 
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#expand-fin-{{ $tx->id }}" 
+                                                        aria-expanded="false" 
+                                                        aria-controls="expand-fin-{{ $tx->id }}">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                    <span>Finansial & Wali</span>
+                                                    @if($fin['unpaid_amount'] > 0)
+                                                        <span class="badge rounded-pill bg-danger text-white px-1.5 py-0.5 ms-1" style="font-size: 9px; font-weight: 700;">
+                                                            Tunggakan: Rp {{ number_format($fin['unpaid_amount'], 0, ',', '.') }}
+                                                        </span>
+                                                    @else
+                                                        <span class="badge rounded-pill bg-success text-white px-1.5 py-0.5 ms-1" style="font-size: 9px; font-weight: 700;">
+                                                            Lunas
+                                                        </span>
+                                                    @endif
+                                                    <svg class="bi-chevron-icon ms-0.5" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                                </button>
                                             </div>
                                         </div>
                                     </td>
@@ -651,6 +770,175 @@
                                             <a href="{{ route('transaction.invoice', $tx->id) }}" target="_blank" class="action-icon-btn" title="Cetak Kwitansi / Invoice">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                             </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="bi-expand-row">
+                                    <td colspan="4">
+                                        <div class="collapse" id="expand-fin-{{ $tx->id }}">
+                                            <div class="bi-nested-panel">
+                                                <!-- Row 1: Profile Wali & Quick WhatsApp Link -->
+                                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-3" style="border-bottom: 1px dashed #e2e8f0;">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div class="d-flex align-items-center justify-content-center fw-bold tint-slate" style="width: 38px; height: 38px; border-radius: 12px; font-size: 13px; flex-shrink: 0; overflow: hidden;">
+                                                            @if($waliAvatar)
+                                                                <img src="{{ $waliAvatar }}" alt="Wali" style="width: 100%; height: 100%; object-fit: cover;">
+                                                            @else
+                                                                {{ strtoupper(substr($waliName ?? 'W', 0, 1)) }}
+                                                            @endif
+                                                        </div>
+                                                        <div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <x-text.label class="mb-0">Wali / Orang Tua Santri:</x-text.label>
+                                                                @if($waliJamaah === 'JAMAAH')
+                                                                    <span class="badge tint-emerald rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">Jamaah</span>
+                                                                @elseif($waliJamaah === 'NON_JAMAAH')
+                                                                    <span class="badge tint-red rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">Non Jamaah</span>
+                                                                @elseif($waliJamaah === 'MUKIMIN')
+                                                                    <span class="badge tint-primary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">Mukimin</span>
+                                                                @endif
+                                                            </div>
+                                                            <x-text.h2 class="mb-0 mt-0.5 {{ $waliName ? 'text-dark' : 'text-muted fst-italic' }}" style="font-size: 14.5px !important;">
+                                                                {{ $waliName ?? 'Belum Ditautkan ke Akun Wali' }}
+                                                            </x-text.h2>
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if($waliPhone)
+                                                            <span class="badge bg-light text-secondary rounded-pill px-3 py-1.5 fw-semibold" style="font-size: 11px;">
+                                                                <svg class="me-1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                                {{ $waliPhone }}
+                                                            </span>
+                                                            @if($waLink)
+                                                                <a href="{{ $waLink }}" target="_blank" class="btn btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold rounded-pill" style="font-size: 11px; background-color: rgba(16, 185, 129, 0.1); color: #10B981;">
+                                                                    <span>Chat WA</span>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                                                                </a>
+                                                            @endif
+                                                        @else
+                                                            <x-text.caption class="mb-0 text-muted">Nomor kontak belum terdaftar</x-text.caption>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Row 2: 3 Cards Komparasi Kemampuan Bayar -->
+                                                <div class="row g-3 mb-3">
+                                                    <!-- Card A: Total Unpaid Bills -->
+                                                    <div class="col-md-4">
+                                                        <div class="bi-nested-card h-100 d-flex flex-column justify-content-between">
+                                                            <div>
+                                                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                                                    <x-text.label>TAGIHAN BELUM LUNAS (TA INI)</x-text.label>
+                                                                    <span class="badge {{ $fin['unpaid_amount'] > 0 ? 'tint-red' : 'tint-emerald' }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
+                                                                        {{ $fin['unpaid_count'] }} Item
+                                                                    </span>
+                                                                </div>
+                                                                <x-text.amount class="{{ $fin['unpaid_amount'] > 0 ? 'amount-error' : 'text-emerald' }} d-block" style="font-size: 16px !important;">
+                                                                    Rp {{ number_format($fin['unpaid_amount'], 0, ',', '.') }}
+                                                                </x-text.amount>
+                                                            </div>
+                                                            <x-text.caption class="mt-2 text-truncate">
+                                                                Sisa tunggakan periode aktif
+                                                            </x-text.caption>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Card B: Akumulasi Topup 30 Hari -->
+                                                    <div class="col-md-4">
+                                                        <div class="bi-nested-card h-100 d-flex flex-column justify-content-between">
+                                                            <div>
+                                                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                                                    <x-text.label>TOP-UP SALDO (30 HARI)</x-text.label>
+                                                                    <span class="badge tint-primary rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
+                                                                        {{ $fin['topup_count'] }}x Top-Up
+                                                                    </span>
+                                                                </div>
+                                                                <x-text.amount class="amount-primary d-block" style="font-size: 16px !important;">
+                                                                    Rp {{ number_format($fin['topup_amount'], 0, ',', '.') }}
+                                                                </x-text.amount>
+                                                            </div>
+                                                            <x-text.caption class="mt-2 text-truncate">
+                                                                Arus mutasi deposit dompet santri
+                                                            </x-text.caption>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Card C: Analisis Kemampuan Bayar & Saldo Aktif -->
+                                                    <div class="col-md-4">
+                                                        <div class="bi-nested-card h-100 d-flex flex-column justify-content-between">
+                                                            <div>
+                                                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                                                    <x-text.label>KOMPARASI KEMAMPUAN</x-text.label>
+                                                                    <span class="badge {{ $fin['capability_badge_class'] }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
+                                                                        {{ $fin['capability_label'] }}
+                                                                    </span>
+                                                                </div>
+                                                                <div class="d-flex align-items-baseline gap-2">
+                                                                    <x-text.amount class="text-dark d-block" style="font-size: 15px !important;">
+                                                                        Saldo: Rp {{ number_format($studentSaldo, 0, ',', '.') }}
+                                                                    </x-text.amount>
+                                                                </div>
+                                                            </div>
+                                                            <x-text.caption class="mt-2">
+                                                                @if($fin['unpaid_amount'] === 0)
+                                                                    Likuiditas aman, tidak ada tunggakan
+                                                                @elseif($fin['capability_ratio'] !== null)
+                                                                    Volume top-up = <strong>{{ $fin['capability_ratio'] }}%</strong> dari sisa tagihan
+                                                                @else
+                                                                    Perlu atensi, tanpa mutasi top-up 30 hari
+                                                                @endif
+                                                            </x-text.caption>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Row 3: Mini-Tabel Rincian Tagihan Belum Lunas -->
+                                                <div class="bg-white rounded-3 p-3" style="border: 1px solid #f1f5f9;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                                        <x-text.label style="font-size: 11px !important;">RINCIAN POS TAGIHAN BELUM LUNAS</x-text.label>
+                                                        <a href="{{ route('report-bill.index', ['student_id' => $tx->student_id]) }}" class="text-primary fw-bold" style="font-size: 11px; text-decoration: none;">
+                                                            Lihat Rekap Lengkap &rarr;
+                                                        </a>
+                                                    </div>
+                                                    @if(!empty($fin['unpaid_items']) && count($fin['unpaid_items']) > 0)
+                                                        <div class="table-responsive">
+                                                            <table class="table bi-nested-table mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th class="ps-2">Item Tagihan</th>
+                                                                        <th>Periode</th>
+                                                                        <th>Status</th>
+                                                                        <th class="text-end pe-2">Sisa Tagihan</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach($fin['unpaid_items'] as $item)
+                                                                        <tr>
+                                                                            <td class="ps-2 fw-semibold text-dark">{{ $item['name'] }}</td>
+                                                                            <td class="text-muted">{{ $item['period'] ?: '-' }}</td>
+                                                                            <td>
+                                                                                <span class="badge {{ $item['status'] === 'PARTIAL' ? 'tint-warning' : 'tint-red' }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
+                                                                                    {{ $item['status'] === 'PARTIAL' ? 'Cicilan' : 'Belum Lunas' }}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td class="text-end pe-2 fw-bold text-danger">
+                                                                                Rp {{ number_format($item['remaining'], 0, ',', '.') }}
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    @else
+                                                        <div class="text-center py-3">
+                                                            <svg class="text-success mb-1" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                                            <x-text.caption class="d-block fst-normal text-success fw-bold">
+                                                                Seluruh tagihan santri pada periode Tahun Ajaran ini telah terbayar lunas.
+                                                            </x-text.caption>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
