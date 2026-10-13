@@ -766,7 +766,7 @@
 </div>
 
 <!-- =====================================================================
-     SECTION 4: AKTIVITAS LOGIN WALI SANTRI & USER BACKOFFICE (3 COLUMNS)
+     SECTION 4: BACKOFFICE ACCESS & ACTIVITY TELEMETRY + PWA ADOPTION (2 COLUMNS)
      ===================================================================== -->
 @php
     $waliPwaChartAll = $loginActivity['wali_pwa_chart']['all'] ?? [
@@ -782,163 +782,178 @@
         : 'Semua Unit';
 @endphp
 <div class="row g-4 mb-5">
-    <!-- Kolom 1: Aktivitas Login User Backoffice -->
-    <div class="col-xl-4 col-lg-6">
+    <!-- Kolom Kiri (Lebar 8 Kolom): Backoffice Access Telemetry & Live Log Activity -->
+    <div class="col-xl-8 col-lg-12">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-4">
                     <div>
-                        <x-text.label>BACKOFFICE ACCESS TELEMETRY</x-text.label>
-                        <x-text.h2 class="mt-1">Aktivitas Login User Backoffice</x-text.h2>
-                        <x-text.caption>Kehadiran digital pengurus, bendahara, kasir & staff</x-text.caption>
+                        <x-text.label>BACKOFFICE ACCESS & ACTIVITY TELEMETRY</x-text.label>
+                        <x-text.h2 class="mt-1">Aktivitas Login & Log Activity User Backoffice</x-text.h2>
+                        <x-text.caption>Kehadiran digital pengurus, bendahara, kasir & jejak audit aktivitas sistem secara real-time</x-text.caption>
                     </div>
-                    <div class="action-cluster">
+                    <div class="action-cluster flex-wrap">
                         <span class="badge tint-primary rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
-                            Hari Ini: {{ $loginActivity['staff_count'] ?? 0 }} / {{ $loginActivity['staff_total'] ?? 0 }} ({{ $loginActivity['staff_percentage'] ?? 0 }}%)
+                            Login Hari Ini: {{ $loginActivity['staff_count'] ?? 0 }} / {{ $loginActivity['staff_total'] ?? 0 }} ({{ $loginActivity['staff_percentage'] ?? 0 }}%)
                         </span>
-                    </div>
-                </div>
-
-                <!-- Progress Strip -->
-                <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border-radius: 16px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
-                        <x-text.caption class="fst-normal fw-bold text-dark">Keaktifan Hari Ini: {{ $loginActivity['staff_percentage'] ?? 0 }}%</x-text.caption>
-                        <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['staff_7d'] ?? 0 }} Staff ({{ $loginActivity['staff_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
-                    </div>
-                    <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
-                        <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['staff_percentage'] ?? 0) }}%; background: #2563EB;"></div>
-                    </div>
-                </div>
-
-                <!-- Recent 10 Backoffice Logins Feed -->
-                <div class="bi-feed-scroll">
-                    @forelse($recentStaffLogins ?? [] as $staff)
-                        @php
-                            $isLoggedToday = $staff->last_login_at && $staff->last_login_at->isToday();
-                        @endphp
-                        <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
-                            <div class="d-flex align-items-start gap-2.5 min-w-0">
-                                <div class="position-relative flex-shrink-0">
-                                    <img src="{{ $staff->avatar_url }}" alt="{{ $staff->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
-                                    <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
-                                          style="width: 10px; height: 10px; background-color: {{ $isLoggedToday ? '#10B981' : '#94a3b8' }};"></span>
-                                </div>
-                                <div class="min-w-0">
-                                    <x-text.body class="fw-bold text-dark d-block text-truncate">{{ $staff->name }}</x-text.body>
-                                    <div class="d-flex flex-wrap align-items-center gap-1 mt-0.5">
-                                        <span class="badge tint-primary rounded-pill px-2 py-0.5" style="font-size: 10px; font-weight: 700;">
-                                            {{ $staff->role_name }}
-                                        </span>
-                                        @if($staff->school)
-                                            <x-text.caption class="fst-normal">• {{ $staff->school->name }}</x-text.caption>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-end flex-shrink-0">
-                                <span class="badge {{ $isLoggedToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
-                                    {{ $staff->last_login_at ? $staff->last_login_at->diffForHumans() : '-' }}
-                                </span>
-                                <x-text.caption class="d-block mt-1 text-nowrap">
-                                    {{ $staff->last_login_at ? $staff->last_login_at->translatedFormat('d M Y, H:i') : '-' }}
-                                </x-text.caption>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="text-center py-6">
-                            <x-text.body>Belum ada riwayat login User Backoffice.</x-text.body>
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Kolom 2: Aktivitas Login Wali Santri (Vertical Stack Siswa) -->
-    <div class="col-xl-4 col-lg-6">
-        <div class="card bi-card h-100">
-            <div class="card-body p-5 pb-4">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-                    <div>
-                        <x-text.label>GUARDIAN PORTAL & PWA TELEMETRY</x-text.label>
-                        <x-text.h2 class="mt-1">Aktivitas Login Wali Santri</x-text.h2>
-                        <x-text.caption>Monitoring akses aplikasi CT-Mobile / Portal oleh Wali Santri</x-text.caption>
-                    </div>
-                    <div class="action-cluster">
                         <span class="badge tint-emerald rounded-pill px-2.5 py-1.5 fw-bold text-nowrap" style="font-size: 10.5px;">
-                            Hari Ini: {{ $loginActivity['wali_count'] ?? 0 }} / {{ $loginActivity['wali_total'] ?? 0 }} ({{ $loginActivity['wali_percentage'] ?? 0 }}%)
+                            Log Hari Ini: {{ number_format($loginActivity['staff_activity_today'] ?? 0, 0, ',', '.') }} Aksi
                         </span>
+                        @if(Route::has('report-audit.index'))
+                            <a href="{{ route('report-audit.index') }}" class="btn btn-sm fw-bold px-3 py-1.5 text-nowrap" style="border-radius: 12px; background: rgba(37, 99, 235, 0.1); color: #2563EB; font-size: 11.5px;">
+                                Audit Log
+                            </a>
+                        @endif
                     </div>
                 </div>
 
-                <!-- Progress Strip -->
-                <div class="p-3 rounded-4 mb-4" style="background: #f8fafc; border-radius: 16px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
-                        <x-text.caption class="fst-normal fw-bold text-dark">Akses Hari Ini: {{ $loginActivity['wali_percentage'] ?? 0 }}%</x-text.caption>
-                        <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['wali_7d'] ?? 0 }} Wali ({{ $loginActivity['wali_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
-                    </div>
-                    <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
-                        <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['wali_percentage'] ?? 0) }}%; background: #10B981;"></div>
-                    </div>
-                </div>
+                <div class="row g-4">
+                    <!-- Sub-Kolom Kiri: Riwayat Login User Backoffice -->
+                    <div class="col-lg-5">
+                        <!-- Progress Strip Login -->
+                        <div class="p-3 rounded-4 mb-3" style="background: #f8fafc; border-radius: 16px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
+                                <x-text.caption class="fst-normal fw-bold text-dark">Keaktifan Login: {{ $loginActivity['staff_percentage'] ?? 0 }}%</x-text.caption>
+                                <x-text.caption class="fst-normal">7 Hari: <strong>{{ $loginActivity['staff_7d'] ?? 0 }} Staff ({{ $loginActivity['staff_7d_percentage'] ?? 0 }}%)</strong></x-text.caption>
+                            </div>
+                            <div class="w-100 rounded-pill" style="height: 6px; background: #e2e8f0;">
+                                <div class="rounded-pill" style="height: 6px; width: {{ min(100, $loginActivity['staff_percentage'] ?? 0) }}%; background: #2563EB;"></div>
+                            </div>
+                        </div>
 
-                <!-- Recent 10 Wali Santri Logins Feed -->
-                <div class="bi-feed-scroll">
-                    @forelse($recentWaliLogins ?? [] as $wali)
-                        @php
-                            $isWaliToday = $wali->last_login && $wali->last_login->isToday();
-                        @endphp
-                        <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
-                            <div class="d-flex align-items-start gap-2.5 min-w-0">
-                                <div class="position-relative flex-shrink-0 mt-0.5">
-                                    <img src="{{ $wali->avatar_url }}" alt="{{ $wali->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
-                                    <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
-                                          style="width: 10px; height: 10px; background-color: {{ $isWaliToday ? '#10B981' : '#94a3b8' }};"></span>
-                                </div>
-                                <div class="min-w-0">
-                                    <x-text.body class="fw-bold text-dark d-block">{{ $wali->name }}</x-text.body>
-                                    <div class="mt-0.5">
-                                        <x-text.caption class="d-block fst-normal mb-0.5" style="font-size: 11px; color: #94a3b8;">Wali dari :</x-text.caption>
-                                        @if($wali->student && $wali->student->isNotEmpty())
-                                            <div class="d-flex flex-column gap-1">
-                                                @foreach($wali->student as $st)
-                                                    <div class="d-flex align-items-start gap-1.5" style="line-height: 1.25;">
-                                                        <span class="rounded-circle flex-shrink-0" style="width: 5px; height: 5px; background-color: #10B981; margin-top: 5px;"></span>
-                                                        <span class="text-dark fw-bold" style="font-size: 11.5px;">
-                                                            {{ $st->name }}
-                                                            @if($st->classroom)
-                                                                <span class="fw-semibold" style="color: #64748b;">({{ $st->classroom->name }})</span>
-                                                            @endif
-                                                        </span>
-                                                    </div>
-                                                @endforeach
+                        <!-- Recent 10 Backoffice Logins Feed -->
+                        <div class="bi-feed-scroll">
+                            @forelse($recentStaffLogins ?? [] as $staff)
+                                @php
+                                    $isLoggedToday = $staff->last_login_at && $staff->last_login_at->isToday();
+                                @endphp
+                                <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
+                                    <div class="d-flex align-items-start gap-2.5 min-w-0">
+                                        <div class="position-relative flex-shrink-0">
+                                            <img src="{{ $staff->avatar_url }}" alt="{{ $staff->name }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
+                                            <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
+                                                  style="width: 10px; height: 10px; background-color: {{ $isLoggedToday ? '#10B981' : '#94a3b8' }};"></span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <x-text.body class="fw-bold text-dark d-block text-truncate">{{ $staff->name }}</x-text.body>
+                                            <div class="d-flex flex-wrap align-items-center gap-1 mt-0.5">
+                                                <span class="badge tint-primary rounded-pill px-2 py-0.5" style="font-size: 10px; font-weight: 700;">
+                                                    {{ $staff->role_name }}
+                                                </span>
+                                                @if($staff->school)
+                                                    <x-text.caption class="fst-normal">• {{ $staff->school->name }}</x-text.caption>
+                                                @endif
                                             </div>
-                                        @else
-                                            <x-text.caption class="d-block fst-normal">-</x-text.caption>
-                                        @endif
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <span class="badge {{ $isLoggedToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
+                                            {{ $staff->last_login_at ? $staff->last_login_at->diffForHumans() : '-' }}
+                                        </span>
+                                        <x-text.caption class="d-block mt-1 text-nowrap">
+                                            {{ $staff->last_login_at ? $staff->last_login_at->translatedFormat('d M Y, H:i') : '-' }}
+                                        </x-text.caption>
                                     </div>
                                 </div>
+                            @empty
+                                <div class="text-center py-6">
+                                    <x-text.body>Belum ada riwayat login User Backoffice.</x-text.body>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- Sub-Kolom Kanan: Live Log Activity User Backoffice -->
+                    <div class="col-lg-7">
+                        <!-- Summary Strip Log Activity -->
+                        <div class="p-3 rounded-4 mb-3" style="background: #f8fafc; border-radius: 16px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-1">
+                                <x-text.caption class="fst-normal fw-bold text-dark">Live Audit Trail (Log Activity)</x-text.caption>
+                                <x-text.caption class="fst-normal">7 Hari Terakhir: <strong>{{ number_format($loginActivity['staff_activity_7d'] ?? 0, 0, ',', '.') }} Aktivitas</strong></x-text.caption>
                             </div>
-                            <div class="text-end flex-shrink-0">
-                                <span class="badge {{ $isWaliToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
-                                    {{ $wali->last_login ? $wali->last_login->diffForHumans() : '-' }}
-                                </span>
-                                <x-text.caption class="d-block mt-1 text-nowrap">
-                                    {{ $wali->last_login ? $wali->last_login->translatedFormat('d M Y, H:i') : '-' }}
-                                </x-text.caption>
+                            <div class="d-flex align-items-center gap-1 w-100 rounded-pill overflow-hidden" style="height: 6px; background: #e2e8f0;">
+                                <div style="height: 6px; width: 45%; background: #10B981;"></div>
+                                <div style="height: 6px; width: 40%; background: #2563EB;"></div>
+                                <div style="height: 6px; width: 15%; background: #94a3b8;"></div>
                             </div>
                         </div>
-                    @empty
-                        <div class="text-center py-6">
-                            <x-text.body>Belum ada riwayat login Wali Santri.</x-text.body>
+
+                        <!-- Recent 15 Backoffice Activity Logs Feed -->
+                        <div class="bi-feed-scroll">
+                            @forelse($recentStaffActivities ?? [] as $act)
+                                @php
+                                    $causer = $act->causer;
+                                    $causerName = $causer->name ?? 'User Backoffice';
+                                    $causerRole = $causer ? $causer->role_name : 'System';
+                                    $causerAvatar = $causer->avatar_url ?? asset('assets/media/avatars/blank.png');
+                                    $actTime = $act->created_at;
+                                    $isActToday = $actTime && $actTime->isToday();
+                                    $eventRaw = strtolower((string) ($act->event ?? ''));
+
+                                    if ($eventRaw === 'created') {
+                                        $eventBadgeClass = 'tint-emerald';
+                                        $eventLabel = 'CREATED';
+                                    } elseif ($eventRaw === 'deleted') {
+                                        $eventBadgeClass = 'tint-red';
+                                        $eventLabel = 'DELETED';
+                                    } elseif ($eventRaw === 'updated') {
+                                        $eventBadgeClass = 'tint-primary';
+                                        $eventLabel = 'UPDATED';
+                                    } else {
+                                        $eventBadgeClass = 'tint-slate';
+                                        $eventLabel = strtoupper($eventRaw ?: 'LOG');
+                                    }
+
+                                    $device = method_exists($act, 'getExtraProperty') ? ($act->getExtraProperty('device') ?? 'Desktop') : 'Desktop';
+                                    $ip = method_exists($act, 'getExtraProperty') ? $act->getExtraProperty('ip') : null;
+                                @endphp
+                                <div class="d-flex align-items-start justify-content-between gap-2 py-2.5" style="border-bottom: 1px dashed #f1f5f9;">
+                                    <div class="d-flex align-items-start gap-2.5 min-w-0">
+                                        <div class="position-relative flex-shrink-0 mt-0.5">
+                                            <img src="{{ $causerAvatar }}" alt="{{ $causerName }}" class="bi-avatar" onerror="this.src='{{ asset('assets/media/avatars/blank.png') }}'">
+                                            <span class="position-absolute bottom-0 end-0 rounded-circle border border-2 border-white"
+                                                  style="width: 10px; height: 10px; background-color: {{ $isActToday ? '#10B981' : '#94a3b8' }};"></span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="d-flex flex-wrap align-items-center gap-1.5">
+                                                <x-text.body class="fw-bold text-dark mb-0">{{ $causerName }}</x-text.body>
+                                                <span class="badge tint-primary rounded-pill px-2 py-0.5" style="font-size: 9.5px; font-weight: 700;">
+                                                    {{ $causerRole }}
+                                                </span>
+                                                <span class="badge {{ $eventBadgeClass }} rounded-pill px-2 py-0.5" style="font-size: 9.5px; font-weight: 700;">
+                                                    {{ $eventLabel }}
+                                                </span>
+                                            </div>
+                                            <x-text.caption class="d-block fst-normal text-dark fw-semibold mt-1" style="line-height: 1.35;">
+                                                {{ \Illuminate\Support\Str::limit($act->description, 95) }}
+                                            </x-text.caption>
+                                            <x-text.caption class="d-block fst-normal mt-0.5" style="font-size: 11px !important; color: #64748b !important;">
+                                                {{ $device }}{{ $ip ? ' • IP: ' . $ip : '' }}
+                                            </x-text.caption>
+                                        </div>
+                                    </div>
+                                    <div class="text-end flex-shrink-0">
+                                        <span class="badge {{ $isActToday ? 'tint-emerald' : 'tint-slate' }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
+                                            {{ $actTime ? $actTime->diffForHumans() : '-' }}
+                                        </span>
+                                        <x-text.caption class="d-block mt-1 text-nowrap">
+                                            {{ $actTime ? $actTime->translatedFormat('d M Y, H:i') : '-' }}
+                                        </x-text.caption>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-center py-6">
+                                    <x-text.body>Belum ada riwayat log aktivitas User Backoffice.</x-text.body>
+                                </div>
+                            @endforelse
                         </div>
-                    @endforelse
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Kolom 3: Bar Chart Statistik Akses PWA Wali Santri (Filter-Driven, Angka & Persentase) -->
+    <!-- Kolom Kanan (Lebar 4 Kolom): Bar Chart Statistik Akses PWA Wali Santri -->
     <div class="col-xl-4 col-lg-12">
         <div class="card bi-card h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">

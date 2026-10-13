@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Activitylog\Models\Activity;
 
 class DashboardController extends Controller
 {
@@ -549,12 +550,25 @@ class DashboardController extends Controller
                 ];
             };
 
+            $scopedStaffIds = !empty($selectedSchoolId)
+                ? (clone $staffBaseQuery)->pluck('id')->toArray()
+                : null;
+
+            $staffActivityBaseQuery = Activity::where('causer_type', Admin::class)
+                ->whereNotNull('causer_id')
+                ->when($scopedStaffIds !== null, fn($q) => $q->whereIn('causer_id', $scopedStaffIds));
+
+            $staffActivityToday = (clone $staffActivityBaseQuery)->whereDate('created_at', $today)->count();
+            $staffActivity7d = (clone $staffActivityBaseQuery)->where('created_at', '>=', $sevenDaysAgo)->count();
+
             $loginActivity = [
                 'staff_count' => $staffLoginToday,
                 'staff_7d' => $staffLogin7d,
                 'staff_total' => $scopedTotalStaff,
                 'staff_percentage' => $scopedTotalStaff > 0 ? round(($staffLoginToday / $scopedTotalStaff) * 100, 1) : 0,
                 'staff_7d_percentage' => $scopedTotalStaff > 0 ? round(($staffLogin7d / $scopedTotalStaff) * 100, 1) : 0,
+                'staff_activity_today' => $staffActivityToday,
+                'staff_activity_7d' => $staffActivity7d,
                 'wali_count' => $waliLoginToday,
                 'wali_7d' => $waliLogin7d,
                 'wali_30d' => $waliLogin30d,
@@ -578,21 +592,11 @@ class DashboardController extends Controller
                 ->limit(10)
                 ->get(['id', 'name', 'email', 'phone', 'avatar', 'school_id', 'role_id', 'last_login_at', 'access_scope']);
 
-            $recentWaliLogins = User::with([
-                    'student' => function ($q) use ($isSchoolFiltered, $waliScopedClassrooms) {
-                        $q->where('status', Student::STATUS_ACTIVE)
-                            ->when($isSchoolFiltered, fn($sq) => $sq->whereIn('classroom_id', $waliScopedClassrooms))
-                            ->with(['classroom:id,name,school_id', 'classroom.school:id,name']);
-                    },
-                ])
-                ->where('is_active', 1)
-                ->whereNotNull('last_login')
-                ->when(!empty($scopedSchoolIds), function ($query) use ($waliScopedClassrooms) {
-                    $query->whereHas('student', fn($q) => $q->whereIn('classroom_id', $waliScopedClassrooms));
-                })
-                ->orderByDesc('last_login')
-                ->limit(10)
-                ->get(['id', 'name', 'phone', 'avatar', 'last_login']);
+            $recentStaffActivities = (clone $staffActivityBaseQuery)
+                ->with(['causer.roles', 'causer.school'])
+                ->orderByDesc('created_at')
+                ->limit(15)
+                ->get();
 
             return view('admins.dashboard.index', compact(
                 'isOutletUser',
@@ -615,7 +619,7 @@ class DashboardController extends Controller
                 'recentPayments',
                 'loginActivity',
                 'recentStaffLogins',
-                'recentWaliLogins',
+                'recentStaffActivities',
                 'upcomingSchedules'
             ));
         } catch (\Exception $e) {
@@ -673,10 +677,11 @@ class DashboardController extends Controller
                 'recentPayments' => collect([]),
                 'loginActivity' => [
                     'staff_count' => 0, 'staff_7d' => 0, 'staff_total' => 0, 'staff_percentage' => 0, 'staff_7d_percentage' => 0,
+                    'staff_activity_today' => 0, 'staff_activity_7d' => 0,
                     'wali_count' => 0, 'wali_7d' => 0, 'wali_total' => 0, 'wali_percentage' => 0, 'wali_7d_percentage' => 0,
                 ],
                 'recentStaffLogins' => collect([]),
-                'recentWaliLogins' => collect([]),
+                'recentStaffActivities' => collect([]),
                 'upcomingSchedules' => collect([]),
             ])->withErrors(['error' => 'Gagal memuat data dashboard.']);
         }
