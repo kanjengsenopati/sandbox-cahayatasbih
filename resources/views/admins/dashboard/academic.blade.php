@@ -93,9 +93,19 @@
         color: #475569 !important;
     }
     .tint-warning {
+
+        background-color: rgba(245, 158, 11, 0.12) !important;
+        color: #d97706 !important;
+    }
+    .tint-yellow {
+        background-color: rgba(234, 179, 8, 0.15) !important;
+        color: #b45309 !important;
+    }
+
         background-color: rgba(245, 158, 11, 0.1) !important;
         color: #d97706 !important;
     }
+
 
     /* Top-Right Action Cluster */
     .action-cluster {
@@ -614,6 +624,428 @@
                         <x-text.amount class="amount-primary">Rp {{ number_format($summary['tabungan_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     SECTION 2B: FINANCIAL DISCREPANCY & ANOMALY MONITORING
+     (Deteksi Santri Menunggak Tagihan Multi-Bulan vs Top-Up Saldo Belanja)
+     ===================================================================== -->
+<div class="row g-4 mb-5" id="section-anomaly-monitoring">
+    <div class="col-12">
+        <div class="card bi-card">
+            <div class="card-body p-5">
+                <!-- Header Card -->
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="badge rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1" style="background: rgba(220, 38, 38, 0.12); color: #DC2626; font-size: 11px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                EXECUTIVE EARLY WARNING
+                            </span>
+                            <x-text.label>DISCREPANCY LIKUIDITAS & PRIORITAS KELUARGA</x-text.label>
+                        </div>
+                        <x-text.h2 class="mt-1 text-dark d-flex align-items-center gap-2" style="font-size: 18px !important;">
+                            <span>Monitoring Santri: Tunggakan Tagihan vs Top-Up Saldo Belanja</span>
+                        </x-text.h2>
+                        <x-text.caption class="d-block mt-0.5">
+                            Deteksi dini santri dengan tunggakan tagihan sekolah jatuh tempo (terutama multi-bulan), namun aktif melakukan pengisian saldo belanja saku dengan nominal tinggi dalam 30 hari terakhir.
+                        </x-text.caption>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @if(($anomalySummary['total_santri'] ?? 0) > 0)
+                            <button type="button" class="btn btn-sm fw-bold px-3 py-2 d-inline-flex align-items-center gap-1.5" style="border-radius: 12px; background: rgba(37, 99, 235, 0.1); color: #2563EB; font-size: 12px;" data-bs-toggle="modal" data-bs-target="#modalAllAnomalies">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span>Lihat Semua ({{ $anomalySummary['total_santri'] ?? 0 }} Santri)</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- 4 KPI Summary Cards -->
+                <div class="row g-3 mb-4">
+                    <!-- KPI 1: Total Santri Terindikasi -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="p-4 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px !important;">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <x-text.label>SANTRI TERINDIKASI</x-text.label>
+                                    <span class="badge {{ ($anomalySummary['total_santri'] ?? 0) > 0 ? 'tint-red' : 'tint-emerald' }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10.5px;">
+                                        {{ $anomalySummary['total_santri'] ?? 0 }} Santri
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-baseline gap-2 mt-1">
+                                    <x-text.amount class="amount-lg {{ ($anomalySummary['total_santri'] ?? 0) > 0 ? 'amount-error' : 'text-emerald' }}">
+                                        {{ $anomalySummary['total_santri'] ?? 0 }}
+                                    </x-text.amount>
+                                    <span class="text-muted fw-semibold" style="font-size: 12px;">Siswa</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap mt-3 pt-2" style="border-top: 1px dashed #e2e8f0; font-size: 11px;">
+                                <span class="badge tint-red rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">🔴 {{ $anomalySummary['kritis_count'] ?? 0 }} Kritis</span>
+                                <span class="badge tint-warning rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">🟠 {{ $anomalySummary['waspada_count'] ?? 0 }} Waspada</span>
+                                <span class="badge tint-slate rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">🟡 {{ $anomalySummary['perhatian_count'] ?? 0 }} Perhatian</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: Total Tunggakan Tertahan -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="p-4 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px !important;">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <x-text.label>TUNGGAKAN JATUH TEMPO</x-text.label>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                </div>
+                                <x-text.amount class="amount-lg amount-error d-block mt-1">
+                                    Rp {{ number_format($anomalySummary['total_tunggakan'] ?? 0, 0, ',', '.') }}
+                                </x-text.amount>
+                            </div>
+                            <x-text.caption class="mt-3 pt-2 text-truncate" style="border-top: 1px dashed #e2e8f0;">
+                                Akumulasi kewajiban tertahan dari santri beranomali
+                            </x-text.caption>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: Arus Top-Up Saku 30 Hari -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="p-4 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px !important;">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <x-text.label>TOP-UP SALDO (30 HARI)</x-text.label>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                </div>
+                                <x-text.amount class="amount-lg amount-primary d-block mt-1">
+                                    Rp {{ number_format($anomalySummary['total_topup_30d'] ?? 0, 0, ',', '.') }}
+                                </x-text.amount>
+                            </div>
+                            <x-text.caption class="mt-3 pt-2 text-truncate" style="border-top: 1px dashed #e2e8f0;">
+                                Total belanja POS 30d: <strong>Rp {{ number_format($anomalySummary['total_belanja_30d'] ?? 0, 0, ',', '.') }}</strong>
+                            </x-text.caption>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4: Rasio Likuiditas & Alokasi -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="p-4 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 20px !important;">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <x-text.label>RASIO ALOKASI SAKU</x-text.label>
+                                    <span class="badge {{ ($anomalySummary['rasio_overall'] ?? 0) >= 50 ? 'tint-red' : 'tint-warning' }} rounded-pill px-2 py-0.5 fw-bold" style="font-size: 10px;">
+                                        Indeks Likuiditas
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-baseline gap-2 mt-1">
+                                    <x-text.amount class="amount-lg text-dark">
+                                        {{ $anomalySummary['rasio_overall'] ?? 0 }}%
+                                    </x-text.amount>
+                                    <span class="text-muted fw-semibold" style="font-size: 12px;">dari Nilai Tagihan</span>
+                                </div>
+                            </div>
+                            <x-text.caption class="mt-3 pt-2 text-truncate" style="border-top: 1px dashed #e2e8f0;">
+                                Top-up saku menyerap {{ $anomalySummary['rasio_overall'] ?? 0 }}% dari tunggakan
+                            </x-text.caption>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Filter & Action Bar -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div class="d-flex align-items-center gap-1.5 p-1 rounded-3" style="background: #f1f5f9;">
+                        <button type="button" class="bi-period-btn active" id="btnTabAnomalyAll" onclick="filterAnomalyTier('ALL')">
+                            Semua ({{ $anomalySummary['total_santri'] ?? 0 }})
+                        </button>
+                        <button type="button" class="bi-period-btn text-danger" id="btnTabAnomalyKritis" onclick="filterAnomalyTier('KRITIS')">
+                            🔴 Kritis ({{ $anomalySummary['kritis_count'] ?? 0 }})
+                        </button>
+                        <button type="button" class="bi-period-btn text-warning" id="btnTabAnomalyWaspada" onclick="filterAnomalyTier('WASPADA')">
+                            🟠 Waspada ({{ $anomalySummary['waspada_count'] ?? 0 }})
+                        </button>
+                        <button type="button" class="bi-period-btn text-secondary" id="btnTabAnomalyPerhatian" onclick="filterAnomalyTier('PERHATIAN')">
+                            🟡 Perhatian ({{ $anomalySummary['perhatian_count'] ?? 0 }})
+                        </button>
+                    </div>
+
+                    <x-text.caption class="fst-normal">
+                        Menampilkan 10 Santri Prioritas Tertinggi. Klik <strong>Chat WA</strong> untuk tindak lanjut cepat dengan wali.
+                    </x-text.caption>
+                </div>
+
+                <!-- Tabel Santri Anomali Top 10 -->
+                <div class="table-responsive">
+                    <table class="table bi-table align-middle mb-0" id="tableTopAnomalies">
+                        <thead>
+                            <tr>
+                                <th class="ps-2">Santri & Unit</th>
+                                <th>Status Anomali & Rasio</th>
+                                <th>Kewajiban Jatuh Tempo</th>
+                                <th>Aktivitas Saku (30 Hari)</th>
+                                <th>Saldo Dompet</th>
+                                <th class="text-end pe-2">Wali & Tindak Lanjut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($topAnomalies ?? [] as $san)
+                                @php
+                                    $studentName = $san['name'];
+                                    $studentNis = $san['nis'];
+                                    $className = $san['classroom_name'];
+                                    $schoolName = $san['school_name'];
+                                    $tier = $san['tier'];
+                                    $unpaidMonths = $san['unpaid_month_labels'];
+                                    $unpaidMonthsCount = $san['unpaid_months_count'];
+                                    $unpaidAmount = $san['unpaid_amount'];
+                                    $topupAmount = $san['topup_amount'];
+                                    $topupCount = $san['topup_count'];
+                                    $posAmount = $san['pos_amount'];
+                                    $studentSaldo = $san['saldo'];
+                                    $waliName = $san['wali_name'];
+                                    $waliPhone = $san['wali_phone'];
+                                    $waliJamaah = $san['wali_jamaah'];
+                                    $waLink = $san['wa_link'];
+                                @endphp
+                                <tr class="anomaly-row" data-tier="{{ $tier }}">
+                                    <!-- Kolom 1: Santri & Unit -->
+                                    <td class="ps-2">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="d-flex align-items-center justify-content-center fw-bold tint-primary mt-1" style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; font-size: 14px;">
+                                                {{ strtoupper(substr($studentName, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <x-text.body class="fw-bold text-dark">{{ \Illuminate\Support\Str::limit($studentName, 26) }}</x-text.body>
+                                                <x-text.caption class="d-block fst-normal">{{ $studentNis }} • {{ $className }} ({{ $schoolName }})</x-text.caption>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Kolom 2: Status Anomali & Rasio -->
+                                    <td>
+                                        <div class="d-flex flex-column align-items-start gap-1">
+                                            <span class="badge {{ $san['tier_badge_class'] }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10.5px;">
+                                                {{ $tier === 'KRITIS' ? '🔴 KRITIS' : ($tier === 'WASPADA' ? '🟠 WASPADA' : '🟡 PERHATIAN') }}
+                                            </span>
+                                            <x-text.caption class="fst-normal text-muted" style="font-size: 11px !important; line-height: 1.25;">
+                                                Top-up = <strong class="text-dark">{{ $san['ratio'] }}%</strong> dari tunggakan
+                                            </x-text.caption>
+                                        </div>
+                                    </td>
+
+                                    <!-- Kolom 3: Kewajiban Jatuh Tempo -->
+                                    <td>
+                                        <x-text.amount class="amount-error d-block" style="font-size: 15px !important;">
+                                            Rp {{ number_format($unpaidAmount, 0, ',', '.') }}
+                                        </x-text.amount>
+                                        <x-text.caption class="d-block fst-normal mt-0.5 text-danger fw-semibold" style="font-size: 11px !important;">
+                                            {{ $unpaidMonthsCount }} Bulan: {{ !empty($unpaidMonths) ? implode(', ', array_slice($unpaidMonths, 0, 3)) . (count($unpaidMonths) > 3 ? ' +' . (count($unpaidMonths) - 3) : '') : '-' }}
+                                        </x-text.caption>
+                                    </td>
+
+                                    <!-- Kolom 4: Aktivitas Saku (30 Hari) -->
+                                    <td>
+                                        <x-text.amount class="amount-primary d-block" style="font-size: 15px !important;">
+                                            Rp {{ number_format($topupAmount, 0, ',', '.') }}
+                                        </x-text.amount>
+                                        <x-text.caption class="d-block fst-normal mt-0.5 text-muted" style="font-size: 11px !important;">
+                                            {{ $topupCount }}x Top-Up • Belanja: Rp {{ number_format($posAmount, 0, ',', '.') }}
+                                        </x-text.caption>
+                                    </td>
+
+                                    <!-- Kolom 5: Saldo Dompet -->
+                                    <td>
+                                        <x-text.body class="fw-bold text-dark" style="font-size: 13.5px !important;">
+                                            Rp {{ number_format($studentSaldo, 0, ',', '.') }}
+                                        </x-text.body>
+                                        <x-text.caption class="d-block fst-normal text-muted" style="font-size: 11px !important;">
+                                            Mengendap di kartu
+                                        </x-text.caption>
+                                    </td>
+
+                                    <!-- Kolom 6: Wali & Tindak Lanjut -->
+                                    <td class="text-end pe-2">
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            <div class="d-flex align-items-center gap-1.5">
+                                                <x-text.body class="fw-semibold text-dark mb-0" style="font-size: 12.5px !important;">
+                                                    {{ \Illuminate\Support\Str::limit($waliName ?? 'Wali Santri', 20) }}
+                                                </x-text.body>
+                                                @if($waliJamaah === 'JAMAAH')
+                                                    <span class="badge tint-emerald rounded-pill px-1.5 py-0.5 fw-bold" style="font-size: 9px;">Jamaah</span>
+                                                @endif
+                                            </div>
+                                            @if($waLink)
+                                                <a href="{{ $waLink }}" target="_blank" class="btn btn-sm px-2.5 py-1 d-inline-flex align-items-center gap-1 fw-bold rounded-pill" style="font-size: 11px; background-color: rgba(16, 185, 129, 0.1); color: #10B981; text-decoration: none;" title="Kirim Pesan WhatsApp Penagihan Resmi">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                    <span>Chat WA</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                                                </a>
+                                            @else
+                                                <x-text.caption class="text-muted" style="font-size: 11px !important;">Tanpa Kontak WA</x-text.caption>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-6">
+                                        <div class="d-flex flex-column align-items-center justify-content-center">
+                                            <div class="d-flex align-items-center justify-content-center tint-emerald rounded-circle mb-2" style="width: 44px; height: 44px;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                            </div>
+                                            <x-text.h2 class="text-dark">Tidak Ditemukan Anomali Likuiditas</x-text.h2>
+                                            <x-text.caption class="text-muted mt-1">Seluruh santri dengan mutasi top-up aktif tertib menyelesaikan kewajiban tagihannya.</x-text.caption>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     MODAL DIALOG: DAFTAR SEMUA SANTRI ANOMALI KEUANGAN
+     ===================================================================== -->
+<div class="modal fade" id="modalAllAnomalies" tabindex="-1" aria-labelledby="modalAllAnomaliesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.12); border: 0;">
+            <div class="modal-header px-5 py-4" style="border-bottom: 1px dashed #e2e8f0;">
+                <div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">
+                            AUDIT LIST LENGKAP
+                        </span>
+                        <x-text.label class="mb-0">EXECUTIVE BI AUDIT</x-text.label>
+                    </div>
+                    <x-text.h2 class="modal-title mt-1 text-dark" id="modalAllAnomaliesLabel" style="font-size: 18px !important;">
+                        Daftar Lengkap Santri Terindikasi Anomali ({{ $anomalySummary['total_santri'] ?? 0 }} Siswa)
+                    </x-text.h2>
+                    <x-text.caption class="d-block mt-0.5">
+                        Menampilkan seluruh santri dengan tunggakan tagihan aktif s.d. bulan ini yang memiliki riwayat top-up saku dalam 30 hari terakhir.
+                    </x-text.caption>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-5 py-4">
+                <!-- Search & Filter Header in Modal -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 360px;">
+                        <input type="text" id="modalAnomalySearchInput" class="form-control form-control-sm" placeholder="Cari nama santri, NIS, atau kelas..." style="border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; height: 38px; font-size: 13px;" onkeyup="searchModalAnomalies()">
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">Kritis: {{ $anomalySummary['kritis_count'] ?? 0 }}</span>
+                        <span class="badge tint-warning rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">Waspada: {{ $anomalySummary['waspada_count'] ?? 0 }}</span>
+                        <span class="badge tint-slate rounded-pill px-2.5 py-1 fw-bold" style="font-size: 11px;">Perhatian: {{ $anomalySummary['perhatian_count'] ?? 0 }}</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                    <table class="table bi-table align-middle mb-0" id="tableModalAnomalies">
+                        <thead>
+                            <tr style="position: sticky; top: 0; background: #ffffff; z-index: 2;">
+                                <th class="ps-2">No</th>
+                                <th>Santri & Unit</th>
+                                <th>Tingkat Anomali</th>
+                                <th>Kewajiban Jatuh Tempo</th>
+                                <th>Top-Up 30 Hari</th>
+                                <th>Belanja POS</th>
+                                <th>Saldo Dompet</th>
+                                <th class="text-end pe-2">Wali & Tindak Lanjut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($allAnomalies ?? [] as $index => $san)
+                                @php
+                                    $studentName = $san['name'];
+                                    $studentNis = $san['nis'];
+                                    $className = $san['classroom_name'];
+                                    $schoolName = $san['school_name'];
+                                    $tier = $san['tier'];
+                                    $unpaidMonths = $san['unpaid_month_labels'];
+                                    $unpaidMonthsCount = $san['unpaid_months_count'];
+                                    $unpaidAmount = $san['unpaid_amount'];
+                                    $topupAmount = $san['topup_amount'];
+                                    $topupCount = $san['topup_count'];
+                                    $posAmount = $san['pos_amount'];
+                                    $studentSaldo = $san['saldo'];
+                                    $waliName = $san['wali_name'];
+                                    $waliPhone = $san['wali_phone'];
+                                    $waliJamaah = $san['wali_jamaah'];
+                                    $waLink = $san['wa_link'];
+                                @endphp
+                                <tr class="modal-anomaly-row" data-search="{{ strtolower($studentName . ' ' . $studentNis . ' ' . $className . ' ' . $schoolName) }}">
+                                    <td class="ps-2 text-muted fw-bold" style="font-size: 12px;">{{ $index + 1 }}</td>
+                                    <td>
+                                        <x-text.body class="fw-bold text-dark">{{ $studentName }}</x-text.body>
+                                        <x-text.caption class="d-block fst-normal">{{ $studentNis }} • {{ $className }} ({{ $schoolName }})</x-text.caption>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ $san['tier_badge_class'] }} rounded-pill px-2.5 py-1 fw-bold" style="font-size: 10px;">
+                                            {{ $tier === 'KRITIS' ? '🔴 KRITIS' : ($tier === 'WASPADA' ? '🟠 WASPADA' : '🟡 PERHATIAN') }}
+                                        </span>
+                                        <x-text.caption class="d-block fst-normal text-muted mt-0.5" style="font-size: 10.5px !important;">
+                                            Rasio: <strong>{{ $san['ratio'] }}%</strong>
+                                        </x-text.caption>
+                                    </td>
+                                    <td>
+                                        <x-text.amount class="amount-error d-block" style="font-size: 14.5px !important;">
+                                            Rp {{ number_format($unpaidAmount, 0, ',', '.') }}
+                                        </x-text.amount>
+                                        <x-text.caption class="d-block fst-normal text-danger fw-semibold" style="font-size: 11px !important;">
+                                            {{ $unpaidMonthsCount }} Bulan: {{ !empty($unpaidMonths) ? implode(', ', $unpaidMonths) : '-' }}
+                                        </x-text.caption>
+                                    </td>
+                                    <td>
+                                        <x-text.amount class="amount-primary d-block" style="font-size: 14.5px !important;">
+                                            Rp {{ number_format($topupAmount, 0, ',', '.') }}
+                                        </x-text.amount>
+                                        <x-text.caption class="d-block fst-normal text-muted" style="font-size: 11px !important;">
+                                            {{ $topupCount }}x Transaksi
+                                        </x-text.caption>
+                                    </td>
+                                    <td>
+                                        <x-text.body class="fw-semibold text-dark" style="font-size: 13.5px !important;">
+                                            Rp {{ number_format($posAmount, 0, ',', '.') }}
+                                        </x-text.body>
+                                    </td>
+                                    <td>
+                                        <x-text.body class="fw-semibold text-dark" style="font-size: 13.5px !important;">
+                                            Rp {{ number_format($studentSaldo, 0, ',', '.') }}
+                                        </x-text.body>
+                                    </td>
+                                    <td class="text-end pe-2">
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            <x-text.body class="fw-semibold text-dark mb-0" style="font-size: 12px !important;">
+                                                {{ $waliName ?? 'Wali Santri' }}
+                                            </x-text.body>
+                                            @if($waLink)
+                                                <a href="{{ $waLink }}" target="_blank" class="btn btn-sm px-2 py-0.5 d-inline-flex align-items-center gap-1 fw-bold rounded-pill" style="font-size: 11px; background-color: rgba(16, 185, 129, 0.1); color: #10B981; text-decoration: none;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                    <span>Chat WA</span>
+                                                </a>
+                                            @else
+                                                <x-text.caption class="text-muted" style="font-size: 10.5px !important;">Tanpa WA</x-text.caption>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <x-text.body>Tidak ada data santri anomali.</x-text.body>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer px-5 py-3" style="border-top: 1px dashed #e2e8f0;">
+                <button type="button" class="btn btn-sm btn-light fw-bold" data-bs-dismiss="modal" style="border-radius: 12px;">Tutup</button>
             </div>
         </div>
     </div>
@@ -2048,6 +2480,53 @@
             btn30d?.classList.remove('active');
             if (subtitle) subtitle.textContent = 'Pergerakan kas masuk bulanan (12 bulan terakhir)';
         }
+    }
+
+    // Interactive Client-Side Filter for Financial Anomaly Monitoring
+    function filterAnomalyTier(tier) {
+        const rows = document.querySelectorAll('#tableTopAnomalies tbody tr.anomaly-row');
+        const buttons = [
+            { id: 'btnTabAnomalyAll', tier: 'ALL' },
+            { id: 'btnTabAnomalyKritis', tier: 'KRITIS' },
+            { id: 'btnTabAnomalyWaspada', tier: 'WASPADA' },
+            { id: 'btnTabAnomalyPerhatian', tier: 'PERHATIAN' }
+        ];
+
+        buttons.forEach(b => {
+            const btn = document.getElementById(b.id);
+            if (btn) {
+                if (b.tier === tier) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+        });
+
+        rows.forEach(r => {
+            const rowTier = r.getAttribute('data-tier');
+            if (tier === 'ALL' || rowTier === tier) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
+    }
+
+    // Interactive Client-Side Search in Modal Dialog
+    function searchModalAnomalies() {
+        const inputEl = document.getElementById('modalAnomalySearchInput');
+        const query = (inputEl ? inputEl.value : '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#tableModalAnomalies tbody tr.modal-anomaly-row');
+
+        rows.forEach(r => {
+            const searchContent = (r.getAttribute('data-search') || '').toLowerCase();
+            if (!query || searchContent.includes(query)) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
     }
 </script>
 @endpush
