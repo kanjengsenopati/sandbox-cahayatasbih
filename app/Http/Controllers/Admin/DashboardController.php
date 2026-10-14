@@ -182,7 +182,7 @@ class DashboardController extends Controller
             }
 
             $excludedBillTypeIds = $this->getExcludedBillTypeIds();
-            $cacheKey = 'bi_dashboard_v5_' . md5(json_encode([
+            $cacheKey = 'bi_dashboard_v6_' . md5(json_encode([
                 'schools' => $scopedSchoolIds,
                 'ay' => $selectedAcademicYearId,
                 'date' => Carbon::today()->toDateString(),
@@ -472,6 +472,314 @@ class DashboardController extends Controller
                     ->limit(5)
                     ->get();
 
+                // --- E. FINANCIAL DISCREPANCY & ANOMALY MONITORING ---
+                // Siswa dengan tunggakan jatuh tempo s.d. bulan berjalan (terutama multi-bulan),
+                // namun memiliki mutasi top-up saldo saku/belanja aktif bernominal tinggi.
+                $currentYear = (int) Carbon::now()->year;
+                $currentMonth = (int) Carbon::now()->month;
+                $thirtyDaysAgo = Carbon::now()->subDays(30);
+
+                // 1. Unpaid bills due up to current month for active students in scoped schools
+                $dueUnpaidBillsQuery = DB::table('bills')
+                    ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
+                    ->join('students', 'students.id', '=', 'bills.student_id')
+                    ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                    ->whereNull('bills.deleted_at')
+                    ->whereNull('bill_types.deleted_at')
+                    ->whereNull('students.deleted_at')
+                    ->where('bill_types.is_visible', 1)
+                    ->where('students.status', Student::STATUS_ACTIVE)
+                    ->whereNotIn('bills.bill_type_id', $excludedBillTypeIds)
+                    ->whereIn('bills.status', [Bill::STATUS_UNPAID, Bill::STATUS_PARTIAL])
+                    ->when(!empty($scopedSchoolIds), fn($q) => $q->whereIn('classrooms.school_id', $scopedSchoolIds), fn($q) => $q->whereRaw('1 = 0'))
+                    ->when($selectedAcademicYearId && $selectedAcademicYearId !== 'all', fn($q) => $q->where('bills.academic_year_id', $selectedAcademicYearId))
+                    ->where(function ($query) use ($currentYear, $currentMonth) {
+                        $query->where(function ($sub) use ($currentYear, $currentMonth) {
+                            $sub->whereNotNull('bills.year')
+                                ->whereNotNull('bills.month')
+                                ->where(function ($dateSub) use ($currentYear, $currentMonth) {
+                                    $dateSub->where('bills.year', '<', $currentYear)
+                                            ->orWhere(function ($sameYear) use ($currentYear, $currentMonth) {
+                                                $sameYear->where('bills.year', '=', $currentYear)
+                                                         ->where('bills.month', '<=', $currentMonth);
+                                            });
+                                });
+                        })
+                        ->orWhere(function ($sub) use ($currentYear) {
+                            $sub->whereNotNull('bills.year')
+                                ->where(function ($mSub) {
+                                    $mSub->whereNull('bills.month')->orWhere('bills.month', 0);
+                                })
+                                ->where('bills.year', '<=', $currentYear);
+                        })
+                        ->orWhere(function ($sub) {
+                            $sub->whereNull('bills.year')
+                                ->whereDate('bills.created_at', '<=', Carbon::now()->endOfMonth());
+                        });
+                    });
+
+                $unpaidPerStudent = (clone $dueUnpaidBillsQuery)
+                    ->selectRaw('
+                        bills.student_id,
+                        COUNT(bills.id) as unpaid_count,
+                        COALESCE(SUM(bills.amount - bills.paid_amount), 0) as total_unpaid_amount,
+                        COUNT(DISTINCT CASE WHEN bills.month > 0 THEN bills.month END) as distinct_unpaid_months
+                    ')
+                    ->groupBy('bills.student_id')
+                    ->get()
+                    ->keyBy('student_id');
+
+                $unpaidBillRows = (clone $dueUnpaidBillsQuery)
+                    ->select(
+                        'bills.student_id',
+                        'bills.month',
+                        'bills.year',
+                        'bills.amount',
+                        'bills.paid_amount',
+                        'bills.status',
+                        'bill_types.name as bill_type_name'
+                    )
+                    ->orderBy('bills.year', 'asc')
+                    ->orderBy('bills.month', 'asc')
+                    ->get()
+                    ->groupBy('student_id');
+
+                // 2. Pocket money top-up in the last 30 days
+                $topupPerStudent = DB::table('saldo_histories')
+                    ->join('students', 'students.id', '=', 'saldo_histories.student_id')
+                    ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                    ->whereNull('saldo_histories.deleted_at')
+                    ->whereNull('students.deleted_at')
+                    ->where('students.status', Student::STATUS_ACTIVE)
+                    ->where('saldo_histories.type', SaldoHistory::TYPE_IN)
+                    ->where('saldo_histories.status', SaldoHistory::STATUS_SUCCESS)
+                    ->where('saldo_histories.created_at', '>=', $thirtyDaysAgo)
+                    ->when(!empty($scopedSchoolIds), fn($q) => $q->whereIn('classrooms.school_id', $scopedSchoolIds), fn($q) => $q->whereRaw('1 = 0'))
+                    ->selectRaw('
+                        saldo_histories.student_id,
+                        COUNT(saldo_histories.id) as topup_count,
+                        COALESCE(SUM(saldo_histories.amount), 0) as total_topup_amount
+                    ')
+                    ->groupBy('saldo_histories.student_id')
+                    ->get()
+                    ->keyBy('student_id');
+
+                // 3. POS spending in the last 30 days
+                $posSpendingPerStudent = DB::table('point_of_sale_transactions')
+                    ->join('students', 'students.id', '=', 'point_of_sale_transactions.student_id')
+                    ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                    ->whereNull('point_of_sale_transactions.deleted_at')
+                    ->whereNull('students.deleted_at')
+                    ->where('students.status', Student::STATUS_ACTIVE)
+                    ->where('point_of_sale_transactions.status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->where('point_of_sale_transactions.created_at', '>=', $thirtyDaysAgo)
+                    ->when(!empty($scopedSchoolIds), fn($q) => $q->whereIn('classrooms.school_id', $scopedSchoolIds), fn($q) => $q->whereRaw('1 = 0'))
+                    ->selectRaw('
+                        point_of_sale_transactions.student_id,
+                        COUNT(point_of_sale_transactions.id) as pos_count,
+                        COALESCE(SUM(point_of_sale_transactions.pay_amount), 0) as total_pos_amount
+                    ')
+                    ->groupBy('point_of_sale_transactions.student_id')
+                    ->get()
+                    ->keyBy('student_id');
+
+                $academicMonthNames = [
+                    1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+                    5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+                    9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+                ];
+
+                // 4. Candidate students with both unpaid bills and active top-up in 30 days
+                $candidateStudentIds = $unpaidPerStudent->keys()->intersect($topupPerStudent->keys())->values();
+
+                $anomalyStudentsList = [];
+                $kritisCount = 0;
+                $waspadaCount = 0;
+                $perhatianCount = 0;
+                $totalTunggakanAnomali = 0;
+                $totalTopupAnomali = 0;
+                $totalBelanjaAnomali = 0;
+
+                if ($candidateStudentIds->isNotEmpty()) {
+                    $studentsInfo = Student::whereIn('id', $candidateStudentIds)
+                        ->with([
+                            'user:id,name,phone,avatar,jamaah_status',
+                            'classroom:id,name,school_id',
+                            'classroom.school:id,name,type',
+                        ])
+                        ->get(['id', 'name', 'nis', 'user_id', 'classroom_id', 'school_id', 'saldo', 'avatar'])
+                        ->keyBy('id');
+
+                    foreach ($candidateStudentIds as $sId) {
+                        $uRow = $unpaidPerStudent->get($sId);
+                        $tRow = $topupPerStudent->get($sId);
+                        $pRow = $posSpendingPerStudent->get($sId);
+                        $student = $studentsInfo->get($sId);
+
+                        if (!$uRow || !$tRow || !$student) {
+                            continue;
+                        }
+
+                        $unpaidAmount = (int) $uRow->total_unpaid_amount;
+                        $unpaidCount = (int) $uRow->unpaid_count;
+                        $distinctMonths = (int) $uRow->distinct_unpaid_months;
+                        $effectiveMonthCount = max($distinctMonths, min($unpaidCount, 1));
+                        $topupAmount = (int) $tRow->total_topup_amount;
+                        $topupCount = (int) $tRow->topup_count;
+                        $posAmount = (int) ($pRow->total_pos_amount ?? 0);
+                        $posCount = (int) ($pRow->pos_count ?? 0);
+
+                        if ($unpaidAmount <= 0 || $topupAmount <= 0) {
+                            continue;
+                        }
+
+                        // Determine Severity Tier
+                        // KRITIS: >= 2 bulan & (topup >= 500k atau topup >= 50% tunggakan)
+                        // WASPADA: >= 2 bulan & topup > 0
+                        // PERHATIAN: 1 bulan & topup >= 500k
+                        $isMultiMonth = $effectiveMonthCount >= 2;
+                        $tier = null;
+                        $tierLabel = '';
+                        $tierBadgeClass = '';
+                        $tierDescription = '';
+                        $severityRank = 99;
+
+                        if ($isMultiMonth && ($topupAmount >= 500000 || $topupAmount >= ($unpaidAmount * 0.5))) {
+                            $tier = 'KRITIS';
+                            $tierLabel = 'Kritis';
+                            $tierBadgeClass = 'tint-red';
+                            $tierDescription = 'Tunggakan multi-bulan dengan alokasi top-up saku sangat tinggi';
+                            $severityRank = 1;
+                            $kritisCount++;
+                        } elseif ($isMultiMonth) {
+                            $tier = 'WASPADA';
+                            $tierLabel = 'Waspada';
+                            $tierBadgeClass = 'tint-warning';
+                            $tierDescription = 'Tunggakan multi-bulan disertai mutasi uang saku aktif';
+                            $severityRank = 2;
+                            $waspadaCount++;
+                        } elseif ($topupAmount >= 500000) {
+                            $tier = 'PERHATIAN';
+                            $tierLabel = 'Perhatian';
+                            $tierBadgeClass = 'tint-slate';
+                            $tierDescription = 'Tunggakan 1 bulan jatuh tempo dengan top-up belanja tinggi';
+                            $severityRank = 3;
+                            $perhatianCount++;
+                        }
+
+                        if (!$tier) {
+                            continue;
+                        }
+
+                        $totalTunggakanAnomali += $unpaidAmount;
+                        $totalTopupAnomali += $topupAmount;
+                        $totalBelanjaAnomali += $posAmount;
+
+                        // Parse detailed unpaid items
+                        $rawItems = $unpaidBillRows->get($sId) ?? collect([]);
+                        $monthLabels = [];
+                        $formattedItems = [];
+
+                        foreach ($rawItems as $item) {
+                            $mLabel = $item->month ? ($academicMonthNames[$item->month] ?? 'Bln ' . $item->month) : '';
+                            if ($mLabel && !in_array($mLabel, $monthLabels, true)) {
+                                $monthLabels[] = $mLabel;
+                            }
+                            $periodStr = $mLabel ? ($mLabel . ($item->year ? ' ' . $item->year : '')) : ($item->year ? 'TA ' . $item->year : '-');
+                            $remaining = max(0, (int) $item->amount - (int) $item->paid_amount);
+
+                            $formattedItems[] = [
+                                'name' => $item->bill_type_name,
+                                'period' => $periodStr,
+                                'remaining' => $remaining,
+                                'status' => $item->status,
+                            ];
+                        }
+
+                        // WhatsApp Message link generator
+                        $waliUser = $student->user;
+                        $waliName = $waliUser?->name;
+                        $waliPhone = $waliUser?->phone;
+                        $waliJamaah = $waliUser?->jamaah_status;
+                        $cleanPhone = preg_replace('/[^0-9]/', '', (string) $waliPhone);
+                        if (str_starts_with($cleanPhone, '0')) {
+                            $cleanPhone = '62' . substr($cleanPhone, 1);
+                        }
+
+                        $monthSummaryStr = !empty($monthLabels) ? implode(', ', $monthLabels) : ($effectiveMonthCount . ' Bulan');
+                        $nominalFormatted = number_format($unpaidAmount, 0, ',', '.');
+
+                        $waText = "Assalamu'alaikum Wr. Wb.\n\n"
+                            . "Yth. Bapak/Ibu *" . ($waliName ?: 'Orang Tua / Wali') . "*,\n"
+                            . "Semoga senantiasa dalam keadaan sehat wal'afiat.\n\n"
+                            . "Kami dari Bagian Keuangan dan Administrasi Pondok Pesantren Cahaya Tasbih bermaksud menginformasikan perihal administrasi ananda *" . $student->name . "* (Kelas: " . ($student->classroom->name ?? '-') . ", " . ($student->classroom->school->name ?? '-') . ").\n\n"
+                            . "Tercatat saat ini ananda memiliki kewajiban tagihan yang telah jatuh tempo s.d. bulan ini sebesar *Rp " . $nominalFormatted . "* (" . $monthSummaryStr . ").\n\n"
+                            . "Mohon kesediaan Bapak/Ibu untuk dapat segera melakukan pelunasan atau konfirmasi melalui Portal Aplikasi Wali Santri atau rekening resmi pesantren.\n\n"
+                            . "Jazakumullah khairan katsiran atas perhatian dan kerja sama Bapak/Ibu.\n"
+                            . "Wassalamu'alaikum Wr. Wb.";
+
+                        $waLink = (strlen($cleanPhone) >= 9)
+                            ? 'https://wa.me/' . $cleanPhone . '?text=' . rawurlencode($waText)
+                            : null;
+
+                        $anomalyStudentsList[] = [
+                            'student_id' => $student->id,
+                            'name' => $student->name,
+                            'nis' => $student->nis ?? '-',
+                            'classroom_name' => $student->classroom->name ?? '-',
+                            'school_name' => $student->classroom->school->name ?? '-',
+                            'school_type' => $student->classroom->school->type ?? '-',
+                            'saldo' => (int) $student->saldo,
+                            'avatar' => $student->avatar,
+                            'wali_name' => $waliName,
+                            'wali_phone' => $waliPhone,
+                            'wali_jamaah' => $waliJamaah,
+                            'clean_phone' => $cleanPhone,
+                            'wa_link' => $waLink,
+                            'unpaid_amount' => $unpaidAmount,
+                            'unpaid_count' => $unpaidCount,
+                            'unpaid_months_count' => $effectiveMonthCount,
+                            'unpaid_month_labels' => $monthLabels,
+                            'unpaid_items' => $formattedItems,
+                            'topup_amount' => $topupAmount,
+                            'topup_count' => $topupCount,
+                            'pos_amount' => $posAmount,
+                            'pos_count' => $posCount,
+                            'tier' => $tier,
+                            'tier_label' => $tierLabel,
+                            'tier_badge_class' => $tierBadgeClass,
+                            'tier_description' => $tierDescription,
+                            'severity_rank' => $severityRank,
+                            'ratio' => round(($topupAmount / $unpaidAmount) * 100),
+                        ];
+                    }
+                }
+
+                // Sort: Severity Rank (1=Kritis, 2=Waspada, 3=Perhatian), then highest unpaid amount, then highest topup
+                usort($anomalyStudentsList, function ($a, $b) {
+                    if ($a['severity_rank'] !== $b['severity_rank']) {
+                        return $a['severity_rank'] <=> $b['severity_rank'];
+                    }
+                    if ($a['unpaid_amount'] !== $b['unpaid_amount']) {
+                        return $b['unpaid_amount'] <=> $a['unpaid_amount'];
+                    }
+                    return $b['topup_amount'] <=> $a['topup_amount'];
+                });
+
+                $allAnomalies = collect($anomalyStudentsList);
+                $topAnomalies = $allAnomalies->take(10)->values();
+
+                $anomalySummary = [
+                    'total_santri' => $allAnomalies->count(),
+                    'kritis_count' => $kritisCount,
+                    'waspada_count' => $waspadaCount,
+                    'perhatian_count' => $perhatianCount,
+                    'total_tunggakan' => $totalTunggakanAnomali,
+                    'total_topup_30d' => $totalTopupAnomali,
+                    'total_belanja_30d' => $totalBelanjaAnomali,
+                    'rasio_overall' => $totalTunggakanAnomali > 0 ? round(($totalTopupAnomali / $totalTunggakanAnomali) * 100) : 0,
+                ];
+
                 return compact(
                     'totalSantri',
                     'totalStaff',
@@ -483,7 +791,10 @@ class DashboardController extends Controller
                     'biSummary',
                     'billTrendChart',
                     'inflowTrendChart',
-                    'upcomingSchedules'
+                    'upcomingSchedules',
+                    'anomalySummary',
+                    'topAnomalies',
+                    'allAnomalies'
                 );
             });
 
@@ -683,7 +994,10 @@ class DashboardController extends Controller
                 'loginActivity',
                 'recentStaffLogins',
                 'recentStaffActivities',
-                'upcomingSchedules'
+                'upcomingSchedules',
+                'anomalySummary',
+                'topAnomalies',
+                'allAnomalies'
             ));
         } catch (\Exception $e) {
             Log::error('Dashboard BI Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -748,6 +1062,18 @@ class DashboardController extends Controller
                 'recentStaffLogins' => collect([]),
                 'recentStaffActivities' => collect([]),
                 'upcomingSchedules' => collect([]),
+                'anomalySummary' => [
+                    'total_santri' => 0,
+                    'kritis_count' => 0,
+                    'waspada_count' => 0,
+                    'perhatian_count' => 0,
+                    'total_tunggakan' => 0,
+                    'total_topup_30d' => 0,
+                    'total_belanja_30d' => 0,
+                    'rasio_overall' => 0,
+                ],
+                'topAnomalies' => collect([]),
+                'allAnomalies' => collect([]),
             ])->withErrors(['error' => 'Gagal memuat data dashboard.']);
         }
     }
