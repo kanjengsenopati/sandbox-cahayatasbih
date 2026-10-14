@@ -803,7 +803,8 @@ class DashboardController extends Controller
             // 3. Real-Time Query: 10 Aktivitas Pembayaran Terkini (Live)
             $recentPayments = Transaction::where('status', Transaction::STATUS_PAID)
                 ->with([
-                    'student:id,name,nis,classroom_id,school_id,avatar',
+                    'student:id,name,nis,classroom_id,school_id,avatar,user_id,saldo',
+                    'student.user:id,name,phone,avatar,jamaah_status',
                     'student.classroom:id,name,school_id',
                     'student.classroom.school:id,name,type',
                     'paymentMethod:id,name',
@@ -819,6 +820,156 @@ class DashboardController extends Controller
                 ->orderByRaw('COALESCE(paid_at, updated_at, created_at) DESC')
                 ->limit(10)
                 ->get();
+
+            // 3b. Real-Time Financial Intelligence per Santri (Unpaid Bills & 30-Day Top-up Capability)
+            $recentStudentIds = $recentPayments->pluck('student_id')->filter()->unique()->values();
+
+            $studentFinancialProfiles = [];
+            if ($recentStudentIds->isNotEmpty()) {
+                // Query unpaid bills scoped by selected academic year and up to current month (jatuh tempo)
+                $currentYear = (int) Carbon::now()->year;
+                $currentMonth = (int) Carbon::now()->month;
+
+                $unpaidBillsQuery = DB::table('bills')
+                    ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
+                    ->whereIn('bills.student_id', $recentStudentIds)
+                    ->whereNull('bills.deleted_at')
+                    ->whereNull('bill_types.deleted_at')
+                    ->where('bill_types.is_visible', 1)
+                    ->whereNotIn('bills.bill_type_id', $excludedBillTypeIds ?? [])
+                    ->whereIn('bills.status', [Bill::STATUS_UNPAID, Bill::STATUS_PARTIAL])
+                    ->when($selectedAcademicYearId && $selectedAcademicYearId !== 'all', fn($q) => $q->where('bills.academic_year_id', $selectedAcademicYearId))
+                    ->where(function ($query) use ($currentYear, $currentMonth) {
+                        $query->where(function ($sub) use ($currentYear, $currentMonth) {
+                            $sub->whereNotNull('bills.year')
+                                ->whereNotNull('bills.month')
+                                ->where(function ($dateSub) use ($currentYear, $currentMonth) {
+                                    $dateSub->where('bills.year', '<', $currentYear)
+                                            ->orWhere(function ($sameYear) use ($currentYear, $currentMonth) {
+                                                $sameYear->where('bills.year', '=', $currentYear)
+                                                         ->where('bills.month', '<=', $currentMonth);
+                                            });
+                                });
+                        })
+                        ->orWhere(function ($sub) use ($currentYear) {
+                            $sub->whereNotNull('bills.year')
+                                ->where(function ($mSub) {
+                                    $mSub->whereNull('bills.month')->orWhere('bills.month', 0);
+                                })
+                                ->where('bills.year', '<=', $currentYear);
+                        })
+                        ->orWhere(function ($sub) {
+                            $sub->whereNull('bills.year')
+                                ->whereDate('bills.created_at', '<=', Carbon::now()->endOfMonth());
+                        });
+                    });
+
+                $unpaidTotals = (clone $unpaidBillsQuery)
+                    ->selectRaw('bills.student_id, COUNT(bills.id) as unpaid_count, COALESCE(SUM(bills.amount - bills.paid_amount), 0) as total_unpaid_amount')
+                    ->groupBy('bills.student_id')
+                    ->get()
+                    ->keyBy('student_id');
+
+                $unpaidItemsRaw = (clone $unpaidBillsQuery)
+                    ->select('bills.id', 'bills.student_id', 'bills.month', 'bills.year', 'bills.amount', 'bills.paid_amount', 'bills.status', 'bill_types.name as bill_type_name')
+                    ->orderBy('bills.year', 'asc')
+                    ->orderBy('bills.month', 'asc')
+                    ->get()
+                    ->groupBy('student_id');
+
+                $thirtyDaysAgo = Carbon::now()->subDays(30);
+                $topup30dTotals = DB::table('saldo_histories')
+                    ->whereIn('student_id', $recentStudentIds)
+                    ->whereNull('deleted_at')
+                    ->where('type', SaldoHistory::TYPE_IN)
+                    ->where('status', SaldoHistory::STATUS_SUCCESS)
+                    ->where('created_at', '>=', $thirtyDaysAgo)
+                    ->selectRaw('student_id, COUNT(id) as topup_count, COALESCE(SUM(amount), 0) as total_topup_amount')
+                    ->groupBy('student_id')
+                    ->get()
+                    ->keyBy('student_id');
+
+                $academicMonthNames = [
+                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                ];
+
+                foreach ($recentStudentIds as $sId) {
+                    $uTotal = $unpaidTotals->get($sId);
+                    $unpaidAmount = (int) ($uTotal->total_unpaid_amount ?? 0);
+                    $unpaidCount = (int) ($uTotal->unpaid_count ?? 0);
+
+                    $tTotal = $topup30dTotals->get($sId);
+                    $topupAmount = (int) ($tTotal->total_topup_amount ?? 0);
+                    $topupCount = (int) ($tTotal->topup_count ?? 0);
+
+                    if ($unpaidAmount === 0) {
+                        $capabilityStatus = 'BEBAS_TUNGGAKAN';
+                        $capabilityLabel = 'Bebas Tunggakan';
+                        $capabilityBadgeClass = 'tint-emerald';
+                        $capabilityRatio = null;
+                    } elseif ($topupAmount >= $unpaidAmount) {
+                        $capabilityStatus = 'LIKUID_TINGGI';
+                        $capabilityLabel = 'Likuiditas Sangat Baik';
+                        $capabilityBadgeClass = 'tint-emerald';
+                        $capabilityRatio = round(($topupAmount / $unpaidAmount) * 100);
+                    } elseif ($topupAmount > 0) {
+                        $capabilityStatus = 'LIKUID_MODERAT';
+                        $capabilityLabel = 'Likuiditas Moderat';
+                        $capabilityBadgeClass = 'tint-warning';
+                        $capabilityRatio = round(($topupAmount / $unpaidAmount) * 100);
+                    } else {
+                        $capabilityStatus = 'PERLU_ATENSI';
+                        $capabilityLabel = 'Perlu Atensi (Tanpa Top-up 30 Hari)';
+                        $capabilityBadgeClass = 'tint-error';
+                        $capabilityRatio = 0;
+                    }
+
+                    $items = ($unpaidItemsRaw->get($sId) ?? collect([]))->map(function ($item) use ($academicMonthNames) {
+                        $period = '';
+                        if ($item->month) {
+                            $period = ($academicMonthNames[$item->month] ?? 'Bln ' . $item->month) . ($item->year ? ' ' . $item->year : '');
+                        } elseif ($item->year) {
+                            $period = 'TA ' . $item->year;
+                        }
+                        $remaining = max(0, (int) $item->amount - (int) $item->paid_amount);
+
+                        return [
+                            'name' => $item->bill_type_name,
+                            'period' => $period,
+                            'remaining' => $remaining,
+                            'status' => $item->status,
+                        ];
+                    });
+
+                    $studentFinancialProfiles[$sId] = [
+                        'unpaid_amount' => $unpaidAmount,
+                        'unpaid_count' => $unpaidCount,
+                        'topup_amount' => $topupAmount,
+                        'topup_count' => $topupCount,
+                        'capability_status' => $capabilityStatus,
+                        'capability_label' => $capabilityLabel,
+                        'capability_badge_class' => $capabilityBadgeClass,
+                        'capability_ratio' => $capabilityRatio,
+                        'unpaid_items' => $items,
+                    ];
+                }
+            }
+
+            foreach ($recentPayments as $tx) {
+                $tx->financial_profile = $studentFinancialProfiles[$tx->student_id] ?? [
+                    'unpaid_amount' => 0,
+                    'unpaid_count' => 0,
+                    'topup_amount' => 0,
+                    'topup_count' => 0,
+                    'capability_status' => 'BEBAS_TUNGGAKAN',
+                    'capability_label' => 'Bebas Tunggakan',
+                    'capability_badge_class' => 'tint-emerald',
+                    'capability_ratio' => null,
+                    'unpaid_items' => collect([]),
+                ];
+            }
 
             // 4. Real-Time Query: Aktivitas Login Wali Santri & User Backoffice
             $isSuperAdmin = $user && method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
