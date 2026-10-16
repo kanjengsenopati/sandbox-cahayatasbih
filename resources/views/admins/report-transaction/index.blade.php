@@ -816,9 +816,27 @@
     }
 
     // onclick export button event handler to set the type and submit the form to export and action to route transaction.export
-    $('.btn-export').on('click', function() {
-        $('#type').val($(this).data('type'));
+    $('.btn-export').on('click', function(e) {
+        e.preventDefault();
+        var exportType = $(this).data('type') || 'xlsx';
+        $('#type').val(exportType);
+
+        Swal.fire({
+            title: 'Menyiapkan File Excel...',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2 text-primary"></i>Sedang memproses dan mengunduh laporan transaksi...</div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
+
+        setTimeout(function() {
+            Swal.close();
+        }, 4000);
     });
 
     // Helper function to safely copy text to clipboard
@@ -874,7 +892,7 @@
         // 1. Show SweetAlert loading state
         Swal.fire({
             title: 'Menyiapkan Data Google Sheets...',
-            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2"></i>Sedang memproses dan memformat data transaksi...</div>',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2 text-primary"></i>Sedang memproses dan menghubungkan data transaksi ke Google Sheets...</div>',
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false,
@@ -883,7 +901,7 @@
             }
         });
 
-        // 2. Fetch TSV data from server
+        // 2. Fetch data from server
         $.ajax({
             url: "{{ route('report-transaction.export-sheets') }}",
             type: "GET",
@@ -898,11 +916,41 @@
                 student_name: $('#filter_student_name').val()
             },
             success: function(response) {
-                if (response.success && response.tsv) {
-                    var tsvData = response.tsv;
-                    var rowCount = response.count;
+                if (response.success) {
+                    var rowCount = response.count || 0;
 
-                    // Copy to clipboard
+                    // MODE 1: Direct Google Apps Script Integration (Nilai terisi otomatis, 0 manual paste)
+                    if (response.mode === 'direct' && response.url) {
+                        window.open(response.url, '_blank');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '<span class="text-success fs-3 fw-bolder">Google Sheets Berhasil Dibuat & Dibuka!</span>',
+                            html: `
+                                <div class="text-start fs-7 text-gray-700 mt-2">
+                                    <p class="mb-3">Berhasil membuat dokumen Google Sheets dengan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
+                                    <div class="p-3 bg-light-success rounded-3 border border-success border-dashed mb-3 text-center">
+                                        <span class="badge badge-light-success fs-7 fw-bold py-2 px-3">
+                                            <i class="fas fa-check-circle text-success me-1"></i> Data Telah Terisi Otomatis (Auto-Populated Tanpa Paste Manual)
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-center pt-2">
+                                        <a href="${response.url}" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                            <i class="fas fa-external-link-alt me-1"></i> Buka Ulang Spreadsheet
+                                        </a>
+                                    </div>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Tutup',
+                            customClass: {
+                                confirmButton: 'btn btn-sm btn-primary'
+                            }
+                        });
+                        return;
+                    }
+
+                    // MODE 2: Fallback Clipboard + Auto Open
+                    var tsvData = response.tsv || '';
                     copyTextToClipboard(tsvData).then(function() {
                         showSuccessModal(true);
                     }).catch(function() {
@@ -916,7 +964,7 @@
 
                         Swal.fire({
                             icon: 'success',
-                            title: '<span class="text-success fs-3 fw-bolder">Data Siap Ditempel ke Google Sheets!</span>',
+                            title: '<span class="text-success fs-3 fw-bolder">Data Siap di Google Sheets!</span>',
                             html: `
                                 <div class="text-start fs-7 text-gray-700 mt-2">
                                     <p class="mb-2">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
@@ -927,9 +975,9 @@
                                             <span class="fw-bolder text-gray-900 fs-7">Cara Menampilkan Data di Google Sheets:</span>
                                         </div>
                                         <div class="ms-6 fs-7 text-gray-700">
-                                            <div class="mb-2"><strong>1.</strong> Klik tombol hijau <strong>Buka Google Sheets</strong> di bawah.</div>
+                                            <div class="mb-2"><strong>1.</strong> Klik tombol hijau <strong>Buka Google Sheets</strong> di bawah (Tab baru terbuka).</div>
                                             <div class="mb-2"><strong>2.</strong> Pada halaman Google Sheets yang terbuka, klik kotak <strong>A1</strong> (pojok kiri atas).</div>
-                                            <div class="mb-1"><strong>3.</strong> Tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">⌘ + V</kbd> di Mac) untuk <strong>Paste / Tempel</strong> data.</div>
+                                            <div class="mb-1"><strong>3.</strong> Tekan keyboard <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">⌘ + V</kbd> di Mac) untuk <strong>Paste / Tempel</strong> data.</div>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
