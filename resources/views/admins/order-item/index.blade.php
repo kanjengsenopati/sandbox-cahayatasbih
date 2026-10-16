@@ -90,6 +90,46 @@
     .product-info {
         padding: 12px !important;
     }
+
+    /* Premium POS Card Lock Modal Styles */
+    .swal2-popup .swal2-html-container {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .pos-premium-modal.swal2-popup {
+        border-radius: 24px !important;
+        padding: 28px 24px 24px !important;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16) !important;
+        border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    .pos-premium-modal .swal2-html-container {
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .pos-premium-modal .swal2-actions {
+        margin: 20px 0 0 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    .pos-premium-modal .btn-pos-modal-close {
+        width: 100% !important;
+        border-radius: 14px !important;
+        padding: 12px 24px !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 6px 16px rgba(220, 38, 38, 0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    .pos-premium-modal .btn-pos-modal-close:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35) !important;
+    }
 </style>
 @endpush
 @section('content')
@@ -1685,6 +1725,30 @@
     });
 </script>
 <script>
+    function resetSelectedStudentOnPos() {
+        var studentNameEl = document.getElementById('student-name');
+        var saldoEl = document.getElementById('saldo');
+        var remainingSaldoEl = document.getElementById('remaining-saldo');
+        var formPaymentEl = document.getElementById('form-payment');
+
+        if (studentNameEl) studentNameEl.value = '';
+        if (saldoEl) saldoEl.value = '';
+        if (remainingSaldoEl) remainingSaldoEl.value = 'Rp. 0';
+        if (formPaymentEl) {
+            formPaymentEl.querySelectorAll('input[name="barcode"]').forEach(function (el) {
+                el.remove();
+            });
+        }
+
+        window.currentStudentLimit = 0;
+        window.currentStudentRemainingLimit = 0;
+        window.currentStudentTotalThisDay = 0;
+        window.isLimitAlertShown = false;
+
+        var curTotal = parseInt((document.getElementById('total-price')?.value || '').replace(/[^\d]/g, '')) || 0;
+        _renderTotalPrice(curTotal);
+    }
+
     // Trigger search on Enter key press
     document.getElementById('scan-card').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
@@ -1697,8 +1761,91 @@
             }).then(function (response) {
                 var student = response.data.data;
                 if (student) {
-                    // Check if card is blocked by Wali
+                    // 1. Check if card is locked due to an active Card Problem Report (pending)
+                    if (student.is_card_reported) {
+                        resetSelectedStudentOnPos();
+                        var issueLabel = student.card_report?.issue_label || 'Kendala Kartu';
+                        var studentNis = student.nis ? `NIS: ${student.nis}` : '';
+                        var reportNotes = student.card_report?.notes
+                            ? `
+                                <div style="margin-top: 10px; padding: 9px 12px; background: #FFFFFF; border: 1px dashed #CBD5E1; border-radius: 10px; font-size: 12px; color: #475569; line-height: 1.45;">
+                                    <span style="font-weight: 700; color: #334155;">Catatan Pelapor:</span> "${student.card_report.notes}"
+                                </div>
+                              `
+                            : '';
+
+                        Swal.fire({
+                            width: 460,
+                            buttonsStyling: false,
+                            customClass: {
+                                popup: 'pos-premium-modal',
+                                confirmButton: 'btn-pos-modal-close'
+                            },
+                            html: `
+                                <div style="text-align: center;">
+                                    <div style="width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.18); display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-user-lock" style="font-size: 26px; color: #DC2626;"></i>
+                                    </div>
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #DC2626; display: inline-block;"></span>
+                                        Transaksi Ditolak &bull; Auto-Lock
+                                    </div>
+                                    <div style="font-size: 20px; font-weight: 800; color: #0F172A; margin-top: 10px; line-height: 1.3;">
+                                        Kartu Santri Sedang Dilaporkan
+                                    </div>
+                                    <div style="font-size: 13px; font-weight: 500; color: #64748B; margin-top: 4px; line-height: 1.45;">
+                                        Kartu ini tidak dapat digunakan bertransaksi karena terdaftar dalam laporan kendala aktif.
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 18px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 14px 16px; text-align: left;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Nama Santri</span>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 14px; font-weight: 700; color: #0F172A;">${student.name}</div>
+                                            ${studentNis ? `<div style="font-size: 11.5px; font-weight: 500; color: #64748B;">${studentNis}</div>` : ''}
+                                        </div>
+                                    </div>
+
+                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Jenis Kendala</span>
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(220, 38, 38, 0.1); color: #DC2626; font-size: 12px; font-weight: 700; line-height: 1.3;">
+                                            <i class="fas fa-exclamation-circle" style="font-size: 11px;"></i>
+                                            <span>${issueLabel}</span>
+                                        </span>
+                                    </div>
+
+                                    <div style="height: 1px; background: #E2E8F0; margin: 10px 0;"></div>
+
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                        <span style="font-size: 12.5px; font-weight: 600; color: #64748B; flex-shrink: 0;">Status Laporan</span>
+                                        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: #FEF3C7; color: #B45309; font-size: 12px; font-weight: 700; line-height: 1.3;">
+                                            <i class="fas fa-clock" style="font-size: 11px;"></i>
+                                            <span>Menunggu Tindak Lanjut</span>
+                                        </span>
+                                    </div>
+
+                                    ${reportNotes}
+                                </div>
+
+                                <div style="margin-top: 14px; padding: 11px 14px; border-radius: 12px; background: #FEF2F2; border: 1px solid #FECACA; display: flex; align-items: flex-start; gap: 10px; text-align: left;">
+                                    <i class="fas fa-shield-alt" style="color: #DC2626; font-size: 15px; margin-top: 2px; flex-shrink: 0;"></i>
+                                    <div style="font-size: 12px; line-height: 1.45; color: #991B1B; font-weight: 500;">
+                                        Kartu akan <strong>terbuka otomatis</strong> setelah laporan kendala diselesaikan oleh Admin pada menu <strong>Monitoring Kendala Kartu</strong>.
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: 'Mengerti & Tutup'
+                        });
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // 2. Check if card is blocked by Wali
                     if (student.is_blocked) {
+                        resetSelectedStudentOnPos();
                         Swal.fire({
                             icon: 'error',
                             title: 'KARTU DIBLOKIR!',
@@ -1712,9 +1859,13 @@
                     // Replace name, saldo, and update total price
                     document.getElementById('student-name').value = student.name;
                     document.getElementById('saldo').value = 'Rp. ' + Number(student.saldo).toLocaleString('id-ID');
-                    // Add student id to form-payment
-                    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
-                        value="${student.barcode}">`);
+
+                    // Clear any previous hidden barcode input before adding current student barcode
+                    var formPaymentEl = document.getElementById('form-payment');
+                    formPaymentEl.querySelectorAll('input[name="barcode"]').forEach(function (el) {
+                        el.remove();
+                    });
+                    formPaymentEl.insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode" value="${student.barcode}">`);
                         
                     // Set global limits for alert logic
                     window.currentStudentLimit = student.effective_daily_limit || 0;
@@ -1727,6 +1878,7 @@
                     // Clear input
                     e.target.value = '';
                 } else {
+                    resetSelectedStudentOnPos();
                     Swal.fire({
                         icon: 'error',
                         title: 'Santri tidak ditemukan',

@@ -401,5 +401,41 @@ class Admin extends Authenticatable
 
         return false;
     }
+
+    /**
+     * Check if admin role is authorized to view the Main Business Intelligence (BI) Dashboard.
+     * Strictly restricted to: Super Admin, Bendahara, TU (Tata Usaha), Kepala Sekolah, Koordinator.
+     */
+    public function canAccessBiDashboard(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $roles = $this->getRoleNamesLower();
+        if (empty($roles) && $this->role_id) {
+            $fallbackRole = strtolower(trim($this->role_name));
+            if ($fallbackRole !== 'admin') {
+                $roles = [$fallbackRole];
+            }
+        }
+
+        foreach ($roles as $role) {
+            if (
+                str_contains($role, 'super admin') ||
+                str_contains($role, 'superadmin') ||
+                str_contains($role, 'bendahara') ||
+                str_contains($role, 'tata usaha') ||
+                preg_match('/(^|[\s\-_])tu($|[\s\-_])/i', $role) ||
+                str_contains($role, 'kepala sekolah') ||
+                str_contains($role, 'kepsek') ||
+                str_contains($role, 'koordinator')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 

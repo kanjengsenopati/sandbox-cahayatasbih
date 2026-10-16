@@ -45,12 +45,13 @@ class AuditLogExport implements FromCollection, WithHeadings, ShouldAutoSize, Wi
         $name = $causer->name ?? 'User Terhapus';
         $role = $causer ? ($causer->roles->first()->name ?? '-') : '-';
         $device = $activity->getExtraProperty('device') ?? 'Desktop';
+        $humanized = \App\Traits\LogActivityTrait::humanizeActivity($activity);
 
         return [
             $this->rowNumber,
             $name,
             $role,
-            $activity->description,
+            $humanized['description'] ?? $activity->description,
             $activity->created_at->format('d-m-Y H:i:s'),
             $device,
         ];

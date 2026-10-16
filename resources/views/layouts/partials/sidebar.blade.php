@@ -90,7 +90,9 @@
             $permissions = array_filter(explode(',', $menu->permission ?? ''));
             $hasAccess = false;
             
-            if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
+            if ($menu->name === 'Dashboard') {
+                $hasAccess = $currentUser && method_exists($currentUser, 'canAccessBiDashboard') && $currentUser->canAccessBiDashboard();
+            } elseif ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
                 $hasAccess = in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList);
             } elseif ($currentUser->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
                 $hasAccess = false;
@@ -145,6 +147,10 @@
                     $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) use ($currentUser, $userRolesList) {
                         if ($sub->url === route('menu-navigation.index') || str_contains($sub->url, 'menu-navigation')) {
                             return in_array('super admin', $userRolesList) || in_array('superadmin', $userRolesList) || $currentUser->can('Manage Menu Aplikasi');
+                        }
+
+                        if (str_contains($sub->url, 'report-audit')) {
+                            return $currentUser && method_exists($currentUser, 'isSuperAdmin') && $currentUser->isSuperAdmin();
                         }
 
                         if ($currentUser->isSuperAdmin()) {

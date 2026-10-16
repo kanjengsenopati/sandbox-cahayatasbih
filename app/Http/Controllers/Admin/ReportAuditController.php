@@ -14,8 +14,9 @@ class ReportAuditController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Laporan Audit Log')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        $user = Auth::user();
+        if (!$user || !method_exists($user, 'isSuperAdmin') || !$user->isSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, halaman Laporan Audit Log hanya dapat diakses oleh Super Admin.');
         }
 
         if (request()->ajax()) {
@@ -41,7 +42,8 @@ class ReportAuditController extends Controller
                     return $row->causer ? ($row->causer->roles->first()->name ?? '-') : '-';
                 })
                 ->editColumn('description', function ($row) {
-                    return $row->description;
+                    $humanized = \App\Traits\LogActivityTrait::humanizeActivity($row);
+                    return $humanized['description'] ?? $row->description;
                 })
                 ->addColumn('date', function ($row) {
                     return $row->created_at->translatedFormat('d F Y H:i:s');
@@ -60,8 +62,9 @@ class ReportAuditController extends Controller
 
     public function export(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Audit Log')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengekspor halaman tersebut');
+        $user = Auth::user();
+        if (!$user || !method_exists($user, 'isSuperAdmin') || !$user->isSuperAdmin()) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, hanya Super Admin yang memiliki akses untuk mengekspor Laporan Audit Log.');
         }
 
         $type = $request->input('type', 'xlsx');

@@ -391,13 +391,22 @@ class OrderItemController extends Controller
             return false;
         }
 
-        if ($student->saldo < $total) {
-            session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi (Saldo: Rp ' . number_format($student->saldo, 0, ',', '.') . ', Total Belanja: Rp ' . number_format($total, 0, ',', '.') . ').');
+        if ($student->is_blocked) {
+            session()->flash('error', 'Maaf, Kartu Santri sedang diblokir oleh Wali Santri.');
             return false;
         }
 
-        if ($student->is_blocked) {
-            session()->flash('error', 'Maaf, Kartu Santri sedang diblokir oleh Wali Santri.');
+        $pendingReport = $student->pendingCardReport()->first();
+        if ($pendingReport) {
+            session()->flash(
+                'error',
+                'Maaf, Kartu Santri (' . $student->name . ') sedang terkunci karena terdaftar dalam laporan kendala kartu (' . $pendingReport->issue_label . ') dan belum ditindaklanjuti.'
+            );
+            return false;
+        }
+
+        if ($student->saldo < $total) {
+            session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi (Saldo: Rp ' . number_format($student->saldo, 0, ',', '.') . ', Total Belanja: Rp ' . number_format($total, 0, ',', '.') . ').');
             return false;
         }
 
@@ -577,7 +586,7 @@ class OrderItemController extends Controller
         session()->save();
 
         $barcode = $request->barcode;
-        $student = Student::with('classroom.school')
+        $student = Student::with(['classroom.school', 'pendingCardReport'])
             ->where(function ($query) use ($barcode) {
                 $query->where('barcode', $barcode)
                       ->orWhere('nis', $barcode)
@@ -588,6 +597,16 @@ class OrderItemController extends Controller
         if (!$student) {
             return $this->postSuccessResponse("Data siswa tidak ditemukan", null);
         }
+
+        $pendingReport = $student->pendingCardReport;
+        $student->is_card_reported = (bool) $pendingReport;
+        $student->card_report = $pendingReport ? [
+            'id' => $pendingReport->id,
+            'issue_type' => $pendingReport->issue_type,
+            'issue_label' => $pendingReport->issue_label,
+            'notes' => $pendingReport->notes,
+            'reported_at' => $pendingReport->created_at ? $pendingReport->created_at->format('d/m/Y H:i') : null,
+        ] : null;
 
         $effectiveLimit = $student->getEffectiveDailyLimit();
         $student->effective_daily_limit = $effectiveLimit;

@@ -33,6 +33,7 @@ class CtMobileAuthController extends Controller
         if (Auth::guard('wali')->attempt(['phone' => $phone, 'password' => $password], $remember)) {
             $user = Auth::guard('wali')->user();
             if ($user->is_active) {
+                $user->update(['last_login' => now()]);
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
@@ -51,6 +52,7 @@ class CtMobileAuthController extends Controller
         if (Auth::guard('web')->attempt(['phone' => $phone, 'password' => $password], $remember)) {
             $admin = Auth::guard('web')->user();
             if ($admin->is_active) {
+                $admin->update(['last_login_at' => now()]);
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,

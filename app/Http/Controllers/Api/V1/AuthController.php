@@ -39,6 +39,8 @@ class AuthController extends Controller
             return $this->failedResponse('Maaf Nih, akun kamu sedang Diblokir. Hubungi admin buat info lebih lanjut ya');
         }
 
+        $user->update(['last_login' => now()]);
+
         // Update FCM token if provided
         if ($request->has('fcm_token')) {
             $this->update_fcm_token($request->fcm_token, $user->id);
