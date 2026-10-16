@@ -430,11 +430,31 @@ class ReportTransactionController extends Controller
 
     public function export()
     {
-        return Excel::download(new ReportTransactionExport, 'Laporan Transaksi ' . request()->start_date . ' - ' . request()->end_date . '.' . request()->type);
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk export laporan transaksi');
+        }
+
+        session()->save();
+        @set_time_limit(300);
+        @ini_set('memory_limit', '1024M');
+
+        try {
+            $startDate = request()->filled('start_date') ? request()->start_date : 'All';
+            $endDate = request()->filled('end_date') ? request()->end_date : 'All';
+            $ext = in_array(request()->type, ['xlsx', 'csv'], true) ? request()->type : 'xlsx';
+
+            return Excel::download(new ReportTransactionExport, "Laporan Transaksi {$startDate} - {$endDate}.{$ext}");
+        } catch (\Throwable $e) {
+            \Log::error('Export excel error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Gagal memproses data export Excel: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Export data to Google Sheets compatible TSV format for instant clipboard copy and paste.
+     * Export data to Google Sheets: direct auto-create via Google Apps Script Web App
+     * or fallback to TSV format for instant clipboard copy and paste.
      */
     public function exportSheets(Request $request)
     {
@@ -444,16 +464,54 @@ class ReportTransactionController extends Controller
 
         session()->save();
         @set_time_limit(300);
-        @ini_set('memory_limit', '512M');
+        @ini_set('memory_limit', '1024M');
 
         try {
             $export = new ReportTransactionExport();
-            $result = $export->generateTsv();
+            $dataResult = $export->generateDataArray();
+            $tsvResult = $export->generateTsv();
+
+            $startDate = $request->start_date ?: date('Y-m-01');
+            $endDate = $request->end_date ?: date('Y-m-d');
+            $sheetTitle = 'Laporan Transaksi ' . $startDate . ' s/d ' . $endDate;
+
+            $gasWebappUrl = config('services.google.sheets_webapp_url') ?: env('GOOGLE_SHEETS_WEBAPP_URL');
+
+            // Jika Google Apps Script Web App URL telah dikonfigurasi, kirim payload langsung
+            if (!empty($gasWebappUrl)) {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::timeout(60)
+                        ->post($gasWebappUrl, [
+                            'title' => $sheetTitle,
+                            'values' => $dataResult['values'],
+                        ]);
+
+                    if ($response->successful()) {
+                        $json = $response->json();
+                        if (!empty($json['url'])) {
+                            return response()->json([
+                                'success' => true,
+                                'mode' => 'direct',
+                                'url' => $json['url'],
+                                'count' => $dataResult['count'],
+                                'tsv' => $tsvResult['tsv'],
+                            ]);
+                        }
+                    }
+                    \Log::warning('Google Apps Script response unhandled: ' . $response->body());
+                } catch (\Throwable $gasError) {
+                    \Log::error('GAS Webhook failed, falling back to TSV: ' . $gasError->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'tsv' => $result['tsv'],
-                'count' => $result['count'],
+                'mode' => 'fallback',
+                'title' => $sheetTitle,
+                'values' => $dataResult['values'],
+                'tsv' => $tsvResult['tsv'],
+                'count' => $tsvResult['count'],
+                'gas_configured' => !empty($gasWebappUrl),
             ]);
         } catch (\Throwable $e) {
             \Log::error('Export sheets error: ' . $e->getMessage(), [

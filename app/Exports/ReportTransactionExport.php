@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use Maatwebsite\Excel\Concerns\FromGenerator;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use App\Traits\CanonicalBillTypeTrait;
 use Generator;
 
-class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
+class ReportTransactionExport implements FromGenerator, WithHeadings, WithColumnWidths, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
 {
     use CanonicalBillTypeTrait;
     private $rowNumber = 0;
@@ -77,7 +77,7 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
         }
 
         return Transaction::where('status', Transaction::STATUS_PAID)
-            ->with('student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType')
+            ->with('student', 'student.classroom.school', 'paymentMethod', 'admin', 'transactionDetails.bill.billType')
             ->when(empty($scopedSchoolIds), function ($query) {
                 $query->whereRaw('1 = 0');
             })
@@ -412,6 +412,34 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
         return [];
     }
 
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 6,   // No
+            'B' => 26,  // Tanggal
+            'C' => 30,  // Nama
+            'D' => 16,  // Kelas
+            'E' => 20,  // UPT
+            'F' => 16,  // Jenis Transaksi
+            'G' => 30,  // Item Tagihan
+            'H' => 18,  // Nominal
+            'I' => 18,  // Metode Pembayaran
+            'J' => 22,  // Petugas
+            'K' => 16,  // Juli
+            'L' => 16,  // Agustus
+            'M' => 16,  // September
+            'N' => 16,  // Oktober
+            'O' => 16,  // November
+            'P' => 16,  // Desember
+            'Q' => 16,  // Januari
+            'R' => 16,  // Februari
+            'S' => 16,  // Maret
+            'T' => 16,  // April
+            'U' => 16,  // Mei
+            'V' => 16,  // Juni
+        ];
+    }
+
     public function title(): string
     {
         return 'Data Transaksi';
@@ -424,39 +452,69 @@ class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAuto
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle($sheet->calculateWorksheetDimension())->getAlignment()->setWrapText(true);
-        $sheet->getStyle($sheet->calculateWorksheetDimension())->applyFromArray([
-            'alignment' => [
-                'vertical' => Alignment::VERTICAL_CENTER,
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
-            ],
-            'font' => [
-                'size' => 12,
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                ],
-            ],
-            'padding' => [
-                'top' => 5,
-                'right' => 5,
-                'bottom' => 5,
-                'left' => 5,
-            ],
-        ]);
+        $highestCol = $sheet->getHighestColumn();
+        $highestRow = $sheet->getHighestRow();
 
-        $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->applyFromArray([
+        // 1. Set font default workbook global
+        $sheet->getParent()->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
+
+        // 2. Format baris Header A1:{highestCol}1 (Tebal, background biru, teks putih)
+        $sheet->getStyle("A1:{$highestCol}1")->applyFromArray([
             'font' => [
                 'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+                'size' => 10,
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
-                    'argb' => 'DDDDDD',
+                    'argb' => '2563EB', // Blue-600
+                ],
+            ],
+            'alignment' => [
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => '1D4ED8'],
                 ],
             ],
         ]);
+        $sheet->getRowDimension(1)->setRowHeight(26);
+        $sheet->freezePane('A2');
+
+        // 3. Format baris data secara range (bukan looping per-sel individual)
+        if ($highestRow > 1) {
+            $sheet->getStyle("A2:{$highestCol}{$highestRow}")->applyFromArray([
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'E2E8F0'],
+                    ],
+                ],
+            ]);
+            $sheet->getStyle("A2:A{$highestRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+    }
+
+    public function generateDataArray(): array
+    {
+        $rows = [];
+        $rows[] = $this->headings();
+
+        foreach ($this->generator() as $groupedTransactions) {
+            $rows[] = $this->map($groupedTransactions);
+        }
+
+        return [
+            'values' => $rows,
+            'count' => $this->rowNumber,
+        ];
     }
 
     public function generateTsv(): array
