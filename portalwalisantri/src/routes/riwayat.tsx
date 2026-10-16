@@ -236,6 +236,8 @@ function RiwayatPage() {
   const activeFilters =
     (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "today" ? 1 : 0) + (q ? 1 : 0);
 
+  const activeDateLabel = DATE_FILTERS.find((d) => d.id === range)?.label || "Hari Ini";
+
   // Enabled Skeleton loading below by removing fullscreen loader block
 
   return (
@@ -272,8 +274,10 @@ function RiwayatPage() {
           <div className="relative mt-5 grid grid-cols-2 gap-3">
             <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50/95 to-teal-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-emerald-100/80 flex flex-col justify-center h-[82px]">
               <div className="relative z-10">
-                <Text.Label className="block text-slate-600 text-[10px] font-bold uppercase tracking-wider">Pemasukan</Text.Label>
-                <span className="block text-[18px] font-bold text-emerald-700 leading-none mt-1">{fmt(totalIn)}</span>
+                <Text.Label className="block text-slate-600 font-semibold tracking-tight normal-case capitalize leading-tight">
+                  Pemasukan {activeDateLabel}
+                </Text.Label>
+                <Text.Amount className="block text-emerald-700 leading-none mt-1.5">{fmt(totalIn)}</Text.Amount>
               </div>
               <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-emerald-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="16" cy="16" r="14" fill="currentColor" />
@@ -282,8 +286,10 @@ function RiwayatPage() {
             </div>
             <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-red-50/95 to-rose-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100/80 flex flex-col justify-center h-[82px]">
               <div className="relative z-10">
-                <Text.Label className="block text-slate-600 text-[10px] font-bold uppercase tracking-wider">Pengeluaran</Text.Label>
-                <span className="block text-[18px] font-bold text-red-700 leading-none mt-1">{fmt(Math.abs(totalOut))}</span>
+                <Text.Label className="block text-slate-600 font-semibold tracking-tight normal-case capitalize leading-tight">
+                  Pengeluaran {activeDateLabel}
+                </Text.Label>
+                <Text.Amount className="block text-red-700 leading-none mt-1.5">{fmt(Math.abs(totalOut))}</Text.Amount>
               </div>
               <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-red-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="16" cy="16" r="14" fill="currentColor" />
