@@ -14,6 +14,33 @@
         transform: translateY(-2px);
         box-shadow: 0 12px 36px rgb(0, 0, 0, 0.06) !important;
     }
+    /* Premium Smooth Palettes for BI Cards */
+    .bi-palette-blue {
+        background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%) !important;
+        border: 1px solid rgba(191, 219, 254, 0.55) !important;
+    }
+    .bi-palette-emerald {
+        background: linear-gradient(180deg, #ffffff 0%, #f7fdfa 100%) !important;
+        border: 1px solid rgba(167, 243, 208, 0.55) !important;
+    }
+    .bi-palette-rose {
+        background: linear-gradient(180deg, #ffffff 0%, #fffbfb 100%) !important;
+        border: 1px solid rgba(254, 205, 211, 0.55) !important;
+    }
+    .bi-palette-teal {
+        background: linear-gradient(180deg, #ffffff 0%, #f6fcfb 100%) !important;
+        border: 1px solid rgba(153, 246, 228, 0.55) !important;
+    }
+    .bi-smooth-badge-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(241, 245, 249, 0.95);
+        backdrop-filter: blur(4px);
+    }
     .bi-glass-bar {
         border-radius: 24px !important;
         background: rgba(255, 255, 255, 0.8) !important;
@@ -285,7 +312,6 @@
     <form action="{{ route('dashboard') }}" method="GET" class="row g-2 align-items-center">
         <div class="col-12 mb-1 d-flex justify-content-between align-items-center">
             <x-text.h2>Executive BI Dashboard</x-text.h2>
-            <span class="badge tint-primary rounded-pill px-3 py-1">TA {{ $activeAcademicYearName ?? '-' }}</span>
         </div>
         @if(isset($schools) && $schools->count() > 1)
             <div class="col-6">
@@ -307,6 +333,16 @@
                 </select>
             </div>
         @endif
+        <div class="col-12">
+            <select name="period" onchange="this.form.submit()" class="form-select form-select-sm border-0 bg-light fw-bold" style="border-radius: 12px;">
+                <option value="hari_ini" {{ ($selectedPeriod ?? '') === 'hari_ini' ? 'selected' : '' }}>Hari Ini</option>
+                <option value="minggu_ini" {{ ($selectedPeriod ?? '') === 'minggu_ini' ? 'selected' : '' }}>Minggu Ini</option>
+                <option value="bulan_ini" {{ ($selectedPeriod ?? 'bulan_ini') === 'bulan_ini' ? 'selected' : '' }}>Bulan Ini</option>
+                <option value="bulan_kemarin" {{ ($selectedPeriod ?? '') === 'bulan_kemarin' ? 'selected' : '' }}>Bulan Kemarin</option>
+                <option value="3_bulan" {{ ($selectedPeriod ?? '') === '3_bulan' ? 'selected' : '' }}>3 Bulan Berjalan</option>
+                <option value="semua" {{ ($selectedPeriod ?? '') === 'semua' ? 'selected' : '' }}>Semua Periode</option>
+            </select>
+        </div>
     </form>
 </div>
 
@@ -316,7 +352,7 @@
 <div class="row g-4 mb-4">
     <!-- Card 1: Target Pembayaran Tagihan -->
     <div class="col-xl-3 col-md-6">
-        <div class="card bi-card h-100">
+        <div class="card bi-card bi-palette-blue h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between gap-2">
@@ -343,14 +379,18 @@
                     <div class="w-100 rounded-pill mb-2" style="height: 6px; background-color: #f1f5f9;">
                         <div class="rounded-pill" style="height: 6px; width: {{ min(100, $summary['realisasi_percentage']) }}%; background-color: #2563EB;"></div>
                     </div>
-                    <div class="d-flex flex-column gap-1 pt-1">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Lunas:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['paid_bill_items']) }} item</strong></x-text.caption>
+                    <div class="d-flex flex-column gap-1.5 pt-1">
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Lunas:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(37, 99, 235, 0.08); color: #2563EB; font-size: 11px;">
+                                {{ number_format($summary['paid_bill_items']) }} item
+                            </span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Cicilan:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Cicilan:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(100, 116, 139, 0.08); color: #334155; font-size: 11px;">
+                                {{ number_format($summary['partial_bill_items']) }} item
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -360,7 +400,7 @@
 
     <!-- Card 2: Realisasi Pembayaran Masuk -->
     <div class="col-xl-3 col-md-6">
-        <div class="card bi-card h-100">
+        <div class="card bi-card bi-palette-emerald h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between gap-2">
@@ -372,10 +412,12 @@
                         </div>
                     </div>
                     <div class="mt-1 mb-3">
-                        <x-text.caption class="mb-1 text-nowrap d-block">Akumulasi Tagihan Terbayar</x-text.caption>
+                        <x-text.caption class="mb-1 text-nowrap d-block">
+                            {{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Akumulasi Tagihan Terbayar' : 'Realisasi ' . ($periodLabel ?? 'Bulan Ini') }}
+                        </x-text.caption>
                         <div>
                             <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
-                                {{ $summary['realisasi_percentage'] }}% Tercapai
+                                {{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? ($summary['realisasi_percentage_all'] ?? $summary['realisasi_percentage']) . '% Tercapai' : ($periodLabel ?? 'Bulan Ini') }}
                             </span>
                         </div>
                     </div>
@@ -384,14 +426,19 @@
                     <div class="mb-2">
                         <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['realisasi_pembayaran'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Hari Ini:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="w-100 rounded-pill mb-2" style="height: 6px;"></div>
+                    <div class="d-flex flex-column gap-1.5 pt-1">
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Hari Ini:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(16, 185, 129, 0.08); color: #059669; font-size: 11px;">
+                                Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}
+                            </span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Bulan Ini:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['pembayaran_bulan_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">{{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Bulan Ini:' : ($periodLabel ?? 'Bulan Ini') . ':' }}</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(16, 185, 129, 0.14); color: #047857; font-size: 11px;">
+                                Rp {{ number_format($summary['pembayaran_periode'] ?? $summary['pembayaran_bulan_ini'], 0, ',', '.') }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -401,7 +448,7 @@
 
     <!-- Card 3: Sisa Piutang / Tunggakan -->
     <div class="col-xl-3 col-md-6">
-        <div class="card bi-card h-100">
+        <div class="card bi-card bi-palette-rose h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between gap-2">
@@ -416,7 +463,7 @@
                         <x-text.caption class="mb-1 text-nowrap d-block">Piutang Santri Belum Lunas</x-text.caption>
                         <div>
                             <span class="badge tint-red rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
-                                {{ max(0, round(100 - $summary['realisasi_percentage'], 1)) }}% Outstanding
+                                {{ max(0, round(100 - ($summary['realisasi_percentage_all'] ?? $summary['realisasi_percentage']), 1)) }}% Outstanding
                             </span>
                         </div>
                     </div>
@@ -425,14 +472,19 @@
                     <div class="mb-2">
                         <x-text.amount class="amount-lg amount-error text-nowrap d-block">Rp {{ number_format($summary['sisa_tunggakan'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Belum Bayar:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong style="color: #DC2626;">{{ number_format($summary['unpaid_bill_items']) }} item</strong></x-text.caption>
+                    <div class="w-100 rounded-pill mb-2" style="height: 6px;"></div>
+                    <div class="d-flex flex-column gap-1.5 pt-1">
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Belum Bayar:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(220, 38, 38, 0.08); color: #DC2626; font-size: 11px;">
+                                {{ number_format($summary['unpaid_bill_items']) }} item
+                            </span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Angsuran:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Angsuran:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(245, 158, 11, 0.08); color: #D97706; font-size: 11px;">
+                                {{ number_format($summary['partial_bill_items']) }} item
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -442,7 +494,7 @@
 
     <!-- Card 4: Saldo Masuk (Top-Up) & Dompet Santri -->
     <div class="col-xl-3 col-md-6">
-        <div class="card bi-card h-100">
+        <div class="card bi-card bi-palette-teal h-100">
             <div class="card-body p-5 pb-4 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex align-items-center justify-content-between gap-2">
@@ -456,22 +508,27 @@
                     <div class="mt-1 mb-3">
                         <x-text.caption class="mb-1 text-nowrap d-block">Top-Up & Saldo Aktif</x-text.caption>
                         <div>
-                            <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">Top-Up Bulan Ini</span>
+                            <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">{{ $summary['saldo_masuk_badge'] ?? 'Top-Up Bulan Ini' }}</span>
                         </div>
                     </div>
                 </div>
                 <div>
                     <div class="mb-2">
-                        <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['saldo_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
+                        <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['saldo_masuk_periode'] ?? $summary['saldo_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Hari Ini:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong style="color: #10B981;">Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="w-100 rounded-pill mb-2" style="height: 6px;"></div>
+                    <div class="d-flex flex-column gap-1.5 pt-1">
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Hari Ini:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(13, 148, 136, 0.08); color: #0d9488; font-size: 11px;">
+                                Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}
+                            </span>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <x-text.caption class="text-nowrap">Saldo Aktif:</x-text.caption>
-                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}</strong></x-text.caption>
+                        <div class="bi-smooth-badge-row">
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">Saldo Aktif:</x-text.caption>
+                            <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(15, 23, 42, 0.06); color: #0f172a; font-size: 11px;">
+                                Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}
+                            </span>
                         </div>
                     </div>
                 </div>
