@@ -181,15 +181,32 @@ class DashboardController extends Controller
                 $activeAcademicYearName = $activeAcademicYear?->name ?? 'Semua Tahun Ajaran';
             }
 
+            $validPeriods = ['hari_ini', 'minggu_ini', 'bulan_ini', 'bulan_kemarin', '3_bulan', 'semua'];
+            $selectedPeriod = $request->input('period', 'bulan_ini');
+            if (!in_array($selectedPeriod, $validPeriods, true)) {
+                $selectedPeriod = 'bulan_ini';
+            }
+
+            $periodLabels = [
+                'hari_ini' => 'Hari Ini',
+                'minggu_ini' => 'Minggu Ini',
+                'bulan_ini' => 'Bulan Ini',
+                'bulan_kemarin' => 'Bulan Kemarin',
+                '3_bulan' => '3 Bulan Berjalan',
+                'semua' => 'Semua Periode',
+            ];
+            $periodLabel = $periodLabels[$selectedPeriod] ?? 'Bulan Ini';
+
             $excludedBillTypeIds = $this->getExcludedBillTypeIds();
-            $cacheKey = 'bi_dashboard_v6_' . md5(json_encode([
+            $cacheKey = 'bi_dashboard_v7_' . md5(json_encode([
                 'schools' => $scopedSchoolIds,
                 'ay' => $selectedAcademicYearId,
+                'period' => $selectedPeriod,
                 'date' => Carbon::today()->toDateString(),
             ]));
 
             // 2. Cached BI Analytics (5-minute TTL for heavy aggregations)
-            $biCachedData = Cache::remember($cacheKey, 300, function () use ($scopedSchoolIds, $selectedAcademicYearId, $excludedBillTypeIds) {
+            $biCachedData = Cache::remember($cacheKey, 300, function () use ($scopedSchoolIds, $selectedAcademicYearId, $excludedBillTypeIds, $selectedPeriod, $periodLabel) {
                 $scopedClassroomIds = !empty($scopedSchoolIds)
                     ? Classroom::whereIn('school_id', $scopedSchoolIds)->pluck('id')->toArray()
                     : [];
@@ -446,23 +463,70 @@ class DashboardController extends Controller
 
                 $todayKey = Carbon::today()->toDateString();
                 $thisMonthKey = Carbon::now()->format('Y-m');
+                $lastMonthKey = Carbon::now()->subMonth()->format('Y-m');
+
+                // Calculate period-specific cash inflow
+                $now = Carbon::now();
+                $pembayaranPeriode = 0;
+                $saldoMasukPeriode = 0;
+                $tabunganMasukPeriode = 0;
+
+                if ($selectedPeriod === 'hari_ini') {
+                    $pembayaranPeriode = (int) ($billTxDailyRows[$todayKey] ?? 0);
+                    $saldoMasukPeriode = (int) ($saldoDailyRows[$todayKey] ?? 0);
+                    $tabunganMasukPeriode = (int) ($savingDailyRows[$todayKey] ?? 0);
+                } elseif ($selectedPeriod === 'minggu_ini') {
+                    $startOfWeek = $now->copy()->startOfWeek();
+                    $endOfWeek = $now->copy()->endOfWeek();
+                    for ($cur = $startOfWeek->copy(); $cur->lte($endOfWeek); $cur->addDay()) {
+                        $dStr = $cur->toDateString();
+                        $pembayaranPeriode += (int) ($billTxDailyRows[$dStr] ?? 0);
+                        $saldoMasukPeriode += (int) ($saldoDailyRows[$dStr] ?? 0);
+                        $tabunganMasukPeriode += (int) ($savingDailyRows[$dStr] ?? 0);
+                    }
+                } elseif ($selectedPeriod === 'bulan_kemarin') {
+                    $pembayaranPeriode = (int) ($billTxMonthlyMap[$lastMonthKey] ?? 0);
+                    $saldoMasukPeriode = (int) ($saldoMonthlyMap[$lastMonthKey] ?? 0);
+                    $tabunganMasukPeriode = (int) ($savingMonthlyMap[$lastMonthKey] ?? 0);
+                } elseif ($selectedPeriod === '3_bulan') {
+                    for ($i = 0; $i < 3; $i++) {
+                        $ym = $now->copy()->subMonths($i)->format('Y-m');
+                        $pembayaranPeriode += (int) ($billTxMonthlyMap[$ym] ?? 0);
+                        $saldoMasukPeriode += (int) ($saldoMonthlyMap[$ym] ?? 0);
+                        $tabunganMasukPeriode += (int) ($savingMonthlyMap[$ym] ?? 0);
+                    }
+                } elseif ($selectedPeriod === 'semua') {
+                    $pembayaranPeriode = $realisasiPembayaran;
+                    $saldoMasukPeriode = (int) array_sum($saldoMonthlyMap);
+                    $tabunganMasukPeriode = (int) array_sum($savingMonthlyMap);
+                } else { // bulan_ini (default)
+                    $pembayaranPeriode = (int) ($billTxMonthlyMap[$thisMonthKey] ?? 0);
+                    $saldoMasukPeriode = (int) ($saldoMonthlyMap[$thisMonthKey] ?? 0);
+                    $tabunganMasukPeriode = (int) ($savingMonthlyMap[$thisMonthKey] ?? 0);
+                }
 
                 $biSummary = [
                     'target_pembayaran' => $targetPembayaran,
-                    'realisasi_pembayaran' => $realisasiPembayaran,
+                    'realisasi_pembayaran' => $selectedPeriod === 'semua' ? $realisasiPembayaran : $pembayaranPeriode,
+                    'realisasi_pembayaran_all' => $realisasiPembayaran,
                     'sisa_tunggakan' => $sisaTunggakan,
-                    'realisasi_percentage' => $realisasiPercentage,
+                    'realisasi_percentage' => $targetPembayaran > 0 ? round((($selectedPeriod === 'semua' ? $realisasiPembayaran : $pembayaranPeriode) / $targetPembayaran) * 100, 1) : 0,
+                    'realisasi_percentage_all' => $realisasiPercentage,
                     'total_bill_items' => (int) ($billTotals->total_bills ?? 0),
                     'paid_bill_items' => (int) ($billTotals->paid_bills ?? 0),
                     'partial_bill_items' => (int) ($billTotals->partial_bills ?? 0),
                     'unpaid_bill_items' => (int) ($billTotals->unpaid_bills ?? 0),
                     'pembayaran_hari_ini' => (int) ($billTxDailyRows[$todayKey] ?? 0),
                     'pembayaran_bulan_ini' => (int) ($billTxMonthlyMap[$thisMonthKey] ?? 0),
+                    'pembayaran_periode' => $pembayaranPeriode,
                     'saldo_masuk_hari_ini' => (int) ($saldoDailyRows[$todayKey] ?? 0),
                     'saldo_masuk_bulan_ini' => (int) ($saldoMonthlyMap[$thisMonthKey] ?? 0),
+                    'saldo_masuk_periode' => $saldoMasukPeriode,
+                    'saldo_masuk_badge' => $selectedPeriod === 'semua' ? 'Semua Top-Up' : ('Top-Up ' . $periodLabel),
                     'saldo_masuk_12_bulan' => array_sum($monthly12['saldo_in']),
                     'saldo_mengendap' => $saldoMengendap,
                     'tabungan_masuk_bulan_ini' => (int) ($savingMonthlyMap[$thisMonthKey] ?? 0),
+                    'tabungan_masuk_periode' => $tabunganMasukPeriode,
                     'tabungan_mengendap' => $tabunganMengendap,
                 ];
 
@@ -1131,6 +1195,8 @@ class DashboardController extends Controller
                 'selectedSchoolId',
                 'selectedAcademicYearId',
                 'activeAcademicYearName',
+                'selectedPeriod',
+                'periodLabel',
                 'totalSantri',
                 'totalStaff',
                 'totalWali',
@@ -1160,6 +1226,8 @@ class DashboardController extends Controller
                 'selectedSchoolId' => null,
                 'selectedAcademicYearId' => 'all',
                 'activeAcademicYearName' => '-',
+                'selectedPeriod' => 'bulan_ini',
+                'periodLabel' => 'Bulan Ini',
                 'totalSantri' => 0,
                 'totalStaff' => 0,
                 'totalWali' => 0,

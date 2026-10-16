@@ -14,12 +14,6 @@
                 <x-text.h1 class="my-1 d-flex align-items-center gap-2">
                     {{ $isOutletUser ? 'Dashboard Outlet' : ($showBiDashboard ? 'Executive Business Intelligence' : 'Workspace Operasional') }}
                 </x-text.h1>
-                @if(!$isOutletUser && isset($activeAcademicYearName))
-                    <span class="h-20px border-gray-300 border-start mx-3"></span>
-                    <span class="badge rounded-pill px-3 py-2" style="background-color: rgba(37, 99, 235, 0.1); color: #2563EB; font-weight: 700; font-size: 11px;">
-                        TA: {{ $activeAcademicYearName }}
-                    </span>
-                @endif
             </div>
             @if($isOutletUser)
                 @include('layouts.partials.outlet_switcher')
@@ -45,6 +39,14 @@
                             @endforeach
                         </select>
                     @endif
+                    <select name="period" onchange="this.form.submit()" class="form-select form-select-sm border-0 fw-bold w-auto" style="border-radius: 14px; background-color: #f1f5f9; color: #1e293b; min-width: 145px; height: 36px;">
+                        <option value="hari_ini" {{ ($selectedPeriod ?? '') === 'hari_ini' ? 'selected' : '' }}>Hari Ini</option>
+                        <option value="minggu_ini" {{ ($selectedPeriod ?? '') === 'minggu_ini' ? 'selected' : '' }}>Minggu Ini</option>
+                        <option value="bulan_ini" {{ ($selectedPeriod ?? 'bulan_ini') === 'bulan_ini' ? 'selected' : '' }}>Bulan Ini</option>
+                        <option value="bulan_kemarin" {{ ($selectedPeriod ?? '') === 'bulan_kemarin' ? 'selected' : '' }}>Bulan Kemarin</option>
+                        <option value="3_bulan" {{ ($selectedPeriod ?? '') === '3_bulan' ? 'selected' : '' }}>3 Bulan Berjalan</option>
+                        <option value="semua" {{ ($selectedPeriod ?? '') === 'semua' ? 'selected' : '' }}>Semua Periode</option>
+                    </select>
                 </form>
             @endif
         </div>
