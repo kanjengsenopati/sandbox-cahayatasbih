@@ -327,11 +327,13 @@
                             </a>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
-                        <x-text.caption class="mb-0 text-nowrap">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
-                        <span class="badge tint-primary rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
-                            {{ number_format($summary['total_bill_items']) }} Tagihan
-                        </span>
+                    <div class="mt-1 mb-3">
+                        <x-text.caption class="mb-1 text-nowrap d-block">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
+                        <div>
+                            <span class="badge tint-primary rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
+                                {{ number_format($summary['total_bill_items']) }} Tagihan
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -341,9 +343,15 @@
                     <div class="w-100 rounded-pill mb-2" style="height: 6px; background-color: #f1f5f9;">
                         <div class="rounded-pill" style="height: 6px; width: {{ min(100, $summary['realisasi_percentage']) }}%; background-color: #2563EB;"></div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center gap-2">
-                        <x-text.caption class="text-nowrap">Lunas: <strong class="text-dark">{{ number_format($summary['paid_bill_items']) }} item</strong></x-text.caption>
-                        <x-text.caption class="text-nowrap">Cicilan: <strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                    <div class="d-flex flex-column gap-1 pt-1">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Lunas:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['paid_bill_items']) }} item</strong></x-text.caption>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Cicilan:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -363,20 +371,28 @@
                             </a>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
-                        <x-text.caption class="mb-0 text-nowrap">Akumulasi Tagihan Terbayar</x-text.caption>
-                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
-                            {{ $summary['realisasi_percentage'] }}% Tercapai
-                        </span>
+                    <div class="mt-1 mb-3">
+                        <x-text.caption class="mb-1 text-nowrap d-block">Akumulasi Tagihan Terbayar</x-text.caption>
+                        <div>
+                            <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
+                                {{ $summary['realisasi_percentage'] }}% Tercapai
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div>
                     <div class="mb-2">
                         <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['realisasi_pembayaran'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption class="text-nowrap">Hari Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
-                        <x-text.caption class="text-nowrap">Bulan Ini: <strong class="text-dark">Rp {{ number_format($summary['pembayaran_bulan_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Hari Ini:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['pembayaran_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Bulan Ini:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['pembayaran_bulan_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -396,20 +412,28 @@
                             </a>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
-                        <x-text.caption class="mb-0 text-nowrap">Piutang Santri Belum Lunas</x-text.caption>
-                        <span class="badge tint-red rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">
-                            {{ max(0, round(100 - $summary['realisasi_percentage'], 1)) }}% Outstanding
-                        </span>
+                    <div class="mt-1 mb-3">
+                        <x-text.caption class="mb-1 text-nowrap d-block">Piutang Santri Belum Lunas</x-text.caption>
+                        <div>
+                            <span class="badge tint-red rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
+                                {{ max(0, round(100 - $summary['realisasi_percentage'], 1)) }}% Outstanding
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div>
                     <div class="mb-2">
                         <x-text.amount class="amount-lg amount-error text-nowrap d-block">Rp {{ number_format($summary['sisa_tunggakan'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center gap-2 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption class="text-nowrap">Belum Bayar: <strong style="color: #DC2626;">{{ number_format($summary['unpaid_bill_items']) }} item</strong></x-text.caption>
-                        <x-text.caption class="text-nowrap">Angsuran: <strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Belum Bayar:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong style="color: #DC2626;">{{ number_format($summary['unpaid_bill_items']) }} item</strong></x-text.caption>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Angsuran:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">{{ number_format($summary['partial_bill_items']) }} item</strong></x-text.caption>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -429,18 +453,26 @@
                             </a>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center justify-content-between gap-2 mt-1 mb-3">
-                        <x-text.caption class="mb-0 text-nowrap">Top-Up & Saldo Aktif</x-text.caption>
-                        <span class="badge tint-emerald rounded-pill px-2.5 py-1 fw-bold text-nowrap" style="font-size: 11px;">Top-Up Bulan Ini</span>
+                    <div class="mt-1 mb-3">
+                        <x-text.caption class="mb-1 text-nowrap d-block">Top-Up & Saldo Aktif</x-text.caption>
+                        <div>
+                            <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">Top-Up Bulan Ini</span>
+                        </div>
                     </div>
                 </div>
                 <div>
                     <div class="mb-2">
                         <x-text.amount class="amount-lg text-nowrap d-block">Rp {{ number_format($summary['saldo_masuk_bulan_ini'], 0, ',', '.') }}</x-text.amount>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
-                        <x-text.caption class="text-nowrap">Hari Ini: <strong style="color: #10B981;">Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
-                        <x-text.caption class="text-nowrap">Saldo Aktif: <strong class="text-dark">Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}</strong></x-text.caption>
+                    <div class="d-flex flex-column gap-1 pt-2" style="border-top: 1px dashed #f1f5f9;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Hari Ini:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong style="color: #10B981;">Rp {{ number_format($summary['saldo_masuk_hari_ini'], 0, ',', '.') }}</strong></x-text.caption>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-text.caption class="text-nowrap">Saldo Aktif:</x-text.caption>
+                            <x-text.caption class="text-nowrap"><strong class="text-dark">Rp {{ number_format($summary['saldo_mengendap'], 0, ',', '.') }}</strong></x-text.caption>
+                        </div>
                     </div>
                 </div>
             </div>
