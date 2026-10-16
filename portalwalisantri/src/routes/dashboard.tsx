@@ -438,18 +438,8 @@ function Dashboard() {
 
           <div className="relative">
             <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Text.Label className="text-white/90">
-                    {isSaldoVisible ? "Saldo Santri" : "Profil Santri"}
-                  </Text.Label>
-                  {(active as any).nisn && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-white/15 text-[10px] font-extrabold tracking-wide uppercase text-white/95 border border-white/10 shrink-0">
-                      {(active as any).nisn}
-                    </span>
-                  )}
-                </div>
-                <Text.Body className="text-white font-bold mt-1 truncate">
+              <div className="min-w-0 pr-2">
+                <Text.Body className="text-white font-bold truncate">
                   {active.name} <span className="text-white/85 font-semibold">· {active.classroom?.name || "Tanpa Kelas"}</span>
                 </Text.Body>
               </div>
@@ -461,31 +451,36 @@ function Dashboard() {
             </div>
 
             {isSaldoVisible ? (
-              <div className="flex items-center justify-between mt-5">
-                <div className="flex items-end gap-3">
-                  <h2 className="text-3xl font-bold tracking-tight">
-                    {hide ? "Rp ••••••" : fmt(dashboard?.activeStudent?.saldo ?? active.saldo)}
-                  </h2>
-                  <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
-                    {hide ? <EyeOff size={18} /> : <Eye size={18} />}
+              <div className="mt-5">
+                <Text.Label className="text-white/85 font-bold block text-[10px] tracking-widest uppercase mb-1">
+                  SALDO SEKARANG
+                </Text.Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-end gap-3">
+                    <h2 className="text-3xl font-bold tracking-tight">
+                      {hide ? "Rp ••••••" : fmt(dashboard?.activeStudent?.saldo ?? active.saldo)}
+                    </h2>
+                    <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
+                      {hide ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLimitModal(true)}
+                    className="text-right bg-white/15 hover:bg-white/25 active:scale-95 transition-all px-3 py-1.5 rounded-2xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex flex-col items-end group cursor-pointer"
+                    title="Klik untuk atur limit harian"
+                  >
+                    <div className="flex items-center gap-1">
+                      <Text.Label className="text-white/85 font-bold block text-[10px] tracking-wider uppercase group-hover:text-white transition">
+                        Limit Harian
+                      </Text.Label>
+                      <Sliders size={11} className="text-white/80 group-hover:text-white transition" />
+                    </div>
+                    <span className="text-[14px] font-black tracking-tight text-white mt-0.5 block leading-tight drop-shadow-sm">
+                      {fmt(active.effective_daily_limit)}
+                    </span>
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowLimitModal(true)}
-                  className="text-right bg-white/15 hover:bg-white/25 active:scale-95 transition-all px-3 py-1.5 rounded-2xl border border-white/20 backdrop-blur-md shadow-sm shrink-0 flex flex-col items-end group cursor-pointer"
-                  title="Klik untuk atur limit harian"
-                >
-                  <div className="flex items-center gap-1">
-                    <Text.Label className="text-white/85 font-bold block text-[10px] tracking-wider uppercase group-hover:text-white transition">
-                      Limit Harian
-                    </Text.Label>
-                    <Sliders size={11} className="text-white/80 group-hover:text-white transition" />
-                  </div>
-                  <span className="text-[14px] font-black tracking-tight text-white mt-0.5 block leading-tight drop-shadow-sm">
-                    {fmt(active.effective_daily_limit)}
-                  </span>
-                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-2.5 mt-4 bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-md shadow-sm">
