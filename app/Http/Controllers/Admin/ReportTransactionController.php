@@ -487,10 +487,11 @@ class ReportTransactionController extends Controller
             if (!empty($gasWebappUrl)) {
                 try {
                     $response = \Illuminate\Support\Facades\Http::timeout(90)
+                        ->withoutVerifying()
                         ->withOptions([
                             'allow_redirects' => [
                                 'max' => 5,
-                                'strict' => true, // Menjaga metode POST dan request body saat 302 redirect
+                                'strict' => false,
                                 'referer' => true,
                                 'protocols' => ['https']
                             ]

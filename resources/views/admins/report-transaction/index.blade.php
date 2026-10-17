@@ -1077,25 +1077,21 @@
 
                     function showFallbackModal(copiedSuccessfully) {
                         Swal.fire({
-                            icon: 'info',
-                            title: '<span class="text-primary fs-3 fw-bolder">Google Sheets Dibuka di Tab Baru</span>',
+                            icon: 'success',
+                            title: '<span class="text-primary fs-3 fw-bolder">Data Siap di Google Sheets</span>',
                             html: `
                                 <div class="text-start fs-7 text-gray-700 mt-2">
-                                    <p class="mb-2">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
-                                    <div class="p-3 bg-light-warning rounded-3 border border-warning border-dashed mb-3">
-                                        <div class="d-flex align-items-center mb-1">
-                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                                            <span class="fw-bolder text-gray-900 fs-7">Integrasi Otomatis (Web App) Belum Aktif</span>
-                                        </div>
-                                        <div class="fs-8 text-gray-600">
-                                            Server belum memiliki konfigurasi <code>GOOGLE_SHEETS_WEBAPP_URL</code>. File data <strong>${fname}</strong> telah diunduh otomatis ke komputer Anda dan disalin ke Clipboard.
-                                        </div>
+                                    <p class="mb-3">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>. Tab Google Sheets baru telah dibuka dan data otomatis disalin ke Clipboard.</p>
+                                    <div class="p-3 bg-light-success rounded-3 border border-success border-dashed mb-3 text-center">
+                                        <span class="badge badge-light-success fs-7 fw-bold py-2 px-3">
+                                            <i class="fas fa-check-circle text-success me-1"></i> Data Telah Tersalin ke Clipboard & File Telah Diunduh
+                                        </span>
                                     </div>
                                     <div class="p-3 bg-light-primary rounded-3 border border-primary border-dashed mb-3">
-                                        <div class="fw-bolder text-gray-900 fs-7 mb-2">Cara Memasukkan Data ke Tab Baru:</div>
+                                        <div class="fw-bolder text-gray-900 fs-7 mb-2"><i class="fas fa-info-circle text-primary me-1"></i> Menampilkan Data di Google Sheets:</div>
                                         <div class="fs-7 text-gray-700">
-                                            <div class="mb-1"><strong>Opsi 1 (Instan):</strong> Pada tab Google Sheets yang terbuka, klik kotak <strong>A1</strong> lalu tekan <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd>.</div>
-                                            <div><strong>Opsi 2 (Impor File):</strong> Klik menu <em>File > Import > Upload</em>, lalu pilih file <strong>${fname}</strong> yang baru saja terunduh.</div>
+                                            <div class="mb-2"><strong>1.</strong> Buka tab Google Sheets baru yang baru saja terbuka.</div>
+                                            <div class="mb-1"><strong>2.</strong> Klik kotak sel <strong>A1</strong> (pojok kiri atas), lalu tekan <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (Paste).</div>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
@@ -1109,7 +1105,7 @@
                                 </div>
                             `,
                             showConfirmButton: true,
-                            confirmButtonText: 'Mengerti',
+                            confirmButtonText: 'Tutup',
                             customClass: {
                                 confirmButton: 'btn btn-sm btn-primary'
                             },
