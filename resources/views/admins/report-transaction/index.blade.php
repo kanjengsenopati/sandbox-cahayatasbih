@@ -164,15 +164,6 @@
                                                 </a>
                                             </div>
                                             <!--end::Menu item-->
-                                            @if(Auth::user()->hasRole('Super Admin') || (method_exists(Auth::user(), 'isSuperAdmin') && Auth::user()->isSuperAdmin()))
-                                            <!--begin::Menu item Super Admin Only-->
-                                            <div class="menu-item px-3 border-top mt-1 pt-1">
-                                                <a type="button" class="menu-link btn-backup-master-sheets px-3 text-primary fw-bold" id="btn-backup-master-sheets">
-                                                    <i class="fas fa-shield-alt text-primary me-2 fs-6"></i> Backup Master Sheets (Super Admin)
-                                                </a>
-                                            </div>
-                                            <!--end::Menu item Super Admin Only-->
-                                            @endif
                                         </div>
                                         <!--end::Menu-->
                                         <!--end::Export dropdown-->
@@ -1173,53 +1164,6 @@
         });
     });
 
-    // Handler khusus Super Admin: Trigger background backup ke Master Google Sheets
-    $(document).on('click', '.btn-backup-master-sheets', function(e) {
-        e.preventDefault();
-        Swal.fire({
-            title: 'Backup Master Google Sheets?',
-            text: 'Proses ini akan mencadangkan seluruh tagihan dan transaksi santri ke master Google Sheet (BACKUP LAPORAN KEUANGAN CT) melalui background queue worker.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, Jalankan Backup',
-            cancelButtonText: 'Batal',
-            customClass: {
-                confirmButton: 'btn btn-primary',
-                cancelButton: 'btn btn-light'
-            }
-        }).then(function(result) {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menjadwalkan Backup...',
-                    text: 'Sedang mendaftarkan job pencadangan ke background queue...',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                $.ajax({
-                    url: "{{ route('report-transaction.backup-master-sheets') }}",
-                    type: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}"
-                    },
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire('Berhasil Dijadwalkan', res.message, 'success');
-                        } else {
-                            Swal.fire('Gagal', res.message || 'Terjadi kesalahan.', 'error');
-                        }
-                    },
-                    error: function(xhr) {
-                        var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal menghubungi server.';
-                        Swal.fire('Akses Ditolak', msg, 'error');
-                    }
-                });
-            }
-        });
-    });
 </script>
 <script>
     $(document).ready(function() {
