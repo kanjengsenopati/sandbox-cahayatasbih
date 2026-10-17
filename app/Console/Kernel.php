@@ -32,6 +32,18 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '03:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/transaction_pruning.log'));
+
+        // Auto Backup Laporan Keuangan dan Tagihan Santri ke Google Sheets
+        // Berjalan setiap tanggal 1 dan 16 pukul 03:30 (dini hari setelah sync database selesai)
+        $schedule->command('backup:google-sheets')
+            ->monthlyOn(1, '03:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/google_sheets_backup.log'));
+
+        $schedule->command('backup:google-sheets')
+            ->monthlyOn(16, '03:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/google_sheets_backup.log'));
             
         // NATIVE LARAVEL WORKER DAEMON (Anti-Supervisor)
         // Mengeksekusi antrean di latar belakang dan mematikan diri sendiri saat kosong.

@@ -43,6 +43,7 @@ return [
 
     'google' => [
         'sheets_webapp_url' => env('GOOGLE_SHEETS_WEBAPP_URL'),
+        'backup_spreadsheet_id' => env('GOOGLE_SHEETS_BACKUP_SPREADSHEET_ID', '1NPPyqpaArOVW0vAsZ4jjBwOLuK9mutnhqWtgQDeSEY8'),
     ],
 
 ];
