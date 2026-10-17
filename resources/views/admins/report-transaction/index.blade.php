@@ -815,6 +815,33 @@
         getTotalSaldo();
     }
 
+    // Helper formatting nama file export format: nama_file_dd-mmm-yyyy
+    function formatExportDateFilename(startDate, endDate, prefix, ext) {
+        prefix = prefix || 'laporan_transaksi';
+        ext = ext || 'xlsx';
+        function formatDate(dStr) {
+            if (!dStr || dStr === 'All' || dStr === 'all') return null;
+            var parts = dStr.split('-');
+            if (parts.length === 3) {
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                var y = parts[0], m = parseInt(parts[1], 10) - 1, d = parts[2];
+                if (m >= 0 && m < 12) return d + '-' + months[m] + '-' + y;
+            }
+            return dStr.replace(/[\/\s]/g, '-');
+        }
+        var sFormatted = formatDate(startDate);
+        var eFormatted = formatDate(endDate);
+        var datePart = 'semua_periode';
+        if (sFormatted && eFormatted) {
+            datePart = (sFormatted === eFormatted) ? sFormatted : (sFormatted + '_sd_' + eFormatted);
+        } else if (sFormatted) {
+            datePart = sFormatted;
+        } else if (eFormatted) {
+            datePart = eFormatted;
+        }
+        return prefix + '_' + datePart + '.' + ext;
+    }
+
     // Handler export Excel / CSV via fetch Blob stream (Mencegah event collision dan memicu auto-download pasti)
     $('.btn-export').on('click', function(e) {
         e.preventDefault();
@@ -865,7 +892,7 @@
             }
 
             var disposition = response.headers.get('content-disposition');
-            var filename = 'Laporan Transaksi ' + ($('#start_date').val() || 'All') + ' - ' + ($('#end_date').val() || 'All') + '.' + exportType;
+            var filename = formatExportDateFilename($('#start_date').val(), $('#end_date').val(), 'laporan_transaksi', exportType);
             if (disposition && disposition.indexOf('filename=') !== -1) {
                 var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
                 var matches = filenameRegex.exec(disposition);
@@ -1059,7 +1086,7 @@
 
                     // MODE 2: Fallback (Jika GOOGLE_SHEETS_WEBAPP_URL belum dikonfigurasi di .env)
                     var tsvData = response.tsv || '';
-                    var fname = 'Laporan_Transaksi_' + ($('#start_date').val() || 'all') + '_' + ($('#end_date').val() || '') + '.tsv';
+                    var fname = formatExportDateFilename($('#start_date').val(), $('#end_date').val(), 'laporan_transaksi', 'tsv');
 
                     // Otomatis download file TSV untuk kemudahan user
                     downloadSheetsData(tsvData, fname);
