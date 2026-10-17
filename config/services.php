@@ -41,4 +41,8 @@ return [
         'vapid_public_key' => env('VITE_FIREBASE_VAPID_PUBLIC_KEY'),
     ],
 
+    'google' => [
+        'sheets_webapp_url' => env('GOOGLE_SHEETS_WEBAPP_URL'),
+    ],
+
 ];
