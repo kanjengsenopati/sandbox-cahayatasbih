@@ -582,6 +582,40 @@ class ReportTransactionController extends Controller
     }
 
     /**
+     * Trigger manual background auto-backup ke master Google Sheets (Khusus Super Admin).
+     */
+    public function backupMasterSheets(Request $request)
+    {
+        $user = Auth::guard('web')->user() ?? Auth::user();
+        $isSuperAdmin = $user && (
+            (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) ||
+            (method_exists($user, 'hasRole') && $user->hasRole('Super Admin'))
+        );
+
+        if (!$isSuperAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak: Fitur pencadangan master sheets hanya dapat dijalankan oleh Super Admin.'
+            ], 403);
+        }
+
+        try {
+            \App\Jobs\BackupFinancialReportToGoogleSheetsJob::dispatch();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proses backup ke master Google Sheets telah dijadwalkan di antrean latar belakang (queue). Pantau log di storage/logs/google_sheets_backup.log.',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Gagal dispatch master sheets backup job: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menjadwalkan backup: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get dynamic filters based on school_id with strict UPT scope isolation (Zero Filter Leakage)
      */
     public function getFilters(Request $request)

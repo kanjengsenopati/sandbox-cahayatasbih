@@ -67,11 +67,14 @@ class GoogleSheetsBackupService
 
         $this->logInfo("Memulai proses Auto-Backup Google Sheets...", ['tab' => $specificTab]);
 
-        $gasUrl = config('services.google.sheets_webapp_url') ?: env('GOOGLE_SHEETS_WEBAPP_URL');
+        $gasUrl = config('services.google.backup_sheets_webapp_url')
+            ?: env('GOOGLE_SHEETS_BACKUP_WEBAPP_URL')
+            ?: config('services.google.sheets_webapp_url')
+            ?: env('GOOGLE_SHEETS_WEBAPP_URL');
         $spreadsheetId = config('services.google.backup_spreadsheet_id') ?: env('GOOGLE_SHEETS_BACKUP_SPREADSHEET_ID', '1NPPyqpaArOVW0vAsZ4jjBwOLuK9mutnhqWtgQDeSEY8');
 
         if (empty($gasUrl)) {
-            $msg = "GOOGLE_SHEETS_WEBAPP_URL belum dikonfigurasi di .env atau config/services.php.";
+            $msg = "GOOGLE_SHEETS_BACKUP_WEBAPP_URL atau GOOGLE_SHEETS_WEBAPP_URL belum dikonfigurasi di .env atau config/services.php.";
             $this->logError($msg);
             return ['success' => false, 'message' => $msg];
         }

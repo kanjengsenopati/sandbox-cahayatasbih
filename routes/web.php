@@ -531,6 +531,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-transaction/get-filters', [ReportTransactionController::class, 'getFilters'])->name('report-transaction.get-filters');
     Route::get('report-transaction/export', [ReportTransactionController::class, 'export'])->name('report-transaction.export');
     Route::get('report-transaction/export-sheets', [ReportTransactionController::class, 'exportSheets'])->name('report-transaction.export-sheets');
+    Route::post('report-transaction/backup-master-sheets', [ReportTransactionController::class, 'backupMasterSheets'])->name('report-transaction.backup-master-sheets');
     Route::resource('report-transaction', ReportTransactionController::class, ['only' => ['index', 'destroy']]);
 
 
