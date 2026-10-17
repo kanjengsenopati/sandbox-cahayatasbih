@@ -815,10 +815,129 @@
         getTotalSaldo();
     }
 
-    // onclick export button event handler to set the type and submit the form to export and action to route transaction.export
-    $('.btn-export').on('click', function() {
-        $('#type').val($(this).data('type'));
-        $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
+    // Helper formatting nama file export format: nama_file_dd-mmm-yyyy
+    function formatExportDateFilename(startDate, endDate, prefix, ext) {
+        prefix = prefix || 'laporan_transaksi';
+        ext = ext || 'xlsx';
+        function formatDate(dStr) {
+            if (!dStr || dStr === 'All' || dStr === 'all') return null;
+            var parts = dStr.split('-');
+            if (parts.length === 3) {
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                var y = parts[0], m = parseInt(parts[1], 10) - 1, d = parts[2];
+                if (m >= 0 && m < 12) return d + '-' + months[m] + '-' + y;
+            }
+            return dStr.replace(/[\/\s]/g, '-');
+        }
+        var sFormatted = formatDate(startDate);
+        var eFormatted = formatDate(endDate);
+        var datePart = 'semua_periode';
+        if (sFormatted && eFormatted) {
+            datePart = (sFormatted === eFormatted) ? sFormatted : (sFormatted + '_sd_' + eFormatted);
+        } else if (sFormatted) {
+            datePart = sFormatted;
+        } else if (eFormatted) {
+            datePart = eFormatted;
+        }
+        return prefix + '_' + datePart + '.' + ext;
+    }
+
+    // Handler export Excel / CSV via fetch Blob stream (Mencegah event collision dan memicu auto-download pasti)
+    $('.btn-export').on('click', function(e) {
+        e.preventDefault();
+        var exportType = $(this).data('type') || 'xlsx';
+
+        Swal.fire({
+            title: 'Menyiapkan File ' + (exportType === 'csv' ? 'CSV' : 'Excel') + '...',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2 text-primary"></i>Sedang mengekstrak dan menyusun data transaksi. Pengunduhan akan dimulai otomatis...</div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Susun parameter filter secara mandiri (tanpa submit #form-filter agar tidak dicegat e.preventDefault())
+        var params = new URLSearchParams({
+            school_id: $('#filter_school_id').val() || '',
+            classroom_id: $('#filter_classroom_id').val() || '',
+            type_data: $('#filter_status').val() || '',
+            admin_id: $('#filter_admin').val() || '',
+            start_date: $('#start_date').val() || '',
+            end_date: $('#end_date').val() || '',
+            bill_type_id: $('#filter_tipe_tagihan').val() || '',
+            student_name: $('#filter_student_name').val() || '',
+            type: exportType
+        });
+
+        var exportUrl = "{{ route('report-transaction.export') }}?" + params.toString();
+
+        fetch(exportUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                return response.text().then(function(text) {
+                    var errorMsg = 'Gagal mengunduh file export (' + response.status + ')';
+                    try {
+                        var json = JSON.parse(text);
+                        if (json && json.message) errorMsg = json.message;
+                    } catch(e) {}
+                    throw new Error(errorMsg);
+                });
+            }
+
+            var disposition = response.headers.get('content-disposition');
+            var filename = formatExportDateFilename($('#start_date').val(), $('#end_date').val(), 'laporan_transaksi', exportType);
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                var matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            return response.blob().then(function(blob) {
+                return { blob: blob, filename: filename };
+            });
+        })
+        .then(function(data) {
+            var blobUrl = window.URL.createObjectURL(data.blob);
+            var a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = data.filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() {
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            }, 200);
+
+            Swal.fire({
+                icon: 'success',
+                title: '<span class="text-success fs-3 fw-bolder">File Berhasil Diunduh!</span>',
+                html: '<div class="text-muted fs-7 mt-2">File <strong class="text-gray-800">' + data.filename + '</strong> telah berhasil diunduh ke perangkat Anda.</div>',
+                timer: 3500,
+                showConfirmButton: false
+            });
+        })
+        .catch(function(error) {
+            console.error('Export download error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Mengunduh File',
+                text: error.message || 'Terjadi kesalahan saat memproses file export.',
+                confirmButtonText: 'Tutup',
+                customClass: {
+                    confirmButton: 'btn btn-sm btn-primary'
+                }
+            });
+        });
     });
 
     // Helper function to safely copy text to clipboard
@@ -867,14 +986,43 @@
         document.body.removeChild(link);
     }
 
-    // onclick export to google sheets
+    // onclick export to google sheets (Kebal Pop-up Blocker & Auto-Populate)
     $('.btn-export-sheets').on('click', function(e) {
         e.preventDefault();
 
-        // 1. Show SweetAlert loading state
+        // 1. Pre-open new tab SINKRON pada saat klik user (100% Kebal Pop-up Blocker)
+        var sheetsTab = window.open('about:blank', '_blank');
+        if (sheetsTab) {
+            sheetsTab.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Menyiapkan Google Sheets - Cahaya Tasbih</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <style>
+                        body { font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; color: #1e293b; }
+                        .card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.06); text-align: center; max-width: 440px; margin: 20px; }
+                        .spin { border: 4px solid #f1f5f9; border-top: 4px solid #10b981; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        h2 { margin: 0 0 10px; font-size: 20px; font-weight: 700; color: #0f172a; }
+                        p { margin: 0; font-size: 14px; color: #64748b; line-height: 1.5; }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <div class="spin"></div>
+                        <h2>Menyiapkan Google Sheets...</h2>
+                        <p>Data transaksi sedang dihubungkan dan disusun ke Google Sheets. Dokumen akan terbuka otomatis tanpa perlu paste manual...</p>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        // 2. Show SweetAlert loading state di tab aplikasi
         Swal.fire({
-            title: 'Menyiapkan Data Google Sheets...',
-            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2"></i>Sedang memproses dan memformat data transaksi...</div>',
+            title: 'Menghubungkan ke Google Sheets...',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2 text-primary"></i>Sedang memproses dan menyusun data transaksi untuk Google Sheets...</div>',
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false,
@@ -883,7 +1031,7 @@
             }
         });
 
-        // 2. Fetch TSV data from server
+        // 3. Fetch data from server
         $.ajax({
             url: "{{ route('report-transaction.export-sheets') }}",
             type: "GET",
@@ -898,83 +1046,117 @@
                 student_name: $('#filter_student_name').val()
             },
             success: function(response) {
-                if (response.success && response.tsv) {
-                    var tsvData = response.tsv;
-                    var rowCount = response.count;
+                if (response.success) {
+                    var rowCount = response.count || 0;
 
-                    // Copy to clipboard
-                    copyTextToClipboard(tsvData).then(function() {
-                        showSuccessModal(true);
-                    }).catch(function() {
-                        showSuccessModal(false);
-                    });
-
-                    function showSuccessModal(copiedSuccessfully) {
-                        var copyBadge = copiedSuccessfully
-                            ? '<span class="badge badge-light-success fs-7 fw-bold py-2 px-3"><i class="fas fa-check-circle text-success me-1"></i> Data Transaksi Berhasil Disalin ke Clipboard!</span>'
-                            : '<span class="badge badge-light-warning fs-7 fw-bold py-2 px-3"><i class="fas fa-info-circle text-warning me-1"></i> Klik "Buka Google Sheets" di bawah untuk menyalin otomatis</span>';
+                    // MODE 1: Direct Google Apps Script Integration (Nilai terisi otomatis, 0 manual paste)
+                    if (response.mode === 'direct' && response.url) {
+                        if (sheetsTab && !sheetsTab.closed) {
+                            sheetsTab.location.href = response.url;
+                        } else {
+                            window.open(response.url, '_blank');
+                        }
 
                         Swal.fire({
                             icon: 'success',
-                            title: '<span class="text-success fs-3 fw-bolder">Data Siap Ditempel ke Google Sheets!</span>',
+                            title: '<span class="text-success fs-3 fw-bolder">Google Sheets Siap Digunakan!</span>',
                             html: `
                                 <div class="text-start fs-7 text-gray-700 mt-2">
-                                    <p class="mb-2">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
-                                    <div class="mb-3 text-center">${copyBadge}</div>
+                                    <p class="mb-3">Dokumen Google Sheets berhasil dibuat dengan <strong class="text-primary">${rowCount} baris data transaksi</strong>.</p>
+                                    <div class="p-3 bg-light-success rounded-3 border border-success border-dashed mb-3 text-center">
+                                        <span class="badge badge-light-success fs-7 fw-bold py-2 px-3">
+                                            <i class="fas fa-check-circle text-success me-1"></i> Data Telah Terisi Otomatis (Tanpa Paste Manual)
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-center pt-2">
+                                        <a href="${response.url}" target="_blank" class="btn btn-sm btn-success fw-bold">
+                                            <i class="fas fa-external-link-alt me-1"></i> Buka Ulang Spreadsheet
+                                        </a>
+                                    </div>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Tutup',
+                            customClass: {
+                                confirmButton: 'btn btn-sm btn-primary'
+                            }
+                        });
+                        return;
+                    }
+
+                    // MODE 2: Fallback (Jika GOOGLE_SHEETS_WEBAPP_URL belum dikonfigurasi di .env)
+                    var tsvData = response.tsv || '';
+                    var fname = formatExportDateFilename($('#start_date').val(), $('#end_date').val(), 'laporan_transaksi', 'tsv');
+
+                    // Otomatis download file TSV untuk kemudahan user
+                    downloadSheetsData(tsvData, fname);
+
+                    // Arahkan tab yang sudah terbuka ke Google Sheets
+                    if (sheetsTab && !sheetsTab.closed) {
+                        sheetsTab.location.href = 'https://sheets.new';
+                    }
+
+                    copyTextToClipboard(tsvData).then(function() {
+                        showFallbackModal(true);
+                    }).catch(function() {
+                        showFallbackModal(false);
+                    });
+
+                    function showFallbackModal(copiedSuccessfully) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '<span class="text-primary fs-3 fw-bolder">Data Siap di Google Sheets</span>',
+                            html: `
+                                <div class="text-start fs-7 text-gray-700 mt-2">
+                                    <p class="mb-3">Berhasil menyiapkan <strong class="text-primary">${rowCount} baris data transaksi</strong>. Tab Google Sheets baru telah dibuka dan data otomatis disalin ke Clipboard.</p>
+                                    <div class="p-3 bg-light-success rounded-3 border border-success border-dashed mb-3 text-center">
+                                        <span class="badge badge-light-success fs-7 fw-bold py-2 px-3">
+                                            <i class="fas fa-check-circle text-success me-1"></i> Data Telah Tersalin ke Clipboard & File Telah Diunduh
+                                        </span>
+                                    </div>
                                     <div class="p-3 bg-light-primary rounded-3 border border-primary border-dashed mb-3">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-info-circle text-primary fs-4 me-2"></i>
-                                            <span class="fw-bolder text-gray-900 fs-7">Cara Menampilkan Data di Google Sheets:</span>
-                                        </div>
-                                        <div class="ms-6 fs-7 text-gray-700">
-                                            <div class="mb-2"><strong>1.</strong> Klik tombol hijau <strong>Buka Google Sheets</strong> di bawah.</div>
-                                            <div class="mb-2"><strong>2.</strong> Pada halaman Google Sheets yang terbuka, klik kotak <strong>A1</strong> (pojok kiri atas).</div>
-                                            <div class="mb-1"><strong>3.</strong> Tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">⌘ + V</kbd> di Mac) untuk <strong>Paste / Tempel</strong> data.</div>
+                                        <div class="fw-bolder text-gray-900 fs-7 mb-2"><i class="fas fa-info-circle text-primary me-1"></i> Menampilkan Data di Google Sheets:</div>
+                                        <div class="fs-7 text-gray-700">
+                                            <div class="mb-2"><strong>1.</strong> Buka tab Google Sheets baru yang baru saja terbuka.</div>
+                                            <div class="mb-1"><strong>2.</strong> Klik kotak sel <strong>A1</strong> (pojok kiri atas), lalu tekan <kbd class="bg-dark text-white px-2 py-1 rounded fs-8 fw-bold">Ctrl + V</kbd> (Paste).</div>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
-                                        <a href="https://sheets.new" target="_blank" class="btn btn-sm btn-success fw-bold" id="btn-open-sheets-link">
-                                            <i class="fas fa-external-link-alt me-1"></i> Buka Google Sheets
-                                        </a>
                                         <button type="button" class="btn btn-sm btn-light-primary fw-bold" id="btn-manual-copy-tsv">
-                                            <i class="fas fa-copy me-1"></i> Salin Ulang
+                                            <i class="fas fa-copy me-1"></i> Salin Ulang Clipboard
                                         </button>
                                         <button type="button" class="btn btn-sm btn-light-info fw-bold" id="btn-manual-download-tsv">
-                                            <i class="fas fa-file-download me-1"></i> Unduh File (.tsv)
+                                            <i class="fas fa-file-download me-1"></i> Unduh Ulang (.tsv)
                                         </button>
                                     </div>
                                 </div>
                             `,
-                            showConfirmButton: false,
-                            showCancelButton: true,
-                            cancelButtonText: 'Tutup',
+                            showConfirmButton: true,
+                            confirmButtonText: 'Tutup',
                             customClass: {
-                                cancelButton: 'btn btn-sm btn-light'
+                                confirmButton: 'btn btn-sm btn-primary'
                             },
                             didOpen: () => {
-                                $('#btn-open-sheets-link').on('click', function() {
-                                    copyTextToClipboard(tsvData);
-                                });
-
                                 $('#btn-manual-copy-tsv').on('click', function() {
                                     copyTextToClipboard(tsvData).then(function() {
-                                        Swal.showValidationMessage('✓ Berhasil menyalin data ke Clipboard! Silakan paste (Ctrl+V) di Google Sheets.');
+                                        Swal.showValidationMessage('✓ Berhasil menyalin data ke Clipboard!');
                                         setTimeout(() => Swal.resetValidationMessage(), 3000);
                                     });
                                 });
 
                                 $('#btn-manual-download-tsv').on('click', function() {
-                                    var fname = 'Laporan_Transaksi_' + ($('#start_date').val() || 'all') + '_' + ($('#end_date').val() || '') + '.tsv';
                                     downloadSheetsData(tsvData, fname);
                                 });
                             }
                         });
                     }
                 } else {
+                    if (sheetsTab && !sheetsTab.closed) sheetsTab.close();
                     Swal.fire('Gagal', response.message || 'Gagal memproses data laporan.', 'error');
                 }
             },
             error: function(xhr) {
+                if (sheetsTab && !sheetsTab.closed) sheetsTab.close();
                 console.error('Export sheets error:', xhr);
                 var errDetail = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Gagal mengambil data untuk Google Sheets.';
                 Swal.fire('Terjadi Kesalahan', errDetail, 'error');

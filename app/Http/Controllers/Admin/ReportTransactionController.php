@@ -430,11 +430,64 @@ class ReportTransactionController extends Controller
 
     public function export()
     {
-        return Excel::download(new ReportTransactionExport, 'Laporan Transaksi ' . request()->start_date . ' - ' . request()->end_date . '.' . request()->type);
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk export laporan transaksi'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk export laporan transaksi');
+        }
+
+        session()->save();
+        @set_time_limit(300);
+        @ini_set('memory_limit', '1024M');
+
+        try {
+            $startDate = request()->filled('start_date') ? request()->start_date : null;
+            $endDate = request()->filled('end_date') ? request()->end_date : null;
+            $ext = in_array(request()->type, ['xlsx', 'csv'], true) ? request()->type : 'xlsx';
+
+            // Format tanggal dd-mmm-yyyy (misal: 01-Okt-2026)
+            $formatDatePart = function($date) {
+                if (!$date || $date === 'All' || $date === 'all') return null;
+                try {
+                    return \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d-M-Y');
+                } catch (\Throwable $e) {
+                    return str_replace(['/', ' '], '-', $date);
+                }
+            };
+
+            $startFormatted = $formatDatePart($startDate);
+            $endFormatted = $formatDatePart($endDate);
+
+            if ($startFormatted && $endFormatted) {
+                $datePart = ($startFormatted === $endFormatted)
+                    ? $startFormatted
+                    : "{$startFormatted}_sd_{$endFormatted}";
+            } elseif ($startFormatted) {
+                $datePart = $startFormatted;
+            } elseif ($endFormatted) {
+                $datePart = $endFormatted;
+            } else {
+                $datePart = 'semua_periode';
+            }
+
+            $fileName = "laporan_transaksi_{$datePart}.{$ext}";
+
+            return Excel::download(new ReportTransactionExport, $fileName);
+        } catch (\Throwable $e) {
+            \Log::error('Export excel error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memproses data export Excel: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal memproses data export Excel: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Export data to Google Sheets compatible TSV format for instant clipboard copy and paste.
+     * Export data to Google Sheets: direct auto-create via Google Apps Script Web App
+     * or fallback to TSV format for instant clipboard copy and paste.
      */
     public function exportSheets(Request $request)
     {
@@ -444,16 +497,78 @@ class ReportTransactionController extends Controller
 
         session()->save();
         @set_time_limit(300);
-        @ini_set('memory_limit', '512M');
+        @ini_set('memory_limit', '1024M');
 
         try {
             $export = new ReportTransactionExport();
-            $result = $export->generateTsv();
+            $dataResult = $export->generateDataArray();
+            $tsvResult = $export->generateTsv();
+
+            // Format tanggal dd-mmm-yyyy untuk judul sheet
+            $formatDatePart = function($date) {
+                if (!$date || $date === 'All' || $date === 'all') return null;
+                try {
+                    return \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d-M-Y');
+                } catch (\Throwable $e) {
+                    return str_replace(['/', ' '], '-', $date);
+                }
+            };
+
+            $startDate = $request->start_date ?: null;
+            $endDate = $request->end_date ?: null;
+            $startFormatted = $formatDatePart($startDate) ?: date('d-M-Y');
+            $endFormatted = $formatDatePart($endDate) ?: date('d-M-Y');
+
+            $sheetTitle = ($startFormatted === $endFormatted)
+                ? 'Laporan Transaksi ' . $startFormatted
+                : 'Laporan Transaksi ' . $startFormatted . ' s/d ' . $endFormatted;
+
+            $gasWebappUrl = config('services.google.sheets_webapp_url') ?: env('GOOGLE_SHEETS_WEBAPP_URL');
+
+            // Jika Google Apps Script Web App URL telah dikonfigurasi, kirim payload langsung
+            if (!empty($gasWebappUrl)) {
+                try {
+                    $response = \Illuminate\Support\Facades\Http::timeout(90)
+                        ->withoutVerifying()
+                        ->withOptions([
+                            'allow_redirects' => [
+                                'max' => 5,
+                                'strict' => false,
+                                'referer' => true,
+                                'protocols' => ['https']
+                            ]
+                        ])
+                        ->post($gasWebappUrl, [
+                            'title' => $sheetTitle,
+                            'values' => $dataResult['values'],
+                        ]);
+
+                    if ($response->successful()) {
+                        $json = $response->json();
+                        if (!empty($json['url'])) {
+                            return response()->json([
+                                'success' => true,
+                                'mode' => 'direct',
+                                'url' => $json['url'],
+                                'count' => $dataResult['count'],
+                                'tsv' => $tsvResult['tsv'],
+                            ]);
+                        }
+                    }
+                    \Log::warning('Google Apps Script response unhandled: ' . $response->body());
+                } catch (\Throwable $gasError) {
+                    \Log::error('GAS Webhook failed, falling back to TSV: ' . $gasError->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'tsv' => $result['tsv'],
-                'count' => $result['count'],
+                'mode' => 'fallback',
+                'title' => $sheetTitle,
+                'values' => $dataResult['values'],
+                'tsv' => $tsvResult['tsv'],
+                'count' => $tsvResult['count'],
+                'gas_configured' => !empty($gasWebappUrl),
             ]);
         } catch (\Throwable $e) {
             \Log::error('Export sheets error: ' . $e->getMessage(), [
