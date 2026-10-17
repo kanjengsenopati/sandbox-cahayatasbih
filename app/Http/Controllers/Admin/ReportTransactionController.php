@@ -431,6 +431,9 @@ class ReportTransactionController extends Controller
     public function export()
     {
         if (!Auth::user()->can('Manage Laporan Transaksi')) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk export laporan transaksi'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk export laporan transaksi');
         }
 
@@ -448,6 +451,9 @@ class ReportTransactionController extends Controller
             \Log::error('Export excel error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memproses data export Excel: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Gagal memproses data export Excel: ' . $e->getMessage());
         }
     }
@@ -480,7 +486,15 @@ class ReportTransactionController extends Controller
             // Jika Google Apps Script Web App URL telah dikonfigurasi, kirim payload langsung
             if (!empty($gasWebappUrl)) {
                 try {
-                    $response = \Illuminate\Support\Facades\Http::timeout(60)
+                    $response = \Illuminate\Support\Facades\Http::timeout(90)
+                        ->withOptions([
+                            'allow_redirects' => [
+                                'max' => 5,
+                                'strict' => true, // Menjaga metode POST dan request body saat 302 redirect
+                                'referer' => true,
+                                'protocols' => ['https']
+                            ]
+                        ])
                         ->post($gasWebappUrl, [
                             'title' => $sheetTitle,
                             'values' => $dataResult['values'],
