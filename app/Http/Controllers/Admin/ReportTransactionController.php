@@ -491,7 +491,7 @@ class ReportTransactionController extends Controller
                         ->withOptions([
                             'allow_redirects' => [
                                 'max' => 5,
-                                'strict' => true, // Menjaga metode POST dan request body saat 302 redirect
+                                'strict' => false,
                                 'referer' => true,
                                 'protocols' => ['https']
                             ]
