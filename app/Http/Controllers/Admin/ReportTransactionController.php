@@ -442,11 +442,38 @@ class ReportTransactionController extends Controller
         @ini_set('memory_limit', '1024M');
 
         try {
-            $startDate = request()->filled('start_date') ? request()->start_date : 'All';
-            $endDate = request()->filled('end_date') ? request()->end_date : 'All';
+            $startDate = request()->filled('start_date') ? request()->start_date : null;
+            $endDate = request()->filled('end_date') ? request()->end_date : null;
             $ext = in_array(request()->type, ['xlsx', 'csv'], true) ? request()->type : 'xlsx';
 
-            return Excel::download(new ReportTransactionExport, "Laporan Transaksi {$startDate} - {$endDate}.{$ext}");
+            // Format tanggal dd-mmm-yyyy (misal: 01-Okt-2026)
+            $formatDatePart = function($date) {
+                if (!$date || $date === 'All' || $date === 'all') return null;
+                try {
+                    return \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d-M-Y');
+                } catch (\Throwable $e) {
+                    return str_replace(['/', ' '], '-', $date);
+                }
+            };
+
+            $startFormatted = $formatDatePart($startDate);
+            $endFormatted = $formatDatePart($endDate);
+
+            if ($startFormatted && $endFormatted) {
+                $datePart = ($startFormatted === $endFormatted)
+                    ? $startFormatted
+                    : "{$startFormatted}_sd_{$endFormatted}";
+            } elseif ($startFormatted) {
+                $datePart = $startFormatted;
+            } elseif ($endFormatted) {
+                $datePart = $endFormatted;
+            } else {
+                $datePart = 'semua_periode';
+            }
+
+            $fileName = "laporan_transaksi_{$datePart}.{$ext}";
+
+            return Excel::download(new ReportTransactionExport, $fileName);
         } catch (\Throwable $e) {
             \Log::error('Export excel error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
@@ -477,9 +504,24 @@ class ReportTransactionController extends Controller
             $dataResult = $export->generateDataArray();
             $tsvResult = $export->generateTsv();
 
-            $startDate = $request->start_date ?: date('Y-m-01');
-            $endDate = $request->end_date ?: date('Y-m-d');
-            $sheetTitle = 'Laporan Transaksi ' . $startDate . ' s/d ' . $endDate;
+            // Format tanggal dd-mmm-yyyy untuk judul sheet
+            $formatDatePart = function($date) {
+                if (!$date || $date === 'All' || $date === 'all') return null;
+                try {
+                    return \Carbon\Carbon::parse($date)->locale('id')->translatedFormat('d-M-Y');
+                } catch (\Throwable $e) {
+                    return str_replace(['/', ' '], '-', $date);
+                }
+            };
+
+            $startDate = $request->start_date ?: null;
+            $endDate = $request->end_date ?: null;
+            $startFormatted = $formatDatePart($startDate) ?: date('d-M-Y');
+            $endFormatted = $formatDatePart($endDate) ?: date('d-M-Y');
+
+            $sheetTitle = ($startFormatted === $endFormatted)
+                ? 'Laporan Transaksi ' . $startFormatted
+                : 'Laporan Transaksi ' . $startFormatted . ' s/d ' . $endFormatted;
 
             $gasWebappUrl = config('services.google.sheets_webapp_url') ?: env('GOOGLE_SHEETS_WEBAPP_URL');
 
