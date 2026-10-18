@@ -1123,6 +1123,10 @@ class BillController extends Controller
             $newStatus = $requestData['status'];
 
             if ($oldStatus != $newStatus) {
+                if ($newStatus == Bill::STATUS_PAID) {
+                    return redirect()->back()->with('error', 'Tagihan tidak dapat diubah ke LUNAS secara manual. Pelunasan wajib dicatat melalui menu pembayaran resmi Bendahara / Petugas Pembayaran Berwenang agar tercatat dalam buku kas fisik dan memiliki nomor bukti transaksi.');
+                }
+
                 $bill->status = $newStatus;
                 if ($newStatus == Bill::STATUS_PAID) {
                     $bill->paid_amount = $bill->amount;
