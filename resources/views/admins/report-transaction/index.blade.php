@@ -641,11 +641,21 @@
 
         var start = moment().startOf('month');
         var end = moment().endOf('month');
+        const customLabel = 'Pilih Periode Bebas';
+        let isCustomRange = false;
+        let appliedIsCustom = false;
 
         // Initialize date range picker
-        $('#dateRange').daterangepicker({
+        const datePickerEl = $('#dateRange');
+        datePickerEl.daterangepicker({
             startDate: start,
             endDate: end,
+            locale: {
+                format: 'D/MM/YYYY',
+                customRangeLabel: customLabel,
+                applyLabel: 'Apply',
+                cancelLabel: 'Cancel'
+            },
             ranges: {
                 'Hari Ini': [moment(), moment()],
                 'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -664,6 +674,64 @@
             if (saldoTable) {
                 reloadTable();
             }
+        });
+
+        const picker = datePickerEl.data('daterangepicker');
+
+        // Override calculateChosenLabel khusus instance ini untuk mencegah fallback ambigu ke 'Bulan Ini'
+        const originalCalculateChosenLabel = picker.calculateChosenLabel.bind(picker);
+        picker.calculateChosenLabel = function() {
+            if (isCustomRange) {
+                this.chosenLabel = customLabel;
+                this.container.find('.ranges li').removeClass('active');
+                this.container.find('.ranges li[data-range-key="' + customLabel + '"]').addClass('active');
+                this.showCalendars();
+                return;
+            }
+            originalCalculateChosenLabel();
+        };
+
+        // Event listener saat opsi rentang diklik
+        picker.container.find('.ranges').on('click', 'li', function() {
+            const key = $(this).attr('data-range-key');
+            if (key === customLabel) {
+                isCustomRange = true;
+                picker.chosenLabel = customLabel;
+                picker.container.find('.ranges li').removeClass('active');
+                $(this).addClass('active');
+                picker.showCalendars();
+            } else {
+                isCustomRange = false;
+            }
+        });
+
+        // Event listener saat user memilih tanggal langsung di kalender
+        picker.container.on('click', '.drp-calendar td.available, .calendar td.available', function() {
+            isCustomRange = true;
+            picker.chosenLabel = customLabel;
+            picker.container.find('.ranges li').removeClass('active');
+            picker.container.find('.ranges li[data-range-key="' + customLabel + '"]').addClass('active');
+        });
+
+        // Event saat tombol Apply ditekan
+        datePickerEl.on('apply.daterangepicker', function(ev, p) {
+            appliedIsCustom = isCustomRange;
+        });
+
+        // Event saat dropdown dibuka (mempertahankan status aktif jika sebelumnya memilih periode bebas)
+        datePickerEl.on('show.daterangepicker', function(ev, p) {
+            isCustomRange = appliedIsCustom;
+            if (isCustomRange) {
+                p.chosenLabel = customLabel;
+                p.showCalendars();
+                p.container.find('.ranges li').removeClass('active');
+                p.container.find('.ranges li[data-range-key="' + customLabel + '"]').addClass('active');
+            }
+        });
+
+        // Event saat dibatalkan
+        datePickerEl.on('cancel.daterangepicker', function(ev, p) {
+            isCustomRange = appliedIsCustom;
         });
 
         // Set initial values
