@@ -282,12 +282,7 @@
                                                                 <span class="badge badge-light-success fs-9 fw-bold">Terbayar</span>
                                                             @endif
                                                         @else
-                                                            @if ($canEditStatus && $billForMonth)
-                                                                <a onclick="changeStatus('{{ $billForMonth->id }}', 'PAID')"
-                                                                    class="btn btn-success btn-sm text-nowrap">
-                                                                    <i class="fas fa-check me-1"></i> Ubah Status
-                                                                </a>
-                                                            @endif
+
                                                             @if ($canPay)
                                                                 @if ($isUnpaid && $paymentLink)
                                                                     <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm text-nowrap">Ke Halaman Pembayaran</a>

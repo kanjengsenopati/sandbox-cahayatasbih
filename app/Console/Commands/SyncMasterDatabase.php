@@ -529,10 +529,9 @@ class SyncMasterDatabase extends Command
                 LEFT JOIN (
                     SELECT 
                         td.bill_id, 
-                        SUM(COALESCE(td.amount, b.amount)) AS total_paid
+                        SUM(COALESCE(td.amount, 0)) AS total_paid
                     FROM transaction_details td
                     JOIN transactions t ON td.transaction_id = t.id
-                    JOIN bills b ON td.bill_id = b.id
                     WHERE t.status IN ('PAID', 'approved', 'SUCCESS')
                       AND td.deleted_at IS NULL
                       AND t.deleted_at IS NULL
@@ -543,15 +542,16 @@ class SyncMasterDatabase extends Command
             
             // 2. For any bill where paid_amount >= amount, status must be PAID
             DB::connection('mysql')->table('bills')
-                ->whereRaw('paid_amount >= amount')
+                ->whereRaw('paid_amount >= amount AND amount > 0')
                 ->update(['status' => 'PAID']);
                 
-            // 3. For any bill where status is PAID but paid_amount is less than amount,
-            // we must set paid_amount = amount to ensure UI consistency.
+            // 3. Pastikan tagihan yang belum lunas penuh berstatus PARTIAL atau UNPAID (Anti Lunas Semu)
             DB::connection('mysql')->table('bills')
                 ->where('status', 'PAID')
                 ->whereRaw('paid_amount < amount')
-                ->update(['paid_amount' => DB::raw('amount')]);
+                ->update([
+                    'status' => DB::raw("CASE WHEN paid_amount > 0 THEN 'PARTIAL' ELSE 'UNPAID' END")
+                ]);
 
             // 4. Soft-delete payment_rate_classrooms pointing to soft-deleted classrooms
             $this->info("Cleaning up orphaned payment_rate_classrooms...");
