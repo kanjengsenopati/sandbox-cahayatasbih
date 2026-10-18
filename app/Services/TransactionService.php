@@ -70,13 +70,7 @@ class TransactionService
                         if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
                             $detail->update(['amount' => $paidVal]);
                         }
-                        $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
-                        if ($bill->paid_amount >= $bill->amount) {
-                            $bill->status = Bill::STATUS_PAID;
-                        } else {
-                            $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
-                        }
-                        $bill->save();
+                        self::recalculateSingleBill($bill->id);
                     }
                 }
             } else {
@@ -123,13 +117,7 @@ class TransactionService
                         if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
                             $detail->update(['amount' => $paidVal]);
                         }
-                        $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
-                        if ($bill->paid_amount >= $bill->amount) {
-                            $bill->status = Bill::STATUS_PAID;
-                        } else {
-                            $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
-                        }
-                        $bill->save();
+                        self::recalculateSingleBill($bill->id);
                     }
                 }
             }
@@ -650,10 +638,7 @@ class TransactionService
                     $transaction->transactionDetails->each(function ($detail) {
                         $bill = $detail->bill;
                         if ($bill) {
-                            $paidVal = $detail->amount ?? $bill->remaining_amount;
-                            $bill->paid_amount = max(0, $bill->paid_amount - $paidVal);
-                            $bill->status = Bill::STATUS_UNPAID;
-                            $bill->save();
+                            self::recalculateSingleBill($bill->id);
                         }
                     });
                 }
@@ -689,13 +674,7 @@ class TransactionService
                             if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
                                 $detail->update(['amount' => $paidVal]);
                             }
-                            $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
-                            if ($bill->paid_amount >= $bill->amount) {
-                                $bill->status = Bill::STATUS_PAID;
-                            } else {
-                                $bill->status = $bill->paid_amount > 0 ? Bill::STATUS_PARTIAL : Bill::STATUS_UNPAID;
-                            }
-                            $bill->save();
+                            self::recalculateSingleBill($bill->id);
                         }
                     });
 
@@ -1207,10 +1186,12 @@ class TransactionService
                             }
                         }
 
-                        // Fix detail amount jika 0
+                        // Fix detail amount jika 0 (Gunakan nominal riil transaksi pay_amount sebagai prioritas utama)
                         if ($bill && (!$detail->amount || $detail->amount <= 0)) {
-                            $fallback = $bill->amount > 0 ? $bill->amount : ($tx->pay_amount > 0 ? $tx->pay_amount : 10000);
-                            $detail->update(['amount' => $fallback]);
+                            $fallback = $tx->pay_amount > 0 ? $tx->pay_amount : ($bill->amount > 0 ? $bill->amount : 0);
+                            if ($fallback > 0) {
+                                $detail->update(['amount' => $fallback]);
+                            }
                         }
 
                         // Tandai untuk recalculate
@@ -1260,6 +1241,40 @@ class TransactionService
             }, 5);
         } catch (\Throwable $e) {
             Log::error("[syncStudentBillsFromPaidTransactions] Error for student {$studentId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recalculate single bill paid_amount and status idempotently from valid transaction details.
+     */
+    public static function recalculateSingleBill($billId)
+    {
+        if (empty($billId)) return;
+
+        $bill = \App\Models\Bill::find($billId);
+        if (!$bill || $bill->trashed()) return;
+
+        $totalPaid = (int) DB::table('transaction_details')
+            ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+            ->where('transaction_details.bill_id', $bill->id)
+            ->whereIn('transactions.status', [Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas'])
+            ->whereNull('transaction_details.deleted_at')
+            ->whereNull('transactions.deleted_at')
+            ->sum('transaction_details.amount');
+
+        $newPaid = min((int)$bill->amount, $totalPaid);
+        if ($newPaid >= (int)$bill->amount && (int)$bill->amount > 0) {
+            $newStatus = Bill::STATUS_PAID;
+        } elseif ($newPaid > 0) {
+            $newStatus = Bill::STATUS_PARTIAL;
+        } else {
+            $newStatus = Bill::STATUS_UNPAID;
+        }
+
+        if ((int)$bill->getRawOriginal('paid_amount') !== $newPaid || $bill->status !== $newStatus) {
+            $bill->paid_amount = $newPaid;
+            $bill->status = $newStatus;
+            $bill->save();
         }
     }
 
