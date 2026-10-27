@@ -224,6 +224,29 @@
             <!-- Bottom Spacer -->
             <div class="mb-10"></div>
         </div>
+
+        <!-- Modal Detail Tagihan Siswa (Wide Modal) -->
+        <div class="modal fade" id="modal-rincian" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95vw; width: 1200px;">
+                <div class="modal-content rounded-[24px] border-0 shadow-lg overflow-hidden bg-white">
+                    <div class="modal-header border-0 pb-0 pt-6 px-8 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="modal-title fw-bolder text-dark fs-3 mb-1">Rincian Tagihan Siswa</h3>
+                            <p class="text-muted fs-7 mb-0" id="modal_student_subtitle">Memuat data rincian tagihan...</p>
+                        </div>
+                        <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-primary rounded-circle" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="fas fa-times fs-4"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body py-6 px-8" id="modal_detail_bill_content">
+                        <div class="text-center py-12">
+                            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                            <div class="mt-3 text-gray-600 fw-semibold fs-6">Memuat rincian tagihan...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 @push('js')
@@ -351,6 +374,53 @@
                 searchTimeout = setTimeout(function() {
                     $('#table-report-bill').DataTable().search(val).draw();
                 }, 300);
+            });
+
+            // Click handler for Detail button to open wide modal
+            $(document).on('click', '.btn-detail-bill', function(e) {
+                e.preventDefault();
+                const studentId = $(this).data('student-id');
+                const billTypeId = $(this).data('bill-type-id');
+                const studentName = $(this).data('student-name');
+
+                $('#modal_student_subtitle').text('Data rincian tagihan untuk ' + studentName);
+                $('#modal_detail_bill_content').html(`
+                    <div class="text-center py-12">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <div class="mt-3 text-gray-600 fw-semibold fs-6">Memuat rincian tagihan ${studentName}...</div>
+                    </div>
+                `);
+                $('#modal-rincian').modal('show');
+
+                $.ajax({
+                    url: "{{ route('bill.summary-bill') }}",
+                    type: "GET",
+                    data: {
+                        student_id: studentId,
+                        bill_type_id: billTypeId
+                    },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        $('#modal_detail_bill_content').html(response);
+                    },
+                    error: function(xhr) {
+                        let msg = 'Gagal memuat rincian tagihan.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+                        $('#modal_detail_bill_content').html(`
+                            <div class="alert alert-danger d-flex align-items-center p-5 rounded-3 mb-0">
+                                <i class="fas fa-exclamation-circle fs-2 me-3 text-danger"></i>
+                                <div class="d-flex flex-column">
+                                    <h5 class="mb-1 text-danger">Terjadi Kesalahan</h5>
+                                    <span>${msg}</span>
+                                </div>
+                            </div>
+                        `);
+                    }
+                });
             });
 
             // Initial call to fetch totals

@@ -418,13 +418,12 @@ class ReportBillController extends Controller
      */
     private function renderActions($row, $billTypeId)
     {
-        // URL Generator manual untuk performa
-        $actionDetail = url("/bill/summary-bill?student_id={$row->id}&bill_type_id={$billTypeId}");
+        $escapedName = htmlspecialchars($row->name, ENT_QUOTES);
         
         // Button HTML
         return "
         <div class='d-flex gap-2 flex-nowrap justify-content-center'>
-            <a href='{$actionDetail}' class='btn btn-primary btn-sm' target='_blank'>Detail</a>
+            <button type='button' class='btn btn-primary btn-sm btn-detail-bill' data-student-id='{$row->id}' data-bill-type-id='{$billTypeId}' data-student-name='{$escapedName}'>Detail</button>
             <button onclick='sendNotification({$row->id}, {$billTypeId})' class='btn btn-icon btn-success btn-sm' data-bs-toggle='tooltip' title='Kirim Tagihan'>
                 <i class='fab fa-whatsapp fs-4'></i>
             </button>
