@@ -44,15 +44,40 @@ class PsbSyncService
     }
 
     /**
+     * Nama kolom pelacak sinkronisasi berdasarkan environment target
+     */
+    protected function getSyncColumn(): string
+    {
+        $target = env('PSB_SYNC_TARGET', 'staging');
+        return ($target === 'production') ? 'synced_production_at' : 'synced_staging_at';
+    }
+
+    /**
      * Mengambil daftar pendaftar yang diterima dan belum disinkronkan dari database PSB
      */
     public function getPendingAcceptedCandidates(int $limit = 50)
     {
-        return DB::connection('psb_mysql')
+        $syncCol = $this->getSyncColumn();
+
+        // Cek apakah kolom dual-target ada di tabel PSB
+        $hasDualCol = false;
+        try {
+            $hasDualCol = DB::connection('psb_mysql')->getSchemaBuilder()->hasColumn('ppdb_registrations', $syncCol);
+        } catch (\Throwable $e) {
+            $hasDualCol = false;
+        }
+
+        $query = DB::connection('psb_mysql')
             ->table('ppdb_registrations')
-            ->where('status', 'ACCEPTED')
-            ->where('is_synced', false)
-            ->orderBy('id', 'asc')
+            ->where('status', 'ACCEPTED');
+
+        if ($hasDualCol) {
+            $query->whereNull($syncCol);
+        } else {
+            $query->where('is_synced', false);
+        }
+
+        return $query->orderBy('id', 'asc')
             ->limit($limit)
             ->get();
     }
@@ -151,13 +176,21 @@ class PsbSyncService
                 }
 
                 // Tandai di database PSB
+                $syncCol = $this->getSyncColumn();
+                $updateData = [
+                    'is_synced' => true,
+                    'synced_at' => now(),
+                ];
+                try {
+                    if (DB::connection('psb_mysql')->getSchemaBuilder()->hasColumn('ppdb_registrations', $syncCol)) {
+                        $updateData[$syncCol] = now();
+                    }
+                } catch (\Throwable $e) {}
+
                 DB::connection('psb_mysql')
                     ->table('ppdb_registrations')
                     ->where('id', $cand->id)
-                    ->update([
-                        'is_synced' => true,
-                        'synced_at' => now(),
-                    ]);
+                    ->update($updateData);
 
                 DB::commit();
             } catch (\Throwable $e) {
@@ -207,7 +240,16 @@ class PsbSyncService
                 ]);
             }
 
-            // 2. Data Santri Baru
+            // 2. Data Santri Baru dengan Auto-Generate NIS Khusus: 3321 + YY + NNN
+            // Sekaligus menjadi Barcode Kartu Transaksi Non-Tunai Santri
+            $year = (int) date('Y');
+            if ($reg->track && $reg->track->ppdbWave && $reg->track->ppdbWave->academicYear) {
+                $ayYear = $reg->track->ppdbWave->academicYear->year; // e.g. "2026/2027"
+                if (preg_match('/^(\d{4})/', $ayYear, $m)) {
+                    $year = (int) $m[1];
+                }
+            }
+
             $student = Student::where('nisn', $reg->nisn)
                 ->orWhere(function ($q) use ($reg) {
                     if (!empty($reg->nik)) {
@@ -217,6 +259,8 @@ class PsbSyncService
                 ->first();
 
             if (!$student) {
+                $generatedNis = Student::generateUniqueNisAndBarcode($year);
+
                 $student = Student::create([
                     'id' => (string) Str::uuid(),
                     'user_id' => $user->id,
@@ -225,6 +269,8 @@ class PsbSyncService
                     'name' => $reg->name,
                     'nisn' => $reg->nisn,
                     'nik' => $reg->nik,
+                    'nis' => $generatedNis,          // Format: 332126112
+                    'barcode' => $generatedNis,      // Barcode Transaksi: 332126112
                     'born_place' => $reg->birth_place,
                     'birth_date' => $reg->birth_date,
                     'gender' => $reg->gender,
@@ -245,8 +291,10 @@ class PsbSyncService
 
             return [
                 'status' => true,
-                'message' => "Santri {$student->name} berhasil diresmikan ke sistem aktif!",
+                'message' => "Santri {$student->name} berhasil diresmikan! NIS & Barcode Transaksi: {$student->nis}",
                 'student_id' => $student->id,
+                'nis' => $student->nis,
+                'barcode' => $student->barcode,
                 'user_id' => $user->id,
             ];
         } catch (\Throwable $e) {

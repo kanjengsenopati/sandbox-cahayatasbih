@@ -262,6 +262,13 @@
                                                                     @endforeach
                                                                 </select>
                                                             </div>
+                                                            <div class="alert alert-light-primary border border-primary border-dashed fs-7 p-3 mb-3">
+                                                                <div class="d-flex align-items-center mb-1">
+                                                                    <i class="fas fa-barcode text-primary fs-4 me-2"></i>
+                                                                    <strong class="text-primary">Auto-Generate NIS & Barcode Transaksi</strong>
+                                                                </div>
+                                                                Sistem otomatis menerbitkan NIS berformat <code>3321 + YY + NNN</code> (contoh: <code>332126112</code>) yang sekaligus menjadi identitas kartu transaksi non-tunai di kantin.
+                                                            </div>
                                                             <div class="alert alert-light-info fs-7 p-3">
                                                                 Sistem akan otomatis membuat akun login Wali Murid di <code>users</code> dengan nomor telepon <strong>{{ $reg->parent_phone }}</strong> dan data Santri di <code>students</code>.
                                                             </div>

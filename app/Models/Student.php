@@ -258,6 +258,36 @@ class Student extends Model
         return $code;
     }
 
+    /**
+     * Generate NIS resmi Yayasan Cahaya Tasbih: 3321 + YY + NNN (contoh: 332126112)
+     * Sekaligus menjadi Barcode Kartu Transaksi Non-Tunai Santri
+     */
+    public static function generateUniqueNisAndBarcode(?int $year = null): string
+    {
+        $year2Digit = $year ? substr((string) $year, -2) : date('y');
+        $prefix = '3321' . $year2Digit;
+
+        $latestNis = self::where('nis', 'like', $prefix . '%')
+            ->orderBy('nis', 'desc')
+            ->value('nis');
+
+        $nextNumber = 1;
+        if ($latestNis && strlen($latestNis) >= 9) {
+            $lastSeq = (int) substr($latestNis, 6);
+            $nextNumber = $lastSeq + 1;
+        }
+
+        do {
+            $nis = $prefix . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+            $conflict = self::where('nis', $nis)->orWhere('barcode', $nis)->exists();
+            if ($conflict) {
+                $nextNumber++;
+            }
+        } while ($conflict);
+
+        return $nis;
+    }
+
     public function barcodeHistories()
     {
         return $this->hasMany(StudentBarcodeHistory::class, 'student_id');
