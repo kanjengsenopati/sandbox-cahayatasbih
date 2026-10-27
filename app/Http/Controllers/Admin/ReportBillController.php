@@ -212,6 +212,11 @@ class ReportBillController extends Controller
         if (request()->type === 'total') {
             return $this->getTotalData($id);
         }
+
+        // Request untuk rincian tagihan per siswa (Nested Expandable Child Row)
+        if (request()->type === 'student_breakdown') {
+            return $this->getStudentBreakdown($id);
+        }
         
         return abort(404);
     }
@@ -418,16 +423,135 @@ class ReportBillController extends Controller
      */
     private function renderActions($row, $billTypeId)
     {
-        $escapedName = htmlspecialchars($row->name, ENT_QUOTES);
-        
-        // Button HTML
         return "
         <div class='d-flex gap-2 flex-nowrap justify-content-center'>
-            <button type='button' class='btn btn-primary btn-sm btn-detail-bill' data-student-id='{$row->id}' data-bill-type-id='{$billTypeId}' data-student-name='{$escapedName}'>Detail</button>
             <button onclick='sendNotification({$row->id}, {$billTypeId})' class='btn btn-icon btn-success btn-sm' data-bs-toggle='tooltip' title='Kirim Tagihan'>
                 <i class='fab fa-whatsapp fs-4'></i>
             </button>
         </div>";
+    }
+
+    /**
+     * Rincian tagihan per siswa untuk nested expandable child row
+     */
+    private function getStudentBreakdown(string $id)
+    {
+        $studentId = request()->student_id;
+        if (!$studentId) {
+            return response()->json(['error' => 'Student ID is required'], 400);
+        }
+
+        $billType = BillType::with('academicYear', 'billItem')->findOrFail($id);
+        $student = Student::with(['classroom.school', 'user'])->findOrFail($studentId);
+
+        // Ambil semua bills untuk siswa & jenis tagihan ini
+        $bills = Bill::with(['transactions.paymentMethod', 'transactions.admin'])
+            ->where('student_id', $student->id)
+            ->where('bill_type_id', $id)
+            ->whereNull('deleted_at')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $currentYear = (int)date('Y');
+        $currentMonth = (int)date('n');
+
+        $items = [];
+        $totalBill = 0;
+        $totalPaid = 0;
+        $totalCurrentDue = 0;
+
+        if ($billType->type === BillType::TYPE_MONTHLY) {
+            $startYear = $billType->academicYear?->start_year ?? $currentYear;
+            $endYear = $billType->academicYear?->end_year ?? ($startYear + 1);
+
+            // Urutan tahun ajaran Indonesia: Juli - Juni
+            $academicMonths = array_merge(range(7, 12), range(1, 6));
+
+            foreach ($academicMonths as $m) {
+                $y = ($m >= 7) ? $startYear : $endYear;
+                $billForMonth = $bills->first(fn($b) => (int)$b->month === (int)$m && (int)$b->year === (int)$y)
+                    ?? $bills->first(fn($b) => (int)$b->month === (int)$m);
+
+                $amount = $billForMonth ? (int)$billForMonth->amount : (int)($billType->billItem->amount ?? 0);
+                if ($amount <= 0 && $bills->isNotEmpty()) {
+                    $amount = (int)$bills->where('amount', '>', 0)->avg('amount');
+                }
+                $paid = $billForMonth ? (int)$billForMonth->paid_amount : 0;
+                $isPaid = $billForMonth && $billForMonth->status === 'PAID';
+
+                $isOverdue = false;
+                $dueAmount = 0;
+                if (!$isPaid) {
+                    if ($y < $currentYear || ($y === $currentYear && $m <= $currentMonth)) {
+                        $isOverdue = true;
+                        $dueAmount = max(0, $amount - $paid);
+                    }
+                }
+
+                $transaction = $billForMonth?->transactions?->first();
+                $paymentMethodName = $transaction?->paymentMethod?->name ?? ($transaction?->payment_type ?? '-');
+                $paidDate = $transaction?->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y') : null;
+
+                $items[] = [
+                    'month_name' => $monthNames[$m] . ' ' . $y,
+                    'month' => $m,
+                    'year' => $y,
+                    'amount' => $amount,
+                    'paid' => $paid,
+                    'due' => $dueAmount,
+                    'is_paid' => $isPaid,
+                    'is_overdue' => $isOverdue,
+                    'payment_method' => $isPaid ? $paymentMethodName : '-',
+                    'paid_date' => $paidDate,
+                    'bill_id' => $billForMonth?->id
+                ];
+
+                $totalBill += $amount;
+                $totalPaid += $paid;
+                $totalCurrentDue += $dueAmount;
+            }
+        } else {
+            // Tipe BEBAS
+            foreach ($bills as $idx => $b) {
+                $amount = (int)$b->amount;
+                $paid = (int)$b->paid_amount;
+                $isPaid = $b->status === 'PAID';
+                $transaction = $b->transactions?->first();
+
+                $items[] = [
+                    'month_name' => $b->name ?? ($billType->name . ' #' . ($idx + 1)),
+                    'month' => $b->month,
+                    'year' => $b->year,
+                    'amount' => $amount,
+                    'paid' => $paid,
+                    'due' => max(0, $amount - $paid),
+                    'is_paid' => $isPaid,
+                    'is_overdue' => false,
+                    'payment_method' => $isPaid ? ($transaction?->paymentMethod?->name ?? 'Tunai') : '-',
+                    'paid_date' => $transaction?->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y') : null,
+                    'bill_id' => $b->id
+                ];
+
+                $totalBill += $amount;
+                $totalPaid += $paid;
+            }
+        }
+
+        $summary = [
+            'total_bill' => $totalBill,
+            'total_paid' => $totalPaid,
+            'total_unpaid' => max(0, $totalBill - $totalPaid),
+            'total_current_due' => $totalCurrentDue
+        ];
+
+        return view('admins.report-bill.partials.student-breakdown', compact('student', 'billType', 'items', 'summary'));
     }
 
     // public function show(string $id)

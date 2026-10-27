@@ -387,14 +387,8 @@
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Loading...');
         });
     });
-</script>
 
-
-
-
-
-
-   function changeStatus(billId, status) {
+    function changeStatus(billId, status) {
         var title = status === 'PAID' ? 'Ubah Status Tagihan' : 'Batalkan Pembayaran';
         var text = status === 'PAID' 
             ? 'Apakah Anda yakin ingin mengubah status tagihan ini menjadi LUNAS?' 

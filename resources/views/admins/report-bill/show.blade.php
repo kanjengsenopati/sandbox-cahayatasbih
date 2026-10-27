@@ -224,29 +224,6 @@
             <!-- Bottom Spacer -->
             <div class="mb-10"></div>
         </div>
-
-        <!-- Modal Detail Tagihan Siswa (Wide Modal) -->
-        <div class="modal fade" id="modal-rincian" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 95vw; width: 1200px;">
-                <div class="modal-content rounded-[24px] border-0 shadow-lg overflow-hidden bg-white">
-                    <div class="modal-header border-0 pb-0 pt-6 px-8 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h3 class="modal-title fw-bolder text-dark fs-3 mb-1">Rincian Tagihan Siswa</h3>
-                            <p class="text-muted fs-7 mb-0" id="modal_student_subtitle">Memuat data rincian tagihan...</p>
-                        </div>
-                        <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-primary rounded-circle" data-bs-dismiss="modal" aria-label="Close">
-                            <i class="fas fa-times fs-4"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body py-6 px-8" id="modal_detail_bill_content">
-                        <div class="text-center py-12">
-                            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-                            <div class="mt-3 text-gray-600 fw-semibold fs-6">Memuat rincian tagihan...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 @endsection
 @push('js')
@@ -376,51 +353,82 @@
                 }, 300);
             });
 
-            // Click handler for Detail button to open wide modal
-            $(document).on('click', '.btn-detail-bill', function(e) {
+            // Accordion Expandable Panel for Student Bill Breakdown
+            $('#table-report-bill tbody').on('click', '.btn-expand-row', function(e) {
                 e.preventDefault();
-                const studentId = $(this).data('student-id');
-                const billTypeId = $(this).data('bill-type-id');
-                const studentName = $(this).data('student-name');
+                e.stopPropagation();
+                var table = $('#table-report-bill').DataTable();
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+                var rowData = row.data();
+                if (!rowData) return;
+                var studentId = rowData.id;
+                var icon = $(this).find('.toggle-icon');
+                var btn = $(this);
 
-                $('#modal_student_subtitle').text('Data rincian tagihan untuk ' + studentName);
-                $('#modal_detail_bill_content').html(`
-                    <div class="text-center py-12">
-                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-                        <div class="mt-3 text-gray-600 fw-semibold fs-6">Memuat rincian tagihan ${studentName}...</div>
-                    </div>
-                `);
-                $('#modal-rincian').modal('show');
-
-                $.ajax({
-                    url: "{{ route('bill.summary-bill') }}",
-                    type: "GET",
-                    data: {
-                        student_id: studentId,
-                        bill_type_id: billTypeId
-                    },
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    success: function(response) {
-                        $('#modal_detail_bill_content').html(response);
-                    },
-                    error: function(xhr) {
-                        let msg = 'Gagal memuat rincian tagihan.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            msg = xhr.responseJSON.message;
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                    icon.removeClass('fa-minus text-danger').addClass('fa-plus text-primary');
+                    btn.removeClass('btn-light-danger').addClass('btn-light-primary');
+                } else {
+                    // Accordion behavior: close other open rows
+                    $('#table-report-bill tbody tr.shown').each(function() {
+                        var otherTr = $(this);
+                        var otherRow = table.row(otherTr);
+                        if (otherRow && otherRow.child.isShown()) {
+                            otherRow.child.hide();
+                            otherTr.removeClass('shown');
+                            otherTr.find('.toggle-icon').removeClass('fa-minus text-danger').addClass('fa-plus text-primary');
+                            otherTr.find('.btn-expand-row').removeClass('btn-light-danger').addClass('btn-light-primary');
                         }
-                        $('#modal_detail_bill_content').html(`
-                            <div class="alert alert-danger d-flex align-items-center p-5 rounded-3 mb-0">
-                                <i class="fas fa-exclamation-circle fs-2 me-3 text-danger"></i>
-                                <div class="d-flex flex-column">
-                                    <h5 class="mb-1 text-danger">Terjadi Kesalahan</h5>
-                                    <span>${msg}</span>
-                                </div>
-                            </div>
-                        `);
+                    });
+
+                    // Set loading state
+                    var loadingHtml = `
+                        <div class="p-4 my-2 text-center bg-light-subtle rounded-3 border border-gray-200">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span class="text-muted fw-semibold fs-7">Memuat rincian tagihan santri...</span>
+                        </div>
+                    `;
+                    row.child(loadingHtml).show();
+                    tr.addClass('shown');
+                    icon.removeClass('fa-plus text-primary').addClass('fa-minus text-danger');
+                    btn.removeClass('btn-light-primary').addClass('btn-light-danger');
+
+                    // Check cache or fetch via AJAX
+                    if (row.data()._cachedBreakdownHtml) {
+                        row.child(row.data()._cachedBreakdownHtml).show();
+                    } else {
+                        $.ajax({
+                            url: "{{ route('report-bill.show', $billType->id) }}",
+                            type: "GET",
+                            data: {
+                                type: 'student_breakdown',
+                                student_id: studentId
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            success: function(html) {
+                                row.data()._cachedBreakdownHtml = html;
+                                if (row.child.isShown()) {
+                                    row.child(html).show();
+                                }
+                            },
+                            error: function() {
+                                if (row.child.isShown()) {
+                                    row.child(`
+                                        <div class="alert alert-danger p-3 my-2 fs-7 rounded-3 d-flex align-items-center">
+                                            <i class="fas fa-exclamation-circle me-2 text-danger fs-5"></i>
+                                            <span>Gagal memuat rincian tagihan santri. Silakan coba kembali.</span>
+                                        </div>
+                                    `).show();
+                                }
+                            }
+                        });
                     }
-                });
+                }
             });
 
             // Initial call to fetch totals
@@ -574,7 +582,13 @@
                         sortable: false,
                         searchable: false,
                         render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
+                            let rowNumber = meta.row + meta.settings._iDisplayStart + 1;
+                            return `<div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-icon btn-sm btn-light-primary rounded-circle btn-expand-row" data-student-id="${row.id}" style="width: 22px; height: 22px; padding: 0; min-width: 22px;" title="Lihat Rincian">
+                                    <i class="fas fa-plus fs-9 toggle-icon text-primary"></i>
+                                </button>
+                                <span>${rowNumber}</span>
+                            </div>`;
                         }
                     },
                     {
