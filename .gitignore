@@ -42,4 +42,5 @@ scratch_*.php
 database/production.sql
 *.sql
 database/*.sql
+/psb-cahaya-tasbih
 
