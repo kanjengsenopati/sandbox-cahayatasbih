@@ -48,25 +48,35 @@
                                 </div>
                             </div>
 
-                            <!-- UPT / School -->
+                            <!-- Cari Nama Siswa -->
                             <div class="col-12 col-md-6 col-xl-3">
-                                <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-2">UPT</label>
-                                <select name="school_id" class="form-select form-select-solid bg-white border"
-                                    id="filter_school_id">
-                                    <option value="">Semua UPT</option>
-                                    @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-2">Cari Nama Siswa</label>
+                                <div class="position-relative">
+                                    <span class="position-absolute top-50 translate-middle-y ms-3 text-gray-400">
+                                        <i class="fa fa-search"></i>
+                                    </span>
+                                    <input type="text" id="search_student_name"
+                                        class="form-control form-control-solid bg-white border ps-10"
+                                        placeholder="Cari Nama Siswa..." autocomplete="off">
+                                </div>
                             </div>
 
                             <!-- Classroom -->
                             <div class="col-12 col-md-6 col-xl-3">
                                 <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-2">Kelas</label>
-                                <select name="classroom_id" class="form-select form-select-solid bg-white border"
-                                    id="filter_classroom_id">
-                                    <option value="">Semua Kelas</option>
-                                </select>
+                                <div class="dropdown" id="report_bill_classroom_dropdown_container" style="position: relative !important;">
+                                    <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                    <button class="btn btn-light border bg-white fs-7 d-flex justify-content-between align-items-center w-100"
+                                        type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                        aria-expanded="false" style="min-width: 140px; height: 42px; cursor: pointer;">
+                                        <span id="filter_classroom_btn_text" class="text-truncate me-2" style="pointer-events: none;">Semua Kelas</span>
+                                        <i class="fas fa-chevron-down fs-8 text-gray-500 filter-classroom-arrow" style="pointer-events: none; transition: transform 0.2s ease;"></i>
+                                    </button>
+                                    <div class="dropdown-menu p-3 shadow-lg border-0" id="classroom_mega_menu"
+                                        style="min-width: 320px; width: 330px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; border-radius: 16px; position: absolute !important; top: 100% !important; margin-top: 6px !important; z-index: 9999 !important;"
+                                        aria-labelledby="filter_classroom_btn">
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Status -->
@@ -195,7 +205,7 @@
                             <thead class="border-bottom border-gray-200 fs-7 fw-bolder">
                                 <tr class="text-start text-gray-400 text-uppercase gs-0">
                                     <th class="ps-4" style="width: 5%">No</th>
-                                    <th class="min-w-150px">Item Pembayaran</th>
+                                    <th class="min-w-150px">Nama Siswa</th>
                                     <th class="min-w-100px">Kelas</th>
                                     <th class="min-w-125px">Total Tagihan</th>
                                     <th class="min-w-125px">Dibayar</th>
@@ -216,20 +226,279 @@
         </div>
     </div>
 @endsection
+@push('css')
+    <style>
+        /* Button Expand Row Base Styling */
+        .btn-expand-row {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border-radius: 50%;
+            border: 1.5px solid #dbeafe;
+            background-color: #eff6ff;
+            color: #2563eb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn-expand-row .toggle-icon {
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 900;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        /* Hover State (Default / Closed) */
+        .btn-expand-row:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+            transform: scale(1.08);
+        }
+        .btn-expand-row:hover .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Active / Expanded State */
+        .btn-expand-row.active {
+            background-color: #1e40af;
+            border-color: #1e40af;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.4);
+        }
+        .btn-expand-row.active .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Hover on Active State (Visual cue to collapse) */
+        .btn-expand-row.active:hover {
+            background-color: #dc2626;
+            border-color: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+            transform: scale(1.08);
+        }
+        .btn-expand-row.active:hover .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Highlight Row when Expanded */
+        #table-report-bill tbody tr.shown > td {
+            background-color: #f8fafc !important;
+            transition: background-color 0.2s ease;
+        }
+    </style>
+@endpush
 @push('js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Initialize the table on document ready
-            // var table = initializeTable();
+            // Classroom Mega Menu Grouping (3 Kolom untuk Kelas 10, 11, 12)
+            const rawClassrooms = @json($classrooms ?? []);
 
-            // Function to initialize DataTable
+            function renderBillClassroomMegaMenu(classes) {
+                const container = $('#classroom_mega_menu');
+                container.empty();
 
+                if (!classes || classes.length === 0) {
+                    container.html('<div class="text-muted fs-7 p-3 text-center">Tidak ada kelas ditemukan</div>');
+                    return;
+                }
+
+                const groups = {};
+                classes.forEach(c => {
+                    let match = (c.name || '').match(/^(\d+)/);
+                    let key = match ? match[1] : 'Lainnya';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(c);
+                });
+
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                    const na = parseInt(a), nb = parseInt(b);
+                    if (isNaN(na) && isNaN(nb)) return a.localeCompare(b);
+                    if (isNaN(na)) return 1;
+                    if (isNaN(nb)) return -1;
+                    return na - nb;
+                });
+
+                const colCount = sortedKeys.length;
+                let colClass = 'col-12';
+                let menuWidth = '160px';
+                if (colCount === 2) {
+                    colClass = 'col-6';
+                    menuWidth = '240px';
+                } else if (colCount === 3) {
+                    colClass = 'col-4';
+                    menuWidth = '330px';
+                } else if (colCount >= 4) {
+                    colClass = 'col-3';
+                    menuWidth = '420px';
+                }
+                container.css({ 'width': menuWidth, 'min-width': menuWidth, 'padding': '10px' });
+
+                const resetBtn = $('<button type="button" class="btn btn-sm btn-light-primary w-100 fw-bold mb-2 classroom-item text-center rounded-2 py-1 fs-8" data-id="" data-name="Semua Kelas" style="cursor: pointer;"><i class="fas fa-layer-group me-1" style="pointer-events: none;"></i><span style="pointer-events: none;">Semua Kelas</span></button>');
+                container.append(resetBtn);
+
+                const row = $('<div class="row g-1"></div>');
+                sortedKeys.forEach(key => {
+                    const col = $(`<div class="${colClass}"></div>`);
+                    const headerTitle = isNaN(parseInt(key)) ? key : 'Kelas ' + key;
+                    col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder px-1 mb-1 fs-9 border-bottom pb-1">${headerTitle}</h6>`);
+                    const list = $('<div class="d-flex flex-column" style="gap: 3px;"></div>');
+                    groups[key].forEach(c => {
+                        list.append(`<button type="button" class="btn btn-sm btn-light btn-active-light-primary text-start w-100 px-2 rounded-2 classroom-item fs-8 fw-semibold d-flex align-items-center justify-content-between text-truncate" data-id="${c.id}" data-name="${c.name}" style="cursor: pointer; transition: all 0.15s ease-in-out; min-height: 26px; padding-top: 3px; padding-bottom: 3px;">
+                            <span class="text-truncate" style="pointer-events: none;">${c.name}</span>
+                            <i class="fas fa-check text-primary fs-9 d-none class-check-icon" style="pointer-events: none;"></i>
+                        </button>`);
+                    });
+                    col.append(list);
+                    row.append(col);
+                });
+                container.append(row);
+            }
+
+            renderBillClassroomMegaMenu(rawClassrooms);
+
+            $(document).on('click', '#classroom_mega_menu .classroom-item', function(e) {
+                e.preventDefault();
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+
+                $('#filter_classroom_id').val(id);
+                if (id) {
+                    $('#filter_classroom_btn_text').html(`<i class="fas fa-chalkboard-user me-1 text-primary"></i> <span class="fw-bold">${name}</span>`);
+                } else {
+                    $('#filter_classroom_btn_text').text('Semua Kelas');
+                }
+
+                $('#classroom_mega_menu .class-check-icon').addClass('d-none');
+                $('#classroom_mega_menu .classroom-item').removeClass('active btn-primary text-white').addClass('btn-light');
+                if (id) {
+                    $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+                    $(this).find('.class-check-icon').removeClass('d-none');
+                }
+
+                const dropdownEl = document.getElementById('classroom_mega_menu');
+                if (dropdownEl) {
+                    const bsDropdown = bootstrap.Dropdown.getInstance(document.getElementById('filter_classroom_btn'));
+                    if (bsDropdown) bsDropdown.hide();
+                }
+
+                reloadTable();
+            });
+
+            $('#report_bill_classroom_dropdown_container').on('show.bs.dropdown', function () {
+                const $btn = $('#filter_classroom_btn');
+                const $menu = $('#classroom_mega_menu');
+                const btnOffset = $btn.offset();
+                const menuWidth = $menu.outerWidth() || 330;
+                const winWidth = $(window).width();
+                if (btnOffset && (btnOffset.left + menuWidth > winWidth - 20)) {
+                    $menu.css({ 'left': 'auto', 'right': '0' });
+                } else {
+                    $menu.css({ 'left': '0', 'right': 'auto' });
+                }
+            });
 
             // Event listeners for filters
-            $('#filter_school_id, #filter_classroom_id, #status').on('change', function() {
+            $('#status').on('change', function() {
                 reloadTable();
+            });
+
+            // Live search nama siswa with debounce
+            let searchTimeout;
+            $('#search_student_name').on('keyup', function() {
+                clearTimeout(searchTimeout);
+                let val = $(this).val();
+                searchTimeout = setTimeout(function() {
+                    $('#table-report-bill').DataTable().search(val).draw();
+                }, 300);
+            });
+
+            // Accordion Expandable Panel for Student Bill Breakdown
+            $('#table-report-bill tbody').on('click', '.btn-expand-row', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var table = $('#table-report-bill').DataTable();
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+                var rowData = row.data();
+                if (!rowData) return;
+                var studentId = rowData.id;
+                var icon = $(this).find('.toggle-icon');
+                var btn = $(this);
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                    btn.removeClass('active').attr('title', 'Lihat Rincian');
+                    icon.removeClass('fa-minus').addClass('fa-plus');
+                } else {
+                    // Accordion behavior: close other open rows
+                    $('#table-report-bill tbody tr.shown').each(function() {
+                        var otherTr = $(this);
+                        var otherRow = table.row(otherTr);
+                        if (otherRow && otherRow.child.isShown()) {
+                            otherRow.child.hide();
+                            otherTr.removeClass('shown');
+                            otherTr.find('.btn-expand-row').removeClass('active').attr('title', 'Lihat Rincian');
+                            otherTr.find('.toggle-icon').removeClass('fa-minus').addClass('fa-plus');
+                        }
+                    });
+
+                    // Set loading state
+                    var loadingHtml = `
+                        <div class="p-4 my-2 text-center bg-light-subtle rounded-3 border border-gray-200">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            <span class="text-muted fw-semibold fs-7">Memuat rincian tagihan santri...</span>
+                        </div>
+                    `;
+                    row.child(loadingHtml).show();
+                    tr.addClass('shown');
+                    btn.addClass('active').attr('title', 'Tutup Rincian');
+                    icon.removeClass('fa-plus').addClass('fa-minus');
+
+                    // Check cache or fetch via AJAX
+                    if (row.data()._cachedBreakdownHtml) {
+                        row.child(row.data()._cachedBreakdownHtml).show();
+                    } else {
+                        $.ajax({
+                            url: "{{ route('report-bill.show', $billType->id) }}",
+                            type: "GET",
+                            data: {
+                                type: 'student_breakdown',
+                                student_id: studentId
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            success: function(html) {
+                                row.data()._cachedBreakdownHtml = html;
+                                if (row.child.isShown()) {
+                                    row.child(html).show();
+                                }
+                            },
+                            error: function() {
+                                if (row.child.isShown()) {
+                                    row.child(`
+                                        <div class="alert alert-danger p-3 my-2 fs-7 rounded-3 d-flex align-items-center">
+                                            <i class="fas fa-exclamation-circle me-2 text-danger fs-5"></i>
+                                            <span>Gagal memuat rincian tagihan santri. Silakan coba kembali.</span>
+                                        </div>
+                                    `).show();
+                                }
+                            }
+                        });
+                    }
+                }
             });
 
             // Initial call to fetch totals
@@ -274,9 +543,9 @@
 
             $('#btn-export').on('click', function(e) {
                 e.preventDefault();
-                let school_id = $('#filter_school_id').val();
                 let classroom_id = $('#filter_classroom_id').val();
                 let status = $('#status').val();
+                let student_name = $('#search_student_name').val();
                 let start_date = $('#dateRange').data('daterangepicker').startDate.format('YYYY-MM-DD');
                 let end_date = $('#dateRange').data('daterangepicker').endDate.format('YYYY-MM-DD');
 
@@ -284,9 +553,9 @@
                 let params = new URLSearchParams({
                     start_date: start_date,
                     end_date: end_date,
-                    school_id: school_id,
                     classroom_id: classroom_id,
-                    status: status
+                    status: status,
+                    student_name: student_name
                 });
 
                 window.location.href = url + "?" + params.toString();
@@ -362,13 +631,12 @@
             return $('#table-report-bill').DataTable({
                 processing: true,
                 serverSide: false,
-                responsive: true,
+                responsive: false,
                 ordering: true,
                 ajax: {
                     url: "{{ route('report-bill.show', $billType->id) }}",
                     data: function(d) {
                         d.type = 'bill';
-                        d.school_id = $('#filter_school_id').val();
                         d.classroom_id = $('#filter_classroom_id').val();
                         d.status = $('#status').val();
                         d.start_date = start_date;
@@ -384,7 +652,13 @@
                         sortable: false,
                         searchable: false,
                         render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
+                            let rowNumber = meta.row + meta.settings._iDisplayStart + 1;
+                            return `<div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn-expand-row" data-student-id="${row.id}" title="Lihat Rincian">
+                                    <i class="fas fa-plus toggle-icon"></i>
+                                </button>
+                                <span class="text-gray-700 fw-bold fs-7">${rowNumber}</span>
+                            </div>`;
                         }
                     },
                     {
@@ -413,13 +687,11 @@
                     },
                     {
                         data: 'status',
-                        name: 'status',
-                        responsivePriority: -1
+                        name: 'status'
                     },
                     {
                         data: 'action',
                         name: 'action',
-                        responsivePriority: -1,
                         orderable: false,
                         searchable: false
                     }
@@ -432,6 +704,10 @@
             var table = $('#table-report-bill').DataTable();
             table.destroy(); // Destroy DataTable
             table = initializeTable(start_date, end_date); // Reinitialize DataTable
+            let currentSearch = $('#search_student_name').val();
+            if (currentSearch) {
+                table.search(currentSearch).draw();
+            }
             getTotalBill(start_date, end_date); // Fetch totals
         }
 
@@ -443,7 +719,6 @@
                 dataType: 'json',
                 data: {
                     type: 'total',
-                    school_id: $('#filter_school_id').val(),
                     classroom_id: $('#filter_classroom_id').val(),
                     status: $('#status').val(),
                     start_date: start_date, // Kirim parameter tanggal
@@ -477,30 +752,5 @@
                 }
             });
         }
-
-        // Event listener for school filter change
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: {
-                    school_id: school_id
-                },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id +
-                                '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append(
-                            '<option value="">Data tidak ditemukan</option>');
-                    }
-                }
-            });
-        });
     </script>
 @endpush

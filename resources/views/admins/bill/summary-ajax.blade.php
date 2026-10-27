@@ -114,11 +114,14 @@
                                 </div>
                             </div>
 
-                            <div class="mt-4 pt-3 border-top">
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
                                 <a href="{{ route('bill.index', ['student_id' => $student->id]) }}"
-                                    class="btn btn-primary" style="background-color: #4D0C7A; border-color: #4D0C7A;">
-                                    Kembali
+                                    class="btn btn-sm btn-light-primary fw-bold" target="_blank">
+                                    <i class="fas fa-external-link-alt me-1"></i> Buka Halaman Tagihan Siswa
                                 </a>
+                                <button type="button" class="btn btn-sm btn-secondary fw-bold" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i> Tutup
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -384,14 +387,8 @@
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Loading...');
         });
     });
-</script>
 
-
-
-
-
-
-   function changeStatus(billId, status) {
+    function changeStatus(billId, status) {
         var title = status === 'PAID' ? 'Ubah Status Tagihan' : 'Batalkan Pembayaran';
         var text = status === 'PAID' 
             ? 'Apakah Anda yakin ingin mengubah status tagihan ini menjadi LUNAS?' 

@@ -137,14 +137,65 @@ class ReportBillController extends Controller
 
         // Load halaman awal
         $billType = BillType::findOrFail($id);
-        
+        $schoolId = $this->resolveSchoolIdForBillType($billType);
+
+        // Ambil daftar kelas yang ketat milik sekolah/UPT tipe tagihan ini
+        $queryClassrooms = Classroom::query();
+        if ($schoolId) {
+            $queryClassrooms->where('school_id', $schoolId);
+        } else {
+            $allowedSchoolIds = School::hasSchool()->pluck('id')->toArray();
+            if (!empty($allowedSchoolIds)) {
+                $queryClassrooms->whereIn('school_id', $allowedSchoolIds);
+            }
+        }
+        $classrooms = $queryClassrooms->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get(['id', 'name']);
+
         // Optimasi: Select hanya kolom yang dibutuhkan agar ringan
         $schools = School::hasSchool()
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();
 
-        return view('admins.report-bill.show', compact('billType', 'schools'));
+        return view('admins.report-bill.show', compact('billType', 'schools', 'classrooms'));
+    }
+
+    /**
+     * Dapatkan school_id yang valid & ketat untuk tipe tagihan ini
+     */
+    private function resolveSchoolIdForBillType(BillType $billType): ?string
+    {
+        // 1. Cek dari PaymentRateClassroom (konfigurasi tarif paling valid)
+        $schoolId = DB::table('payment_rate_classrooms')
+            ->join('payment_rates', 'payment_rates.id', '=', 'payment_rate_classrooms.payment_rate_id')
+            ->join('classrooms', 'classrooms.id', '=', 'payment_rate_classrooms.classroom_id')
+            ->where('payment_rates.bill_type_id', $billType->id)
+            ->whereNull('payment_rates.deleted_at')
+            ->whereNull('classrooms.deleted_at')
+            ->groupBy('classrooms.school_id')
+            ->orderByRaw('COUNT(*) DESC')
+            ->value('classrooms.school_id');
+
+        if ($schoolId) {
+            return $schoolId;
+        }
+
+        // 2. Cek kecocokan berdasarkan nama jenjang / UPT
+        $name = strtoupper($billType->name);
+        if (preg_match('/\b(MA|ALIYAH)\b/i', $name)) {
+            $school = School::where('type', 'MA')->orWhere('name', 'like', '%ALIYAH%')->first();
+            if ($school) return $school->id;
+        }
+        if (preg_match('/\b(SMP)\b/i', $name)) {
+            $school = School::where('type', 'SMP')->orWhere('name', 'like', '%SMP%')->first();
+            if ($school) return $school->id;
+        }
+        if (preg_match('/\b(PONDOK|PPTQ|SANTRI)\b/i', $name)) {
+            $school = School::where('type', 'PONDOK')->orWhere('name', 'like', '%PONDOK%')->first();
+            if ($school) return $school->id;
+        }
+
+        return null;
     }
 
     /**
@@ -160,6 +211,11 @@ class ReportBillController extends Controller
         // Request untuk kartu summary (Total, Realisasi, Sisa)
         if (request()->type === 'total') {
             return $this->getTotalData($id);
+        }
+
+        // Request untuk rincian tagihan per siswa (Nested Expandable Child Row)
+        if (request()->type === 'student_breakdown') {
+            return $this->getStudentBreakdown($id);
         }
         
         return abort(404);
@@ -205,7 +261,11 @@ class ReportBillController extends Controller
             ->where('bills.bill_type_id', $id);
 
         // 3. Apply Filters
-        if (request()->school_id && request()->school_id != 'null') {
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+        if ($schoolId) {
+            $query->where('classrooms.school_id', $schoolId);
+        } elseif (request()->school_id && request()->school_id != 'null') {
             $query->where('classrooms.school_id', request()->school_id);
         }
 
@@ -241,7 +301,10 @@ class ReportBillController extends Controller
             ->filterColumn('total_unpaid', function(){})
             
             // Format Kolom
-            // Format Kolom
+            ->editColumn('name', function ($row) {
+                $nis = !empty($row->nis) ? '<div class="text-muted fs-8">NIS: ' . e($row->nis) . '</div>' : '';
+                return '<div class="d-flex flex-column"><span class="text-dark fw-bolder">' . e($row->name) . '</span>' . $nis . '</div>';
+            })
             ->addColumn('status', function ($row) {
                 if ($row->current_due_amount > 0) return '<span class="badge badge-light-danger fw-bolder text-danger">Melewati Tempo</span>';
              
@@ -271,7 +334,7 @@ class ReportBillController extends Controller
             })
             
             ->addColumn('action', fn($row) => $this->renderActions($row, $id))
-            ->rawColumns(['status', 'action', 'current_due', 'future_bill', 'type'])
+            ->rawColumns(['name', 'status', 'action', 'current_due', 'future_bill', 'type'])
             ->make(true);
     }
 
@@ -294,7 +357,11 @@ class ReportBillController extends Controller
             ->where('bills.bill_type_id', $id);
 
         // 1. Filter Sekolah (Sekarang pakai alias 'classrooms')
-        if (request()->school_id && request()->school_id != 'null') {
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+        if ($schoolId) {
+             $query->where('classrooms.school_id', $schoolId);
+        } elseif (request()->school_id && request()->school_id != 'null') {
              $query->where('classrooms.school_id', request()->school_id);
         }
 
@@ -356,17 +423,135 @@ class ReportBillController extends Controller
      */
     private function renderActions($row, $billTypeId)
     {
-        // URL Generator manual untuk performa
-        $actionDetail = url("/bill/summary-bill?student_id={$row->id}&bill_type_id={$billTypeId}");
-        
-        // Button HTML
         return "
         <div class='d-flex gap-2 flex-nowrap justify-content-center'>
-            <a href='{$actionDetail}' class='btn btn-primary btn-sm' target='_blank'>Detail</a>
             <button onclick='sendNotification({$row->id}, {$billTypeId})' class='btn btn-icon btn-success btn-sm' data-bs-toggle='tooltip' title='Kirim Tagihan'>
                 <i class='fab fa-whatsapp fs-4'></i>
             </button>
         </div>";
+    }
+
+    /**
+     * Rincian tagihan per siswa untuk nested expandable child row
+     */
+    private function getStudentBreakdown(string $id)
+    {
+        $studentId = request()->student_id;
+        if (!$studentId) {
+            return response()->json(['error' => 'Student ID is required'], 400);
+        }
+
+        $billType = BillType::with('academicYear', 'billItem')->findOrFail($id);
+        $student = Student::with(['classroom.school', 'user'])->findOrFail($studentId);
+
+        // Ambil semua bills untuk siswa & jenis tagihan ini
+        $bills = Bill::with(['transactions.paymentMethod', 'transactions.admin'])
+            ->where('student_id', $student->id)
+            ->where('bill_type_id', $id)
+            ->whereNull('deleted_at')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $currentYear = (int)date('Y');
+        $currentMonth = (int)date('n');
+
+        $items = [];
+        $totalBill = 0;
+        $totalPaid = 0;
+        $totalCurrentDue = 0;
+
+        if ($billType->type === BillType::TYPE_MONTHLY) {
+            $startYear = $billType->academicYear?->start_year ?? $currentYear;
+            $endYear = $billType->academicYear?->end_year ?? ($startYear + 1);
+
+            // Urutan tahun ajaran Indonesia: Juli - Juni
+            $academicMonths = array_merge(range(7, 12), range(1, 6));
+
+            foreach ($academicMonths as $m) {
+                $y = ($m >= 7) ? $startYear : $endYear;
+                $billForMonth = $bills->first(fn($b) => (int)$b->month === (int)$m && (int)$b->year === (int)$y)
+                    ?? $bills->first(fn($b) => (int)$b->month === (int)$m);
+
+                $amount = $billForMonth ? (int)$billForMonth->amount : (int)($billType->billItem->amount ?? 0);
+                if ($amount <= 0 && $bills->isNotEmpty()) {
+                    $amount = (int)$bills->where('amount', '>', 0)->avg('amount');
+                }
+                $paid = $billForMonth ? (int)$billForMonth->paid_amount : 0;
+                $isPaid = $billForMonth && $billForMonth->status === 'PAID';
+
+                $isOverdue = false;
+                $dueAmount = 0;
+                if (!$isPaid) {
+                    if ($y < $currentYear || ($y === $currentYear && $m <= $currentMonth)) {
+                        $isOverdue = true;
+                        $dueAmount = max(0, $amount - $paid);
+                    }
+                }
+
+                $transaction = $billForMonth?->transactions?->first();
+                $paymentMethodName = $transaction?->paymentMethod?->name ?? ($transaction?->payment_type ?? '-');
+                $paidDate = $transaction?->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y') : null;
+
+                $items[] = [
+                    'month_name' => $monthNames[$m] . ' ' . $y,
+                    'month' => $m,
+                    'year' => $y,
+                    'amount' => $amount,
+                    'paid' => $paid,
+                    'due' => $dueAmount,
+                    'is_paid' => $isPaid,
+                    'is_overdue' => $isOverdue,
+                    'payment_method' => $isPaid ? $paymentMethodName : '-',
+                    'paid_date' => $paidDate,
+                    'bill_id' => $billForMonth?->id
+                ];
+
+                $totalBill += $amount;
+                $totalPaid += $paid;
+                $totalCurrentDue += $dueAmount;
+            }
+        } else {
+            // Tipe BEBAS
+            foreach ($bills as $idx => $b) {
+                $amount = (int)$b->amount;
+                $paid = (int)$b->paid_amount;
+                $isPaid = $b->status === 'PAID';
+                $transaction = $b->transactions?->first();
+
+                $items[] = [
+                    'month_name' => $b->name ?? ($billType->name . ' #' . ($idx + 1)),
+                    'month' => $b->month,
+                    'year' => $b->year,
+                    'amount' => $amount,
+                    'paid' => $paid,
+                    'due' => max(0, $amount - $paid),
+                    'is_paid' => $isPaid,
+                    'is_overdue' => false,
+                    'payment_method' => $isPaid ? ($transaction?->paymentMethod?->name ?? 'Tunai') : '-',
+                    'paid_date' => $transaction?->paid_at ? Carbon::parse($transaction->paid_at)->format('d M Y') : null,
+                    'bill_id' => $b->id
+                ];
+
+                $totalBill += $amount;
+                $totalPaid += $paid;
+            }
+        }
+
+        $summary = [
+            'total_bill' => $totalBill,
+            'total_paid' => $totalPaid,
+            'total_unpaid' => max(0, $totalBill - $totalPaid),
+            'total_current_due' => $totalCurrentDue
+        ];
+
+        return view('admins.report-bill.partials.student-breakdown', compact('student', 'billType', 'items', 'summary'));
     }
 
     // public function show(string $id)
@@ -719,15 +904,25 @@ class ReportBillController extends Controller
         }
 
         // 3. Query Students with Bills filtered by this range
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+
         $query = Student::select('students.*', 'classrooms.name as classroom_name')
             ->join('bills', 'bills.student_id', '=', 'students.id')
             ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
             ->where('bills.bill_type_id', $id)
-            ->when(request()->school_id && request()->school_id !== 'null', function ($q) {
-                $q->where('classrooms.school_id', request()->school_id);
+            ->when($schoolId, function ($q) use ($schoolId) {
+                $q->where('classrooms.school_id', $schoolId);
+            }, function ($q) {
+                $q->when(request()->school_id && request()->school_id !== 'null', function ($sub) {
+                    $sub->where('classrooms.school_id', request()->school_id);
+                });
             })
             ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($q) {
                 $q->where('bills.classroom_id', request()->classroom_id);
+            })
+            ->when(request()->student_name, function ($q) {
+                $q->where('students.name', 'like', '%' . request()->student_name . '%');
             })
             ->when(request()->academic_year_id && request()->academic_year_id !== 'null', function ($q) {
                 // Optional: Filter students who strictly have bills linked to this academic_year_id
