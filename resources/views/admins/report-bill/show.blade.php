@@ -561,7 +561,7 @@
             return $('#table-report-bill').DataTable({
                 processing: true,
                 serverSide: false,
-                responsive: true,
+                responsive: false,
                 ordering: true,
                 ajax: {
                     url: "{{ route('report-bill.show', $billType->id) }}",
@@ -617,13 +617,11 @@
                     },
                     {
                         data: 'status',
-                        name: 'status',
-                        responsivePriority: -1
+                        name: 'status'
                     },
                     {
                         data: 'action',
                         name: 'action',
-                        responsivePriority: -1,
                         orderable: false,
                         searchable: false
                     }
