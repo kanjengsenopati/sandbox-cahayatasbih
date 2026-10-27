@@ -226,6 +226,76 @@
         </div>
     </div>
 @endsection
+@push('css')
+    <style>
+        /* Button Expand Row Base Styling */
+        .btn-expand-row {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border-radius: 50%;
+            border: 1.5px solid #dbeafe;
+            background-color: #eff6ff;
+            color: #2563eb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn-expand-row .toggle-icon {
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 900;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        /* Hover State (Default / Closed) */
+        .btn-expand-row:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+            transform: scale(1.08);
+        }
+        .btn-expand-row:hover .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Active / Expanded State */
+        .btn-expand-row.active {
+            background-color: #1e40af;
+            border-color: #1e40af;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.4);
+        }
+        .btn-expand-row.active .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Hover on Active State (Visual cue to collapse) */
+        .btn-expand-row.active:hover {
+            background-color: #dc2626;
+            border-color: #dc2626;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+            transform: scale(1.08);
+        }
+        .btn-expand-row.active:hover .toggle-icon {
+            color: #ffffff;
+        }
+
+        /* Highlight Row when Expanded */
+        #table-report-bill tbody tr.shown > td {
+            background-color: #f8fafc !important;
+            transition: background-color 0.2s ease;
+        }
+    </style>
+@endpush
 @push('js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
@@ -369,8 +439,8 @@
                 if (row.child.isShown()) {
                     row.child.hide();
                     tr.removeClass('shown');
-                    icon.removeClass('fa-minus text-danger').addClass('fa-plus text-primary');
-                    btn.removeClass('btn-light-danger').addClass('btn-light-primary');
+                    btn.removeClass('active').attr('title', 'Lihat Rincian');
+                    icon.removeClass('fa-minus').addClass('fa-plus');
                 } else {
                     // Accordion behavior: close other open rows
                     $('#table-report-bill tbody tr.shown').each(function() {
@@ -379,8 +449,8 @@
                         if (otherRow && otherRow.child.isShown()) {
                             otherRow.child.hide();
                             otherTr.removeClass('shown');
-                            otherTr.find('.toggle-icon').removeClass('fa-minus text-danger').addClass('fa-plus text-primary');
-                            otherTr.find('.btn-expand-row').removeClass('btn-light-danger').addClass('btn-light-primary');
+                            otherTr.find('.btn-expand-row').removeClass('active').attr('title', 'Lihat Rincian');
+                            otherTr.find('.toggle-icon').removeClass('fa-minus').addClass('fa-plus');
                         }
                     });
 
@@ -393,8 +463,8 @@
                     `;
                     row.child(loadingHtml).show();
                     tr.addClass('shown');
-                    icon.removeClass('fa-plus text-primary').addClass('fa-minus text-danger');
-                    btn.removeClass('btn-light-primary').addClass('btn-light-danger');
+                    btn.addClass('active').attr('title', 'Tutup Rincian');
+                    icon.removeClass('fa-plus').addClass('fa-minus');
 
                     // Check cache or fetch via AJAX
                     if (row.data()._cachedBreakdownHtml) {
@@ -584,10 +654,10 @@
                         render: function(data, type, row, meta) {
                             let rowNumber = meta.row + meta.settings._iDisplayStart + 1;
                             return `<div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-icon btn-sm btn-light-primary rounded-circle btn-expand-row" data-student-id="${row.id}" style="width: 22px; height: 22px; padding: 0; min-width: 22px;" title="Lihat Rincian">
-                                    <i class="fas fa-plus fs-9 toggle-icon text-primary"></i>
+                                <button type="button" class="btn-expand-row" data-student-id="${row.id}" title="Lihat Rincian">
+                                    <i class="fas fa-plus toggle-icon"></i>
                                 </button>
-                                <span>${rowNumber}</span>
+                                <span class="text-gray-700 fw-bold fs-7">${rowNumber}</span>
                             </div>`;
                         }
                     },
