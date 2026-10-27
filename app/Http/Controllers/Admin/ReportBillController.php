@@ -137,42 +137,19 @@ class ReportBillController extends Controller
 
         // Load halaman awal
         $billType = BillType::findOrFail($id);
+        $schoolId = $this->resolveSchoolIdForBillType($billType);
 
-        // Ambil daftar kelas yang relevan dengan tipe tagihan ini
-        $classroomIds = Bill::where('bill_type_id', $id)
-            ->whereNotNull('classroom_id')
-            ->distinct()
-            ->pluck('classroom_id');
-
-        if ($classroomIds->isNotEmpty()) {
-            $classrooms = Classroom::whereIn('id', $classroomIds)
-                ->orderByRaw(\App\Helpers\DbCompat::classroomOrder())
-                ->get(['id', 'name']);
+        // Ambil daftar kelas yang ketat milik sekolah/UPT tipe tagihan ini
+        $queryClassrooms = Classroom::query();
+        if ($schoolId) {
+            $queryClassrooms->where('school_id', $schoolId);
         } else {
-            $rateClassroomIds = \App\Models\PaymentRateClassroom::whereHas('paymentRate', function ($q) use ($id) {
-                $q->where('bill_type_id', $id);
-            })->pluck('classroom_id');
-
-            if ($rateClassroomIds->isNotEmpty()) {
-                $classrooms = Classroom::whereIn('id', $rateClassroomIds)
-                    ->orderByRaw(\App\Helpers\DbCompat::classroomOrder())
-                    ->get(['id', 'name']);
-            } else {
-                $schoolType = $billType->school_type;
-                $query = Classroom::query();
-                if ($schoolType) {
-                    $query->whereHas('school', function ($q) use ($schoolType) {
-                        $q->where('type', $schoolType)->orWhere('name', 'like', "%{$schoolType}%");
-                    });
-                } else {
-                    $allowedSchoolIds = School::hasSchool()->pluck('id')->toArray();
-                    if (!empty($allowedSchoolIds)) {
-                        $query->whereIn('school_id', $allowedSchoolIds);
-                    }
-                }
-                $classrooms = $query->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get(['id', 'name']);
+            $allowedSchoolIds = School::hasSchool()->pluck('id')->toArray();
+            if (!empty($allowedSchoolIds)) {
+                $queryClassrooms->whereIn('school_id', $allowedSchoolIds);
             }
         }
+        $classrooms = $queryClassrooms->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get(['id', 'name']);
 
         // Optimasi: Select hanya kolom yang dibutuhkan agar ringan
         $schools = School::hasSchool()
@@ -181,6 +158,44 @@ class ReportBillController extends Controller
             ->get();
 
         return view('admins.report-bill.show', compact('billType', 'schools', 'classrooms'));
+    }
+
+    /**
+     * Dapatkan school_id yang valid & ketat untuk tipe tagihan ini
+     */
+    private function resolveSchoolIdForBillType(BillType $billType): ?string
+    {
+        // 1. Cek dari PaymentRateClassroom (konfigurasi tarif paling valid)
+        $schoolId = DB::table('payment_rate_classrooms')
+            ->join('payment_rates', 'payment_rates.id', '=', 'payment_rate_classrooms.payment_rate_id')
+            ->join('classrooms', 'classrooms.id', '=', 'payment_rate_classrooms.classroom_id')
+            ->where('payment_rates.bill_type_id', $billType->id)
+            ->whereNull('payment_rates.deleted_at')
+            ->whereNull('classrooms.deleted_at')
+            ->groupBy('classrooms.school_id')
+            ->orderByRaw('COUNT(*) DESC')
+            ->value('classrooms.school_id');
+
+        if ($schoolId) {
+            return $schoolId;
+        }
+
+        // 2. Cek kecocokan berdasarkan nama jenjang / UPT
+        $name = strtoupper($billType->name);
+        if (preg_match('/\b(MA|ALIYAH)\b/i', $name)) {
+            $school = School::where('type', 'MA')->orWhere('name', 'like', '%ALIYAH%')->first();
+            if ($school) return $school->id;
+        }
+        if (preg_match('/\b(SMP)\b/i', $name)) {
+            $school = School::where('type', 'SMP')->orWhere('name', 'like', '%SMP%')->first();
+            if ($school) return $school->id;
+        }
+        if (preg_match('/\b(PONDOK|PPTQ|SANTRI)\b/i', $name)) {
+            $school = School::where('type', 'PONDOK')->orWhere('name', 'like', '%PONDOK%')->first();
+            if ($school) return $school->id;
+        }
+
+        return null;
     }
 
     /**
@@ -241,7 +256,11 @@ class ReportBillController extends Controller
             ->where('bills.bill_type_id', $id);
 
         // 3. Apply Filters
-        if (request()->school_id && request()->school_id != 'null') {
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+        if ($schoolId) {
+            $query->where('classrooms.school_id', $schoolId);
+        } elseif (request()->school_id && request()->school_id != 'null') {
             $query->where('classrooms.school_id', request()->school_id);
         }
 
@@ -333,7 +352,11 @@ class ReportBillController extends Controller
             ->where('bills.bill_type_id', $id);
 
         // 1. Filter Sekolah (Sekarang pakai alias 'classrooms')
-        if (request()->school_id && request()->school_id != 'null') {
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+        if ($schoolId) {
+             $query->where('classrooms.school_id', $schoolId);
+        } elseif (request()->school_id && request()->school_id != 'null') {
              $query->where('classrooms.school_id', request()->school_id);
         }
 
@@ -758,12 +781,19 @@ class ReportBillController extends Controller
         }
 
         // 3. Query Students with Bills filtered by this range
+        $billType = BillType::find($id);
+        $schoolId = $billType ? $this->resolveSchoolIdForBillType($billType) : null;
+
         $query = Student::select('students.*', 'classrooms.name as classroom_name')
             ->join('bills', 'bills.student_id', '=', 'students.id')
             ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
             ->where('bills.bill_type_id', $id)
-            ->when(request()->school_id && request()->school_id !== 'null', function ($q) {
-                $q->where('classrooms.school_id', request()->school_id);
+            ->when($schoolId, function ($q) use ($schoolId) {
+                $q->where('classrooms.school_id', $schoolId);
+            }, function ($q) {
+                $q->when(request()->school_id && request()->school_id !== 'null', function ($sub) {
+                    $sub->where('classrooms.school_id', request()->school_id);
+                });
             })
             ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($q) {
                 $q->where('bills.classroom_id', request()->classroom_id);
