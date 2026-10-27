@@ -192,6 +192,11 @@
                         Manajemen PSB (Penerimaan Santri Baru)
                     </h1>
                 </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('psb.sync.index') }}" class="btn btn-sm btn-primary fw-bold">
+                        <i class="fas fa-sync-alt me-1"></i> Sinkronisasi PSB (Database Terpisah)
+                    </a>
+                </div>
             </div>
         </div>
 

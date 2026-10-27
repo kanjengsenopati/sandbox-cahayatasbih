@@ -548,6 +548,11 @@ Route::group(['middleware' => ['auth']], function () {
 
     // PSB Management (Penerimaan Santri Baru)
     Route::prefix('psb')->name('psb.')->group(function () {
+        // Sinkronisasi PSB Database Terpisah
+        Route::get('/sync', [\App\Http\Controllers\Admin\PsbSyncController::class, 'index'])->name('sync.index');
+        Route::post('/sync/pull', [\App\Http\Controllers\Admin\PsbSyncController::class, 'pull'])->name('sync.pull');
+        Route::post('/sync/promote/{id}', [\App\Http\Controllers\Admin\PsbSyncController::class, 'promote'])->name('sync.promote');
+
         // Registration Management
         Route::get('/', [\App\Http\Controllers\Admin\AdminPsbController::class, 'index'])->name('index');
         Route::get('/registrations/{id}', [\App\Http\Controllers\Admin\AdminPsbController::class, 'show'])->name('show');
