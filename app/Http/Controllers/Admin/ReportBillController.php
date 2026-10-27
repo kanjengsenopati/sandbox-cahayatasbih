@@ -137,14 +137,50 @@ class ReportBillController extends Controller
 
         // Load halaman awal
         $billType = BillType::findOrFail($id);
-        
+
+        // Ambil daftar kelas yang relevan dengan tipe tagihan ini
+        $classroomIds = Bill::where('bill_type_id', $id)
+            ->whereNotNull('classroom_id')
+            ->distinct()
+            ->pluck('classroom_id');
+
+        if ($classroomIds->isNotEmpty()) {
+            $classrooms = Classroom::whereIn('id', $classroomIds)
+                ->orderByRaw(\App\Helpers\DbCompat::classroomOrder())
+                ->get(['id', 'name']);
+        } else {
+            $rateClassroomIds = \App\Models\PaymentRateClassroom::whereHas('paymentRate', function ($q) use ($id) {
+                $q->where('bill_type_id', $id);
+            })->pluck('classroom_id');
+
+            if ($rateClassroomIds->isNotEmpty()) {
+                $classrooms = Classroom::whereIn('id', $rateClassroomIds)
+                    ->orderByRaw(\App\Helpers\DbCompat::classroomOrder())
+                    ->get(['id', 'name']);
+            } else {
+                $schoolType = $billType->school_type;
+                $query = Classroom::query();
+                if ($schoolType) {
+                    $query->whereHas('school', function ($q) use ($schoolType) {
+                        $q->where('type', $schoolType)->orWhere('name', 'like', "%{$schoolType}%");
+                    });
+                } else {
+                    $allowedSchoolIds = School::hasSchool()->pluck('id')->toArray();
+                    if (!empty($allowedSchoolIds)) {
+                        $query->whereIn('school_id', $allowedSchoolIds);
+                    }
+                }
+                $classrooms = $query->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get(['id', 'name']);
+            }
+        }
+
         // Optimasi: Select hanya kolom yang dibutuhkan agar ringan
         $schools = School::hasSchool()
             ->select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();
 
-        return view('admins.report-bill.show', compact('billType', 'schools'));
+        return view('admins.report-bill.show', compact('billType', 'schools', 'classrooms'));
     }
 
     /**
@@ -241,7 +277,10 @@ class ReportBillController extends Controller
             ->filterColumn('total_unpaid', function(){})
             
             // Format Kolom
-            // Format Kolom
+            ->editColumn('name', function ($row) {
+                $nis = !empty($row->nis) ? '<div class="text-muted fs-8">NIS: ' . e($row->nis) . '</div>' : '';
+                return '<div class="d-flex flex-column"><span class="text-dark fw-bolder">' . e($row->name) . '</span>' . $nis . '</div>';
+            })
             ->addColumn('status', function ($row) {
                 if ($row->current_due_amount > 0) return '<span class="badge badge-light-danger fw-bolder text-danger">Melewati Tempo</span>';
              
@@ -271,7 +310,7 @@ class ReportBillController extends Controller
             })
             
             ->addColumn('action', fn($row) => $this->renderActions($row, $id))
-            ->rawColumns(['status', 'action', 'current_due', 'future_bill', 'type'])
+            ->rawColumns(['name', 'status', 'action', 'current_due', 'future_bill', 'type'])
             ->make(true);
     }
 
@@ -728,6 +767,9 @@ class ReportBillController extends Controller
             })
             ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($q) {
                 $q->where('bills.classroom_id', request()->classroom_id);
+            })
+            ->when(request()->student_name, function ($q) {
+                $q->where('students.name', 'like', '%' . request()->student_name . '%');
             })
             ->when(request()->academic_year_id && request()->academic_year_id !== 'null', function ($q) {
                 // Optional: Filter students who strictly have bills linked to this academic_year_id

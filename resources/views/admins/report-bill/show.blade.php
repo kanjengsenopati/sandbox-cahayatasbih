@@ -48,16 +48,17 @@
                                 </div>
                             </div>
 
-                            <!-- UPT / School -->
+                            <!-- Cari Nama Siswa -->
                             <div class="col-12 col-md-6 col-xl-3">
-                                <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-2">UPT</label>
-                                <select name="school_id" class="form-select form-select-solid bg-white border"
-                                    id="filter_school_id">
-                                    <option value="">Semua UPT</option>
-                                    @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-2">Cari Nama Siswa</label>
+                                <div class="position-relative">
+                                    <span class="position-absolute top-50 translate-middle-y ms-3 text-gray-400">
+                                        <i class="fa fa-search"></i>
+                                    </span>
+                                    <input type="text" id="search_student_name"
+                                        class="form-control form-control-solid bg-white border ps-10"
+                                        placeholder="Cari Nama Siswa..." autocomplete="off">
+                                </div>
                             </div>
 
                             <!-- Classroom -->
@@ -66,6 +67,11 @@
                                 <select name="classroom_id" class="form-select form-select-solid bg-white border"
                                     id="filter_classroom_id">
                                     <option value="">Semua Kelas</option>
+                                    @if(isset($classrooms))
+                                        @foreach ($classrooms as $classroom)
+                                            <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
 
@@ -195,7 +201,7 @@
                             <thead class="border-bottom border-gray-200 fs-7 fw-bolder">
                                 <tr class="text-start text-gray-400 text-uppercase gs-0">
                                     <th class="ps-4" style="width: 5%">No</th>
-                                    <th class="min-w-150px">Item Pembayaran</th>
+                                    <th class="min-w-150px">Nama Siswa</th>
                                     <th class="min-w-100px">Kelas</th>
                                     <th class="min-w-125px">Total Tagihan</th>
                                     <th class="min-w-125px">Dibayar</th>
@@ -228,8 +234,18 @@
 
 
             // Event listeners for filters
-            $('#filter_school_id, #filter_classroom_id, #status').on('change', function() {
+            $('#filter_classroom_id, #status').on('change', function() {
                 reloadTable();
+            });
+
+            // Live search nama siswa with debounce
+            let searchTimeout;
+            $('#search_student_name').on('keyup', function() {
+                clearTimeout(searchTimeout);
+                let val = $(this).val();
+                searchTimeout = setTimeout(function() {
+                    $('#table-report-bill').DataTable().search(val).draw();
+                }, 300);
             });
 
             // Initial call to fetch totals
@@ -274,9 +290,9 @@
 
             $('#btn-export').on('click', function(e) {
                 e.preventDefault();
-                let school_id = $('#filter_school_id').val();
                 let classroom_id = $('#filter_classroom_id').val();
                 let status = $('#status').val();
+                let student_name = $('#search_student_name').val();
                 let start_date = $('#dateRange').data('daterangepicker').startDate.format('YYYY-MM-DD');
                 let end_date = $('#dateRange').data('daterangepicker').endDate.format('YYYY-MM-DD');
 
@@ -284,9 +300,9 @@
                 let params = new URLSearchParams({
                     start_date: start_date,
                     end_date: end_date,
-                    school_id: school_id,
                     classroom_id: classroom_id,
-                    status: status
+                    status: status,
+                    student_name: student_name
                 });
 
                 window.location.href = url + "?" + params.toString();
@@ -368,7 +384,6 @@
                     url: "{{ route('report-bill.show', $billType->id) }}",
                     data: function(d) {
                         d.type = 'bill';
-                        d.school_id = $('#filter_school_id').val();
                         d.classroom_id = $('#filter_classroom_id').val();
                         d.status = $('#status').val();
                         d.start_date = start_date;
@@ -432,6 +447,10 @@
             var table = $('#table-report-bill').DataTable();
             table.destroy(); // Destroy DataTable
             table = initializeTable(start_date, end_date); // Reinitialize DataTable
+            let currentSearch = $('#search_student_name').val();
+            if (currentSearch) {
+                table.search(currentSearch).draw();
+            }
             getTotalBill(start_date, end_date); // Fetch totals
         }
 
@@ -443,7 +462,6 @@
                 dataType: 'json',
                 data: {
                     type: 'total',
-                    school_id: $('#filter_school_id').val(),
                     classroom_id: $('#filter_classroom_id').val(),
                     status: $('#status').val(),
                     start_date: start_date, // Kirim parameter tanggal
@@ -477,30 +495,5 @@
                 }
             });
         }
-
-        // Event listener for school filter change
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: {
-                    school_id: school_id
-                },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id +
-                                '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append(
-                            '<option value="">Data tidak ditemukan</option>');
-                    }
-                }
-            });
-        });
     </script>
 @endpush
