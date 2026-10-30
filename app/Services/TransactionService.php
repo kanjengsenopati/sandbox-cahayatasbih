@@ -312,22 +312,35 @@ class TransactionService
                         }
                     } else {
                         // For SALDO/SAVING: Auto-cancel previous pending transactions of the same type
-                        $pendingTransactions = Transaction::where('student_id', $request->student_id)
-                            ->where('type', $type)
-                            ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
-                            ->get();
+                        // Guard: Jangan auto-cancel transaksi pending jika request baru adalah penarikan tunai (WITHDRAW)
+                        // Dan hanya batalkan transaksi pending yang memang sudah expired atau lewat 2 jam tanpa bukti bayar
+                        $isWithdrawal = ($request->type ?? '') === SaldoHistory::TYPE_WITHDRAW;
 
-                        foreach ($pendingTransactions as $pendingTx) {
-                            $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
+                        if (!$isWithdrawal) {
+                            $pendingTransactions = Transaction::where('student_id', $request->student_id)
+                                ->where('type', $type)
+                                ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
+                                ->whereDoesntHave('activeProof')
+                                ->where(function($q) {
+                                    $q->where('created_at', '<=', Carbon::now()->subHours(2))
+                                      ->orWhere(function($sub) {
+                                          $sub->whereNotNull('expiry_time')->where('expiry_time', '<=', Carbon::now());
+                                      });
+                                })
+                                ->get();
 
-                            if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
-                                $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
-                                foreach ($details as $detail) {
-                                    if ($detail->saldo_history_id) {
-                                        \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
-                                    }
-                                    if ($detail->saving_history_id) {
-                                        \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
+                            foreach ($pendingTransactions as $pendingTx) {
+                                $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
+
+                                if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
+                                    $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
+                                    foreach ($details as $detail) {
+                                        if ($detail->saldo_history_id) {
+                                            \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
+                                        }
+                                        if ($detail->saving_history_id) {
+                                            \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
+                                        }
                                     }
                                 }
                             }
@@ -739,7 +752,11 @@ class TransactionService
                     $saldoHistory = null;
                     if ($mainDetail && $mainDetail->saldoHistory) {
                         $saldoHistory = $mainDetail->saldoHistory;
+                        if (method_exists($saldoHistory, 'trashed') && $saldoHistory->trashed()) {
+                            $saldoHistory->restore();
+                        }
                         $saldoHistory->update([
+                            'deleted_at' => null,
                             'status' => SaldoHistory::STATUS_SUCCESS,
                             'amount' => $mainAmount > 0 ? $mainAmount : $saldoHistory->amount,
                             'type' => SaldoHistory::TYPE_IN,
@@ -749,7 +766,8 @@ class TransactionService
                         ]);
                     } else {
                         // Fallback: cari apakah ada record PENDING milik santri yang sesuai rentang waktu transaksi
-                        $pendingHistory = SaldoHistory::where('student_id', $student->id)
+                        $pendingHistory = SaldoHistory::withTrashed()
+                            ->where('student_id', $student->id)
                             ->where('status', SaldoHistory::STATUS_PENDING)
                             ->where('type', SaldoHistory::TYPE_IN)
                             ->where('description', 'not like', '%Kode Unik%')
@@ -765,7 +783,11 @@ class TransactionService
 
                         if ($pendingHistory) {
                             $saldoHistory = $pendingHistory;
+                            if (method_exists($saldoHistory, 'trashed') && $saldoHistory->trashed()) {
+                                $saldoHistory->restore();
+                            }
                             $saldoHistory->update([
+                                'deleted_at' => null,
                                 'status' => SaldoHistory::STATUS_SUCCESS,
                                 'amount' => $mainAmount > 0 ? $mainAmount : $pendingHistory->amount,
                                 'usage' => SaldoHistory::USAGE_TOPUP,
