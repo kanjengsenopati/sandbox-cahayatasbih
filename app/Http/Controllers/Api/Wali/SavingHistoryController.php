@@ -43,17 +43,23 @@ class SavingHistoryController extends BaseWaliApiController
 
                 $tx = \App\Models\Transaction::withTrashed()->with('activeProof')->find($transactionDetail->transaction_id);
                 
-                // If transaction is missing, cancelled, rejected, or deleted by admin
-                if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->status === \App\Models\Transaction::STATUS_REJECTED || $tx->trashed()) {
+                // If transaction is missing, cancelled, or deleted by admin
+                if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed()) {
                     $history->delete();
                     $histories->forget($key);
                 } else {
-                    // Sync REJECTED status from proof
-                    if ($history->status === SavingHistory::STATUS_PENDING && $tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
-                        $history->update(['status' => SavingHistory::STATUS_FAILED]);
-                        $history->status = SavingHistory::STATUS_FAILED;
+                    // Sync real status from linked transaction
+                    if ($tx->status === \App\Models\Transaction::STATUS_PENDING_CONFIRMATION) {
+                        $history->status = \App\Models\Transaction::STATUS_PENDING_CONFIRMATION;
+                    } elseif (in_array($tx->status, [\App\Models\Transaction::STATUS_PENDING_PAYMENT, \App\Models\Transaction::STATUS_PENDING])) {
+                        $history->status = \App\Models\Transaction::STATUS_PENDING_PAYMENT;
+                    } elseif ($tx->status === \App\Models\Transaction::STATUS_PAID) {
+                        $history->status = 'SUCCESS';
+                    } elseif ($tx->status === \App\Models\Transaction::STATUS_REJECTED || ($tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED)) {
+                        $history->status = 'REJECTED';
+                        $history->rejection_note = $tx->activeProof?->note ?? 'Bukti pembayaran ditolak oleh Petugas Tabungan';
                     }
-                    
+
                     // Attach note if it exists
                     if ($tx->activeProof && $tx->activeProof->note) {
                         $history->note = $tx->activeProof->note;

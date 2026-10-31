@@ -28,6 +28,18 @@ export const Route = createFileRoute("/pembayaran/$payId")({
 const fmtIDR = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
+const getVerifierTitle = (type?: string) => {
+  if (type === "SALDO") return "Petugas Pondok Mart";
+  if (type === "SAVING") return "Petugas Tabungan";
+  return "bendahara sekolah";
+};
+
+const getVerifierShortTitle = (type?: string) => {
+  if (type === "SALDO") return "Petugas Pondok Mart";
+  if (type === "SAVING") return "Petugas Tabungan";
+  return "Bendahara";
+};
+
 function PembayaranPage() {
   const { payId } = useParams({ from: "/pembayaran/$payId" });
   const navigate = useNavigate();
@@ -56,6 +68,7 @@ function PembayaranPage() {
     return {
       id: p.id,
       payment_code: p.payment_code,
+      type: p.type,
       billName: p.type === "BILL" ? "Pembayaran Tagihan" : p.type === "SALDO" ? "Topup Saldo" : "Pembayaran Tabungan",
       amount: Number(p.pay_amount),
       baseAmount: Number(p.pay_amount) - Number(p.unique_payment || 0),
@@ -187,7 +200,13 @@ function PembayaranPage() {
         {/* Header — legacy style */}
         <div className="px-6 pt-12 pb-3 flex items-center gap-3">
           <button
-            onClick={() => navigate({ to: "/tagihan" })}
+            onClick={() => {
+              if (tx?.type === "SALDO") {
+                navigate({ to: "/dashboard" });
+              } else {
+                navigate({ to: "/tagihan" });
+              }
+            }}
             className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-foreground active:scale-95 transition"
           >
             <ArrowLeft size={18} />
@@ -204,7 +223,7 @@ function PembayaranPage() {
 
         {/* Status banner */}
         <div className="px-5 pt-3">
-          <StatusBanner status={tx.status} hasProof={!!tx.proofUrl} note={tx.note} />
+          <StatusBanner status={tx.status} hasProof={!!tx.proofUrl} note={tx.note} type={tx.type} />
         </div>
 
         {/* Info batas waktu 2 jam saat menunggu unggah bukti */}
@@ -367,7 +386,7 @@ function PembayaranPage() {
                 <div className="rounded-[24px] bg-destructive/10 border border-destructive/20 p-3 flex items-start gap-2.5 text-destructive text-sm text-left">
                   <XCircle size={16} className="mt-0.5 shrink-0" />
                   <div>
-                    <span className="font-bold block mb-0.5">Alasan Penolakan Bendahara:</span>
+                    <span className="font-bold block mb-0.5">Alasan Penolakan {getVerifierShortTitle(tx.type)}:</span>
                     <span>{tx.note}</span>
                   </div>
                 </div>
@@ -566,11 +585,16 @@ function StatusBanner({
   status,
   hasProof,
   note,
+  type,
 }: {
   status: "approved" | "rejected" | "pending" | "cancelled";
   hasProof?: boolean;
   note?: string;
+  type?: string;
 }) {
+  const verifierTitle = getVerifierTitle(type);
+  const verifierShortTitle = getVerifierShortTitle(type);
+
   if (status === "approved") {
     return (
       <div className="rounded-[24px] border border-emerald-200/80 bg-gradient-to-r from-emerald-50 to-teal-50/60 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-start gap-3.5">
@@ -587,7 +611,7 @@ function StatusBanner({
             Pembayaran Disetujui
           </Text.H2>
           <Text.Body className="text-[12px] text-emerald-900/80 mt-1 leading-snug">
-            Transaksi sudah diverifikasi dan disetujui oleh bendahara.
+            Transaksi sudah diverifikasi dan disetujui oleh {verifierTitle}.
           </Text.Body>
         </div>
       </div>
@@ -610,7 +634,9 @@ function StatusBanner({
             Transaksi Dibatalkan
           </Text.H2>
           <Text.Body className="text-[12px] text-slate-600 mt-1 leading-snug">
-            Transaksi ini telah dibatalkan. Tagihan telah di-rollback dan dapat dipilih kembali di halaman Tagihan.
+            {type === "SALDO"
+              ? "Transaksi topup saldo ini telah dibatalkan."
+              : "Transaksi ini telah dibatalkan. Tagihan telah di-rollback dan dapat dipilih kembali di halaman Tagihan."}
           </Text.Body>
         </div>
       </div>
@@ -630,10 +656,10 @@ function StatusBanner({
             </span>
           </div>
           <Text.H2 className="text-[15px] font-extrabold text-red-950 leading-tight">
-            Pembayaran Ditolak Bendahara
+            Pembayaran Ditolak {verifierShortTitle}
           </Text.H2>
           <Text.Body className="text-[12px] text-red-900/80 mt-1 leading-snug">
-            Bukti transfer ditolak oleh bendahara sekolah.
+            Bukti transfer ditolak oleh {verifierTitle}.
           </Text.Body>
           {note && (
             <div className="mt-2.5 p-3 rounded-[16px] bg-red-100/90 border border-red-200 text-xs text-red-950">
@@ -682,10 +708,10 @@ function StatusBanner({
           </span>
         </div>
         <Text.H2 className="text-[15px] font-extrabold text-blue-950 leading-tight">
-          Menunggu Verifikasi Bendahara
+          Menunggu Verifikasi {verifierShortTitle}
         </Text.H2>
         <Text.Body className="text-[12px] text-blue-900/80 mt-1 leading-snug">
-          Bukti transfer telah diterima. Mohon menunggu konfirmasi dan verifikasi oleh bendahara sekolah.
+          Bukti transfer telah diterima. Mohon menunggu konfirmasi dan verifikasi oleh {verifierTitle}.
         </Text.Body>
       </div>
     </div>
@@ -828,7 +854,7 @@ function ProofUploader({
           <span>
             Setelah unggah, status menjadi{" "}
             <span className="font-bold text-foreground">Pending</span> dan
-            menunggu verifikasi petugas.
+            menunggu verifikasi {getVerifierTitle(tx.type)}.
           </span>
         </div>
       )}
