@@ -52,7 +52,7 @@ class DashboardController extends BaseWaliApiController
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
-            $saldoHistories = \App\Models\SaldoHistory::with('transaction_details')->where('student_id', $activeStudent->id)
+            $saldoHistories = \App\Models\SaldoHistory::with('transaction_details.transaction.activeProof')->where('student_id', $activeStudent->id)
                 ->where(function ($q) {
                     $q->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
                       ->orWhereDoesntHave('pointOfSaleTransaction');
@@ -72,16 +72,43 @@ class DashboardController extends BaseWaliApiController
                     ) {
                         return true; // reject dari collection, tapi TIDAK mengubah data
                     }
+
+                    // Lewati transaksi yang sudah dibatalkan atau dihapus
+                    $tx = $item->transaction_details->first()?->transaction;
+                    if ($tx && ($tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed())) {
+                        return true;
+                    }
+
                     return false;
                 })
                 ->map(function($item) {
                     $rawDate = $item->created_at;
+                    $tx = $item->transaction_details->first()?->transaction;
+                    $status = $item->status;
+                    $rejectionNote = null;
+
+                    if ($tx) {
+                        if ($tx->status === \App\Models\Transaction::STATUS_PENDING_CONFIRMATION) {
+                            $status = \App\Models\Transaction::STATUS_PENDING_CONFIRMATION;
+                        } elseif (in_array($tx->status, [\App\Models\Transaction::STATUS_PENDING_PAYMENT, \App\Models\Transaction::STATUS_PENDING])) {
+                            $status = \App\Models\Transaction::STATUS_PENDING_PAYMENT;
+                        } elseif ($tx->status === \App\Models\Transaction::STATUS_PAID) {
+                            $status = \App\Models\Transaction::STATUS_PAID;
+                        } elseif ($tx->status === \App\Models\Transaction::STATUS_REJECTED) {
+                            $status = \App\Models\Transaction::STATUS_REJECTED;
+                            $rejectionNote = $tx->activeProof?->note ?? 'Bukti pembayaran ditolak oleh Petugas Pondok Mart';
+                        } elseif ($tx->status === \App\Models\Transaction::STATUS_CANCELLED) {
+                            $status = \App\Models\Transaction::STATUS_CANCELLED;
+                        }
+                    }
+
                     return [
-                        'id' => $item->transaction_details->first()?->transaction_id ?? $item->id,
+                        'id' => $tx ? $tx->id : ($item->transaction_details->first()?->transaction_id ?? $item->id),
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
-                        'status' => $item->status,
+                        'status' => $status,
+                        'rejection_note' => $rejectionNote,
                         'created_at' => $rawDate ? \Carbon\Carbon::parse($rawDate)->toIso8601String() : null,
                         'category' => $item->type === 'IN' ? 'TOPUP' : ($item->type === 'WITHDRAW' ? 'WITHDRAW' : 'SALDO')
                     ];
