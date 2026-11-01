@@ -175,9 +175,15 @@ class ReportBillStudentController extends Controller
         return DataTables::of($data)
             ->addColumn('amount', fn($row) => 'Rp' . number_format($row->amount, 0, ',', '.'))
             ->addColumn('bill_type', fn($row) => $row->billType?->name ?? '-')
-            ->addColumn('status', fn($row) => $row->status == 'UNPAID'
-                ? '<span class="badge badge-danger">Belum Lunas</span>'
-                : '<span class="badge badge-success">Lunas</span>')
+            ->addColumn('status', function ($row) {
+                if ($row->status === Bill::STATUS_PAID || ((int)$row->paid_amount >= (int)$row->amount && (int)$row->amount > 0)) {
+                    return '<span class="badge badge-success">Lunas</span>';
+                } elseif ($row->status === Bill::STATUS_PARTIAL || ((int)$row->paid_amount > 0 && (int)$row->paid_amount < (int)$row->amount)) {
+                    return '<span class="badge badge-warning text-white">Sebagian</span>';
+                } else {
+                    return '<span class="badge badge-danger">Belum Lunas</span>';
+                }
+            })
             ->addColumn('student', function ($row) {
                 $studentName = $row->student?->name ?? '-';
                 $className   = $row->classroom?->name ?? '-';
@@ -240,7 +246,7 @@ class ReportBillStudentController extends Controller
                 DB::raw('SUM(bills.paid_amount) as total_paid'),
                 DB::raw('SUM(bills.amount - bills.paid_amount) as total_unpaid'),
                 DB::raw('SUM(CASE
-                    WHEN bills.status = "UNPAID" AND (
+                    WHEN bills.status IN ("UNPAID", "PARTIAL") AND (
                         bills.year < ' . date('Y') . ' OR (bills.year = ' . date('Y') . ' AND bills.month <= ' . date('n') . ')
                     ) THEN bills.amount - bills.paid_amount
                     ELSE 0
@@ -369,13 +375,14 @@ class ReportBillStudentController extends Controller
             SUM(bills.paid_amount) as total_paid,
             SUM(bills.amount - bills.paid_amount) as total_unpaid,
             SUM(CASE
-                WHEN bills.status = ? AND (
+                WHEN bills.status IN (?, ?) AND (
                     bills.year < ? OR (bills.year = ? AND bills.month <= ?)
                 ) THEN bills.amount - bills.paid_amount
                 ELSE 0
             END) as total_current_due
         ', [
             Bill::STATUS_UNPAID,
+            Bill::STATUS_PARTIAL,
             date('Y'), date('Y'), date('n'),
         ])->first();
 
@@ -507,13 +514,22 @@ class ReportBillStudentController extends Controller
         $bills = $query->with(['billType', 'academicYear'])->get();
 
         $details = $bills->map(function ($bill) use ($studentId) {
-            $monthName = self::MONTH_NAMES[$bill->month] ?? 'Invalid';
-            $statusBadge = $bill->status == 'UNPAID'
-                ? '<span class="badge badge-light-danger fs-8">Belum Lunas</span>'
-                : '<span class="badge badge-light-success fs-8">Lunas</span>';
+            $monthName = self::MONTH_NAMES[$bill->month] ?? ($bill->month == 0 ? 'Bebas' : 'Invalid');
+            
+            $remaining = max(0, (int)$bill->amount - (int)$bill->paid_amount);
+            $isPaid = $bill->status === Bill::STATUS_PAID || ($remaining <= 0 && (int)$bill->amount > 0);
+            $isPartial = $bill->status === Bill::STATUS_PARTIAL || ((int)$bill->paid_amount > 0 && $remaining > 0);
+
+            if ($isPaid) {
+                $statusBadge = '<span class="badge badge-light-success fs-8">Lunas</span>';
+            } elseif ($isPartial) {
+                $statusBadge = '<span class="badge badge-light-warning text-warning fs-8">Sebagian (Kurang Rp ' . number_format($remaining, 0, ',', '.') . ')</span>';
+            } else {
+                $statusBadge = '<span class="badge badge-light-danger fs-8">Belum Lunas</span>';
+            }
 
             $actionBtn = '';
-            if ($bill->status == 'UNPAID') {
+            if (!$isPaid && $remaining > 0) {
                 $payUrl = route('bill.index') . '?student_id=' . $studentId . '&academic_year_id=' . $bill->academic_year_id;
                 $actionBtn = '<a href="' . $payUrl . '" class="btn btn-sm btn-primary py-1 px-3" target="_blank">Bayar</a>';
             }
@@ -521,7 +537,7 @@ class ReportBillStudentController extends Controller
             return [
                 'bill_type'     => $bill->billType?->name ?? '-',
                 'academic_year' => $bill->academicYear?->name ?? '-',
-                'period'        => $monthName . ' ' . $bill->year,
+                'period'        => ($bill->month == 0 ? 'Bebas / ' . $bill->year : $monthName . ' ' . $bill->year),
                 'amount'        => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
                 'status'        => $statusBadge,
                 'action'        => $actionBtn,
