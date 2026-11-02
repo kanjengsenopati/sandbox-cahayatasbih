@@ -35,11 +35,18 @@ jobs:
             mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
             chmod -R 775 bootstrap/cache storage 2>/dev/null || true
             
-            # Switch to PHP 8.3 to avoid PHP 8.4 deprecation failures in older Laravel packages
-            PHP_BIN="/www/server/php/83/bin/php"
-            if [ ! -x "$PHP_BIN" ]; then
-                PHP_BIN="$(command -v php || true)"
+            # Auto-detect aaPanel PHP binary that has pdo_mysql enabled (8.4 / 8.3 / 8.2 / 8.1)
+            PHP_BIN=""
+            for candidate in /www/server/php/84/bin/php /www/server/php/83/bin/php /www/server/php/82/bin/php /www/server/php/81/bin/php "$(command -v php || true)"; do
+                if [ -n "$candidate" ] && [ -x "$candidate" ] && "$candidate" -m 2>/dev/null | grep -qi '^pdo_mysql$'; then
+                    PHP_BIN="$candidate"
+                    break
+                fi
+            done
+            if [ -z "$PHP_BIN" ]; then
+                PHP_BIN="/www/server/php/84/bin/php"
             fi
+            echo "Using PHP_BIN: $PHP_BIN"
             
             # Set queue to database BEFORE caching config
             sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' .env || true
@@ -76,9 +83,11 @@ jobs:
                 }
             "
             
-            if ! /etc/init.d/php-fpm-83 reload 2>/dev/null; then
-                /etc/init.d/php-fpm-83 restart 2>/dev/null || true
-            fi
+            for fpm_ver in 84 83 82; do
+                if [ -x "/etc/init.d/php-fpm-${fpm_ver}" ]; then
+                    /etc/init.d/php-fpm-${fpm_ver} reload 2>/dev/null || /etc/init.d/php-fpm-${fpm_ver} restart 2>/dev/null || true
+                fi
+            done
             
             if ! nginx -s reload 2>/dev/null; then
                 systemctl reload nginx 2>/dev/null || true

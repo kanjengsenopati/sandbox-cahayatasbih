@@ -1,4 +1,4 @@
-﻿name: Run Artisan Command on VPS
+name: Run Artisan Command on VPS
 
 on:
   workflow_dispatch:
@@ -22,9 +22,15 @@ jobs:
             set -Eeuo pipefail
             cd /www/wwwroot/sim.cahayatasbih.or.id
             
-            PHP_BIN="/www/server/php/83/bin/php"
-            if [ ! -x "$PHP_BIN" ]; then
-                PHP_BIN="$(command -v php)"
+            PHP_BIN=""
+            for candidate in /www/server/php/84/bin/php /www/server/php/83/bin/php /www/server/php/82/bin/php /www/server/php/81/bin/php "$(command -v php || true)"; do
+                if [ -n "$candidate" ] && [ -x "$candidate" ] && "$candidate" -m 2>/dev/null | grep -qi '^pdo_mysql$'; then
+                    PHP_BIN="$candidate"
+                    break
+                fi
+            done
+            if [ -z "$PHP_BIN" ]; then
+                PHP_BIN="/www/server/php/84/bin/php"
             fi
             
             echo "Running: php artisan ${{ github.event.inputs.command }}"
