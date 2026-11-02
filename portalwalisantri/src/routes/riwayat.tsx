@@ -24,7 +24,6 @@ import {
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSaldoHistories, fetchPosTransactions } from "@/lib/api";
-import { Text } from "@/components/Text";
 import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/riwayat")({
@@ -220,9 +219,6 @@ function RiwayatPage() {
     });
   }, [allTxs, type, cat, q]);
 
-  const totalIn = filtered.filter((t) => t.type === "in" && (!t.status || t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID")).reduce((a, b) => a + b.amount, 0);
-  const totalOut = filtered.filter((t) => t.type === "out" && (!t.status || t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID")).reduce((a, b) => a + b.amount, 0);
-
   // Group by date label
   const groups = useMemo(() => {
     const m = new Map<string, Tx[]>();
@@ -236,8 +232,6 @@ function RiwayatPage() {
   const activeFilters =
     (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "today" ? 1 : 0) + (q ? 1 : 0);
 
-  const activeDateLabel = DATE_FILTERS.find((d) => d.id === range)?.label || "Hari Ini";
-
   // Enabled Skeleton loading below by removing fullscreen loader block
 
   return (
@@ -245,7 +239,7 @@ function RiwayatPage() {
       <div className="relative w-full max-w-md min-h-screen bg-background pb-24">
         {/* Hero */}
         <div
-          className="relative px-6 pt-12 pb-20 rounded-b-[2rem] overflow-hidden bg-gradient-hero"
+          className="relative px-6 pt-12 pb-16 rounded-b-[2rem] overflow-hidden bg-gradient-hero"
           style={{ background: "var(--gradient-hero)" }}
         >
           <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
@@ -270,37 +264,10 @@ function RiwayatPage() {
               <p className="text-base font-bold text-white">Transaksi Santri</p>
             </div>
           </div>
-
-          <div className="relative mt-5 grid grid-cols-2 gap-3">
-            <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50/95 to-teal-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-emerald-100/80 flex flex-col justify-center h-[82px]">
-              <div className="relative z-10">
-                <Text.Label className="block text-slate-600 font-semibold tracking-tight normal-case capitalize leading-tight">
-                  Pemasukan {activeDateLabel}
-                </Text.Label>
-                <Text.Amount className="block text-emerald-700 leading-none mt-1.5">{fmt(totalIn)}</Text.Amount>
-              </div>
-              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-emerald-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="14" fill="currentColor" />
-                <circle cx="32" cy="16" r="14" fill="currentColor" />
-              </svg>
-            </div>
-            <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-red-50/95 to-rose-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100/80 flex flex-col justify-center h-[82px]">
-              <div className="relative z-10">
-                <Text.Label className="block text-slate-600 font-semibold tracking-tight normal-case capitalize leading-tight">
-                  Pengeluaran {activeDateLabel}
-                </Text.Label>
-                <Text.Amount className="block text-red-700 leading-none mt-1.5">{fmt(Math.abs(totalOut))}</Text.Amount>
-              </div>
-              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-red-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="14" fill="currentColor" />
-                <circle cx="32" cy="16" r="14" fill="currentColor" />
-              </svg>
-            </div>
-          </div>
         </div>
 
         {/* Search + filters */}
-        <div className="px-6 -mt-12 relative z-10">
+        <div className="px-6 -mt-11 relative z-10">
           <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-card)] p-4">
             <div className="flex items-center gap-2 bg-secondary rounded-2xl px-4 py-3 border border-transparent focus-within:border-primary transition">
               <Search size={16} className="text-primary" />
