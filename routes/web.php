@@ -196,6 +196,12 @@ Route::get('/laporpak', [App\Http\Controllers\Public\LaporPakPublicController::c
 Route::post('/laporpak', [App\Http\Controllers\Public\LaporPakPublicController::class, 'store'])->name('public.laporpak.store');
 Route::get('/laporpak/search-students', [App\Http\Controllers\Public\LaporPakPublicController::class, 'searchStudents'])->name('public.laporpak.search-students');
 
+// Public Standalone Cek Saldo Kiosk (Barcode Scanner)
+Route::get('/cek-saldo', [App\Http\Controllers\Public\CekSaldoPublicController::class, 'index'])->name('public.cek-saldo.index');
+Route::post('/cek-saldo/scan', [App\Http\Controllers\Public\CekSaldoPublicController::class, 'scan'])
+    ->middleware('throttle:60,1')
+    ->name('public.cek-saldo.scan');
+
 
 //auth
 Route::get('/', [AuthController::class, 'index'])->name('home');
