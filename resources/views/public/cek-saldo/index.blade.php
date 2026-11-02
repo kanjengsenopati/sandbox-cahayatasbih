@@ -15,7 +15,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -23,40 +23,46 @@
     <style>
         [x-cloak] { display: none !important; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* Typography System Wrappers */
-        .text-h1 { font-size: 22px; font-weight: 700; color: #0f172a; line-height: 1.25; }
-        .text-h2 { font-size: 16px; font-weight: 600; color: #1e293b; line-height: 1.35; }
-        .text-amount { font-size: 18px; font-weight: 700; color: #7c3aed; }
-        .text-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; }
-        .text-body { font-size: 14px; font-weight: 500; color: #475569; }
-        .text-caption { font-size: 12px; font-weight: 400; font-style: italic; color: #94a3b8; }
+        /* Typography System Wrappers (Darkened for High Kiosk Contrast & Legibility) */
+        .text-h1 { font-size: 22px; font-weight: 800; color: #0f172a; line-height: 1.25; letter-spacing: -0.015em; }
+        .text-h2 { font-size: 17px; font-weight: 700; color: #0f172a; line-height: 1.35; }
+        .text-amount { font-size: 18px; font-weight: 800; color: #7c3aed; }
+        .text-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #334155; }
+        .text-body { font-size: 15px; font-weight: 600; color: #334155; }
+        .text-caption { font-size: 13px; font-weight: 600; font-style: italic; color: #475569; }
 
         /* Prominent Display Scales for Kiosk Readability */
         .prominent-student-name {
-            font-size: clamp(1.65rem, 3.2vw, 2.45rem);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(1.75rem, 3.2vw, 2.65rem);
             font-weight: 800;
             color: #0f172a;
             line-height: 1.15;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.025em;
         }
         .prominent-subidentity {
-            font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(1.1rem, 1.85vw, 1.45rem);
             line-height: 1.35;
         }
         .prominent-saldo-amount {
-            font-size: clamp(2.75rem, 6.2vw, 4.75rem);
-            font-weight: 900;
-            color: #7c3aed;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(3rem, 6.5vw, 5.25rem);
+            font-weight: 800;
+            color: #6d28d9;
             line-height: 1.05;
             letter-spacing: -0.03em;
+            font-variant-numeric: tabular-nums;
         }
         .prominent-limit-amount {
-            font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(1.45rem, 2.5vw, 2rem);
             font-weight: 800;
             line-height: 1.2;
+            font-variant-numeric: tabular-nums;
         }
 
         @keyframes scanLine {
@@ -68,7 +74,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 antialiased selection:bg-violet-600 selection:text-white flex flex-col">
+<body class="bg-slate-100 min-h-screen text-slate-900 antialiased selection:bg-violet-600 selection:text-white flex flex-col">
 
     <div
         x-data="cekSaldoKiosk()"
@@ -77,8 +83,8 @@
         class="w-full min-h-screen flex flex-col justify-between"
     >
         <!-- STICKY HEADER GLASSMORPHISM -->
-        <header class="sticky top-0 z-30 backdrop-blur-md bg-white/80 px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        <header class="sticky top-0 z-30 backdrop-blur-md bg-white/85 px-5 md:px-8 lg:px-12 py-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div class="w-full max-w-[1600px] mx-auto flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3.5">
                     <div class="w-12 h-12 rounded-[24px] bg-violet-600/10 flex items-center justify-center shrink-0">
                         <img
@@ -101,7 +107,7 @@
 
                 <!-- Top-Right Action Cluster: Scanner Active Badge + Full Screen Toggle -->
                 <div class="flex items-center gap-2.5">
-                    <span class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-[24px] bg-emerald-600/10 text-emerald-600 text-label">
+                    <span class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-[24px] bg-emerald-600/10 !text-emerald-700 text-label">
                         <span class="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
                         <span>Scanner Aktif</span>
                     </span>
@@ -110,8 +116,8 @@
                         type="button"
                         @click.stop="toggleFullscreen()"
                         :title="isFullscreen ? 'Keluar dari Mode Layar Penuh (Esc)' : 'Aktifkan Mode Layar Penuh Kiosk (Sembunyikan Address Bar)'"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-[24px] transition shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
-                        :class="isFullscreen ? 'bg-violet-600 text-white' : 'bg-slate-100 hover:bg-violet-600/10 text-slate-700 hover:text-violet-600'"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-[24px] transition shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                        :class="isFullscreen ? 'bg-violet-600 text-white' : 'bg-slate-200/80 hover:bg-violet-600/15 text-slate-800 hover:text-violet-700'"
                     >
                         <!-- Icon Maximize (when not fullscreen) -->
                         <svg x-show="!isFullscreen" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
@@ -133,17 +139,17 @@
             </div>
         </header>
 
-        <!-- MAIN CONTAINER (SAFE AREA px-5) -->
-        <main class="flex-1 flex flex-col justify-center px-5 py-6 md:py-10">
-            <div class="w-full max-w-4xl mx-auto space-y-5">
+        <!-- MAIN CONTAINER (STRETCHED RESPONSIVELY LEFT, RIGHT & TOP) -->
+        <main class="flex-1 flex flex-col justify-start px-5 md:px-8 lg:px-12 pt-4 pb-6">
+            <div class="w-full max-w-[1600px] mx-auto space-y-4">
 
                 <!-- BARCODE SCANNER INPUT CARD (ALWAYS ACTIVE & READY LIKE POS KASIR) -->
-                <div class="rounded-[24px] bg-white p-5 md:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div class="rounded-[24px] bg-white p-4 md:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                     <form @submit.prevent="submitScan()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <div class="relative flex-1">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <!-- Lucide ScanBarcode Icon (18px, stroke 2px, text-slate-400) -->
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                                <!-- Lucide ScanBarcode Icon (18px, stroke 2px, darkened for visibility) -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600">
                                     <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
                                     <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
                                     <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
@@ -163,7 +169,7 @@
                                 autocomplete="off"
                                 autofocus
                                 placeholder="Tempelkan / Scan Barcode Kartu Santri pada alat scanner..."
-                                class="w-full pl-11 pr-10 py-3.5 rounded-[24px] bg-slate-50 text-body text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-600/30 focus:bg-white transition"
+                                class="w-full pl-11 pr-10 py-3.5 rounded-[24px] bg-slate-100/90 text-body !text-slate-900 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-600/40 focus:bg-white transition"
                             >
                             <!-- Loading Spinner inside Input -->
                             <div x-show="isLoading" x-cloak class="absolute inset-y-0 right-0 pr-4 flex items-center">
@@ -179,9 +185,9 @@
                             <button
                                 type="button"
                                 @click.stop="resetKiosk()"
-                                class="w-full sm:w-auto px-5 py-3.5 rounded-[24px] bg-slate-100 hover:bg-slate-200/80 text-body flex items-center justify-center gap-2 transition"
+                                class="w-full sm:w-auto px-5 py-3.5 rounded-[24px] bg-slate-200/80 hover:bg-slate-300/80 text-body !text-slate-800 flex items-center justify-center gap-2 transition"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-700">
                                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                                     <path d="M3 3v5h5"/>
                                 </svg>
@@ -222,7 +228,7 @@
                     x-transition:enter="transition ease-out duration-300"
                     x-transition:enter-start="opacity-0 scale-95"
                     x-transition:enter-end="opacity-100 scale-100"
-                    class="rounded-[24px] bg-white p-8 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center"
+                    class="rounded-[24px] bg-white p-8 md:p-14 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center"
                 >
                     <div class="relative w-28 h-28 mx-auto mb-6 rounded-[24px] bg-violet-600/10 flex items-center justify-center overflow-hidden">
                         <!-- Animated Laser Line -->
@@ -239,14 +245,14 @@
                         </svg>
                     </div>
 
-                    <span class="text-label !text-violet-600 block mb-2">Siap Memindai Kartu</span>
+                    <span class="text-label !text-violet-700 block mb-2">Siap Memindai Kartu</span>
                     <h2 class="prominent-student-name mb-3">Silakan Scan Kartu Santri Anda</h2>
-                    <p class="text-body max-w-lg mx-auto">
+                    <p class="text-body max-w-xl mx-auto">
                         Arahkan barcode pada <strong>Kartu Santri</strong> ke alat scanner. Informasi <strong>Nama</strong>, <strong>NIS</strong>, <strong>Kelas</strong>, dan <strong>Nominal Saldo</strong> akan tampil secara otomatis.
                     </p>
 
-                    <div class="mt-8 inline-flex items-center gap-2.5 px-4 py-2 rounded-[24px] bg-slate-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+                    <div class="mt-8 inline-flex items-center gap-2.5 px-4 py-2.5 rounded-[24px] bg-slate-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
                         </svg>
                         <span class="text-caption !not-italic">Kode kartu terenkripsi &bull; Layar otomatis di-reset setelah 15 detik</span>
@@ -259,7 +265,7 @@
                         x-transition:enter="transition ease-out duration-300"
                         x-transition:enter-start="opacity-0 translate-y-3"
                         x-transition:enter-end="opacity-100 translate-y-0"
-                        class="space-y-5"
+                        class="space-y-4"
                     >
                         <!-- CARD PERINGATAN JIKA KARTU DIBLOKIR / DILAPORKAN KENDALA -->
                         <template x-if="student.is_card_reported || student.is_blocked">
@@ -281,15 +287,15 @@
                         </template>
 
                         <!-- MAIN PROMINENT RESULT CARD -->
-                        <div class="rounded-[24px] bg-white p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                        <div class="rounded-[24px] bg-white p-6 md:p-8 lg:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
                             <!-- Top-Right Action & Status Cluster -->
-                            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
                                 <div class="flex items-center gap-2">
                                     <span class="text-label">Identitas Santri Terverifikasi</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <template x-if="!student.is_card_reported && !student.is_blocked">
-                                        <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[24px] bg-emerald-600/10 text-emerald-600 text-label">
+                                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[24px] bg-emerald-600/10 !text-emerald-700 text-label">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M20 6 9 17l-5-5"/>
                                             </svg>
@@ -297,7 +303,7 @@
                                         </span>
                                     </template>
                                     <template x-if="student.is_card_reported || student.is_blocked">
-                                        <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[24px] bg-red-600/10 text-red-600 text-label">
+                                        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-[24px] bg-red-600/10 !text-red-600 text-label">
                                             <span>Kartu Terkunci</span>
                                         </span>
                                     </template>
@@ -305,7 +311,7 @@
                             </div>
 
                             <!-- STUDENT IDENTITY SECTION: ALIGNED VERTICALLY WITH AVATAR -->
-                            <div class="flex flex-col sm:flex-row items-center gap-5 md:gap-6 pb-6 border-b border-slate-100 text-center sm:text-left">
+                            <div class="flex flex-col sm:flex-row items-center gap-5 md:gap-6 pb-6 border-b border-slate-200/80 text-center sm:text-left">
                                 <!-- Avatar Siswa -->
                                 <div class="w-20 h-20 md:w-24 md:h-24 rounded-[24px] bg-violet-600/10 flex items-center justify-center overflow-hidden shrink-0">
                                     <img
@@ -323,15 +329,15 @@
                                     <h2 class="prominent-student-name break-words" x-text="student.name"></h2>
 
                                     <!-- Satu Baris Teks Tegas NIS & Kelas Tepat di Bawah Nama -->
-                                    <div class="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-x-3.5 gap-y-1 prominent-subidentity">
+                                    <div class="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 prominent-subidentity">
                                         <div class="inline-flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-semibold">NIS:</span>
-                                            <span class="text-slate-800 font-extrabold tracking-tight" x-text="student.nis"></span>
+                                            <span class="text-slate-600 font-bold">NIS:</span>
+                                            <span class="text-slate-900 font-extrabold tracking-tight" x-text="student.nis"></span>
                                         </div>
-                                        <span class="text-slate-300 font-bold select-none">&bull;</span>
+                                        <span class="text-slate-400 font-extrabold select-none">&bull;</span>
                                         <div class="inline-flex items-center gap-1.5">
-                                            <span class="text-slate-400 font-semibold">Kelas:</span>
-                                            <span class="text-slate-800 font-extrabold" x-text="student.class_name + (student.school_name ? ' — ' + student.school_name : '')"></span>
+                                            <span class="text-slate-600 font-bold">Kelas:</span>
+                                            <span class="text-slate-900 font-extrabold" x-text="student.class_name + (student.school_name ? ' — ' + student.school_name : '')"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -339,39 +345,39 @@
 
                             <!-- BOTTOM DENSITY: HERO NOMINAL SALDO (CENTERED & MODERN PURPLE) -->
                             <div class="pt-6">
-                                <div class="rounded-[24px] bg-violet-600/10 px-6 py-8 md:py-11 flex flex-col items-center justify-center text-center">
-                                    <span class="text-label !text-violet-600 block mb-2">Nominal Saldo Saat Ini</span>
+                                <div class="rounded-[24px] bg-violet-600/10 px-6 py-9 md:py-12 flex flex-col items-center justify-center text-center">
+                                    <span class="text-label !text-violet-800 block mb-2.5">Nominal Saldo Saat Ini</span>
                                     <div class="text-amount prominent-saldo-amount" x-text="student.saldo_formatted"></div>
                                 </div>
 
                                 <!-- DAILY LIMIT QUOTA SECTION (IF STUDENT HAS ACTIVE DAILY LIMIT) -->
                                 <template x-if="student.effective_daily_limit > 0">
-                                    <div class="mt-4 rounded-[24px] bg-slate-50 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div class="mt-4 rounded-[24px] bg-slate-100/80 px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                                         <div class="flex items-center gap-3.5 text-center sm:text-left">
-                                            <div class="w-10 h-10 rounded-[24px] bg-violet-600/10 flex items-center justify-center shrink-0">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-violet-600">
+                                            <div class="w-11 h-11 rounded-[24px] bg-violet-600/15 flex items-center justify-center shrink-0">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-violet-700">
                                                     <circle cx="12" cy="12" r="10"/>
                                                     <polyline points="12 6 12 12 16 14"/>
                                                 </svg>
                                             </div>
                                             <div>
-                                                <span class="text-label block">Sisa Kuota Belanja Hari Ini</span>
+                                                <span class="text-label block mb-0.5">Sisa Kuota Belanja Hari Ini</span>
                                                 <div
                                                     class="prominent-limit-amount"
-                                                    :class="student.remaining_limit > 0 ? 'text-violet-600' : 'text-red-600'"
+                                                    :class="student.remaining_limit > 0 ? 'text-violet-700' : 'text-red-600'"
                                                     x-text="student.remaining_limit_formatted"
                                                 ></div>
                                             </div>
                                         </div>
 
-                                        <div class="flex items-center gap-6 text-center sm:text-right">
+                                        <div class="flex items-center gap-7 text-center sm:text-right">
                                             <div>
-                                                <span class="text-label block">Terpakai Hari Ini</span>
+                                                <span class="text-label block mb-0.5">Terpakai Hari Ini</span>
                                                 <span class="text-h2" x-text="student.total_this_day_formatted"></span>
                                             </div>
-                                            <div class="h-8 w-px bg-slate-200"></div>
+                                            <div class="h-9 w-px bg-slate-300"></div>
                                             <div>
-                                                <span class="text-label block">Batas Limit Harian</span>
+                                                <span class="text-label block mb-0.5">Batas Limit Harian</span>
                                                 <span class="text-h2" x-text="student.effective_daily_limit_formatted"></span>
                                             </div>
                                         </div>
@@ -380,11 +386,11 @@
 
                                 <!-- AUTO-RESET PROGRESS BAR (15 SECONDS) -->
                                 <div class="mt-5">
-                                    <div class="flex items-center justify-between mb-1.5">
-                                        <span class="text-caption !not-italic">Layar otomatis kembali ke mode siap scan dalam <strong class="text-slate-600" x-text="countdown + ' detik'"></strong></span>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-caption !not-italic">Layar otomatis kembali ke mode siap scan dalam <strong class="text-slate-900 font-extrabold" x-text="countdown + ' detik'"></strong></span>
                                         <span class="text-caption">Scan kartu lain untuk langsung mengganti</span>
                                     </div>
-                                    <div class="w-full h-2 rounded-[24px] bg-slate-100 overflow-hidden">
+                                    <div class="w-full h-2.5 rounded-[24px] bg-slate-200 overflow-hidden">
                                         <div
                                             class="h-full bg-violet-600 transition-all duration-1000 ease-linear rounded-[24px]"
                                             :style="'width: ' + ((countdown / maxCountdown) * 100) + '%'"
@@ -400,7 +406,7 @@
         </main>
 
         <!-- FOOTER -->
-        <footer class="px-5 py-4 text-center">
+        <footer class="px-5 py-3.5 text-center">
             <span class="text-caption !not-italic">&copy; {{ date('Y') }} PPTQ Cahaya Tasbih &bull; Sistem Informasi Manajemen &amp; POS Santri</span>
         </footer>
     </div>
