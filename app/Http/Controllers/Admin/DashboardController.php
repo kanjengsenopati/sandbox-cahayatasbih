@@ -374,16 +374,16 @@ class DashboardController extends Controller
                     ->pluck('total_amount', 'date_only')
                     ->toArray();
 
-                // Query daily Bill Transactions PAID over last 12 months
-                $billTxDailyRows = DB::table('transactions')
-                    ->join('students', 'students.id', '=', 'transactions.student_id')
-                    ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                // Query daily Bill Transactions PAID over last 12 months (Scoped by Academic Year, School & Active Students)
+                $billTxDailyRows = (clone $billBaseQuery)
+                    ->join('transaction_details', 'transaction_details.bill_id', '=', 'bills.id')
+                    ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
+                    ->whereNull('transaction_details.deleted_at')
                     ->whereNull('transactions.deleted_at')
                     ->where('transactions.status', Transaction::STATUS_PAID)
                     ->where('transactions.type', Transaction::TYPE_BILL)
                     ->where('transactions.created_at', '>=', $start12Months)
-                    ->when(!empty($scopedSchoolIds), fn($q) => $q->whereIn('classrooms.school_id', $scopedSchoolIds), fn($q) => $q->whereRaw('1 = 0'))
-                    ->selectRaw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as date_only, COALESCE(SUM(transactions.pay_amount), 0) as total_amount')
+                    ->selectRaw('DATE(COALESCE(transactions.paid_at, transactions.created_at)) as date_only, COALESCE(SUM(CASE WHEN transaction_details.amount > 0 THEN transaction_details.amount ELSE bills.paid_amount END), 0) as total_amount')
                     ->groupBy('date_only')
                     ->pluck('total_amount', 'date_only')
                     ->toArray();
@@ -467,6 +467,28 @@ class DashboardController extends Controller
 
                 // Calculate period-specific cash inflow
                 $now = Carbon::now();
+                $currentMonthNum = (int) $now->month;
+                $currentMonthRow = $monthlyBillsRaw->get($currentMonthNum);
+                $targetBulanIni = (int) ($currentMonthRow->target_amount ?? 0);
+                $realisasiTagihanBulanIni = (int) ($currentMonthRow->paid_amount ?? 0);
+                $sisaTagihanBulanIni = max(0, $targetBulanIni - $realisasiTagihanBulanIni);
+                $persenCapaianBulanIni = $targetBulanIni > 0 ? round(($realisasiTagihanBulanIni / $targetBulanIni) * 100, 1) : 0;
+
+                // Hitung item tagihan khusus bulan berjalan
+                $currentMonthItems = (clone $billBaseQuery)
+                    ->where('bills.month', $currentMonthNum)
+                    ->selectRaw("
+                        COUNT(bills.id) as total_bills,
+                        SUM(CASE WHEN bills.status = 'PAID' THEN 1 ELSE 0 END) as paid_bills,
+                        SUM(CASE WHEN bills.status = 'PARTIAL' THEN 1 ELSE 0 END) as partial_bills,
+                        SUM(CASE WHEN bills.status = 'UNPAID' THEN 1 ELSE 0 END) as unpaid_bills
+                    ")->first();
+
+                $totalBillsCurrentMonth = (int) ($currentMonthItems->total_bills ?? 0);
+                $paidBillsCurrentMonth = (int) ($currentMonthItems->paid_bills ?? 0);
+                $partialBillsCurrentMonth = (int) ($currentMonthItems->partial_bills ?? 0);
+                $unpaidBillsCurrentMonth = (int) ($currentMonthItems->unpaid_bills ?? 0);
+
                 $pembayaranPeriode = 0;
                 $saldoMasukPeriode = 0;
                 $tabunganMasukPeriode = 0;
@@ -505,17 +527,46 @@ class DashboardController extends Controller
                     $tabunganMasukPeriode = (int) ($savingMonthlyMap[$thisMonthKey] ?? 0);
                 }
 
+                $isMonthOnly = $selectedPeriod === 'bulan_ini';
+
                 $biSummary = [
-                    'target_pembayaran' => $targetPembayaran,
+                    // Target Pembayaran: Dinamis (Bulan Ini vs 1 Tahun)
+                    'target_pembayaran' => $isMonthOnly ? $targetBulanIni : $targetPembayaran,
+                    'target_pembayaran_all' => $targetPembayaran,
+                    'target_bulan_ini' => $targetBulanIni,
+
+                    // Realisasi Kas Masuk (Card 2)
                     'realisasi_pembayaran' => $selectedPeriod === 'semua' ? $realisasiPembayaran : $pembayaranPeriode,
                     'realisasi_pembayaran_all' => $realisasiPembayaran,
-                    'sisa_tunggakan' => $sisaTunggakan,
+                    'realisasi_tagihan_bulan_ini' => $realisasiTagihanBulanIni,
+
+                    // Sisa Tunggakan: Dinamis (Bulan Ini vs 1 Tahun)
+                    'sisa_tunggakan' => $isMonthOnly ? $sisaTagihanBulanIni : $sisaTunggakan,
+                    'sisa_tunggakan_all' => $sisaTunggakan,
+                    'sisa_tunggakan_bulan_ini' => $sisaTagihanBulanIni,
+
+                    // Persentase Card 1, Card 2 & Card 3
+                    'target_percentage' => $isMonthOnly ? $persenCapaianBulanIni : $realisasiPercentage,
                     'realisasi_percentage' => $targetPembayaran > 0 ? round((($selectedPeriod === 'semua' ? $realisasiPembayaran : $pembayaranPeriode) / $targetPembayaran) * 100, 1) : 0,
                     'realisasi_percentage_all' => $realisasiPercentage,
-                    'total_bill_items' => (int) ($billTotals->total_bills ?? 0),
-                    'paid_bill_items' => (int) ($billTotals->paid_bills ?? 0),
-                    'partial_bill_items' => (int) ($billTotals->partial_bills ?? 0),
-                    'unpaid_bill_items' => (int) ($billTotals->unpaid_bills ?? 0),
+                    'persen_capaian_bulan_ini' => $persenCapaianBulanIni,
+
+                    // Metrik Chart 1 (Dinamis: Target, Realisasi & % Capaian)
+                    'chart_target' => $isMonthOnly ? $targetBulanIni : $targetPembayaran,
+                    'chart_realisasi' => $isMonthOnly ? $realisasiTagihanBulanIni : $realisasiPembayaran,
+                    'chart_percentage' => $isMonthOnly ? $persenCapaianBulanIni : $realisasiPercentage,
+
+                    // Items Tagihan (Dinamis)
+                    'total_bill_items' => $isMonthOnly ? $totalBillsCurrentMonth : (int) ($billTotals->total_bills ?? 0),
+                    'paid_bill_items' => $isMonthOnly ? $paidBillsCurrentMonth : (int) ($billTotals->paid_bills ?? 0),
+                    'partial_bill_items' => $isMonthOnly ? $partialBillsCurrentMonth : (int) ($billTotals->partial_bills ?? 0),
+                    'unpaid_bill_items' => $isMonthOnly ? $unpaidBillsCurrentMonth : (int) ($billTotals->unpaid_bills ?? 0),
+                    'total_bill_items_all' => (int) ($billTotals->total_bills ?? 0),
+                    'paid_bill_items_all' => (int) ($billTotals->paid_bills ?? 0),
+                    'partial_bill_items_all' => (int) ($billTotals->partial_bills ?? 0),
+                    'unpaid_bill_items_all' => (int) ($billTotals->unpaid_bills ?? 0),
+
+                    // Kas Masuk Breakdown
                     'pembayaran_hari_ini' => (int) ($billTxDailyRows[$todayKey] ?? 0),
                     'pembayaran_bulan_ini' => (int) ($billTxMonthlyMap[$thisMonthKey] ?? 0),
                     'pembayaran_periode' => $pembayaranPeriode,
@@ -1244,20 +1295,40 @@ class DashboardController extends Controller
                 ],
                 'biSummary' => [
                     'target_pembayaran' => 0,
+                    'target_pembayaran_all' => 0,
+                    'target_bulan_ini' => 0,
                     'realisasi_pembayaran' => 0,
+                    'realisasi_pembayaran_all' => 0,
+                    'realisasi_tagihan_bulan_ini' => 0,
                     'sisa_tunggakan' => 0,
+                    'sisa_tunggakan_all' => 0,
+                    'sisa_tunggakan_bulan_ini' => 0,
+                    'target_percentage' => 0,
                     'realisasi_percentage' => 0,
+                    'realisasi_percentage_all' => 0,
+                    'persen_capaian_bulan_ini' => 0,
+                    'chart_target' => 0,
+                    'chart_realisasi' => 0,
+                    'chart_percentage' => 0,
                     'total_bill_items' => 0,
                     'paid_bill_items' => 0,
                     'partial_bill_items' => 0,
                     'unpaid_bill_items' => 0,
+                    'total_bill_items_all' => 0,
+                    'paid_bill_items_all' => 0,
+                    'partial_bill_items_all' => 0,
+                    'unpaid_bill_items_all' => 0,
                     'pembayaran_hari_ini' => 0,
                     'pembayaran_bulan_ini' => 0,
+                    'pembayaran_periode' => 0,
                     'saldo_masuk_hari_ini' => 0,
                     'saldo_masuk_bulan_ini' => 0,
+                    'saldo_masuk_periode' => 0,
+                    'saldo_masuk_badge' => 'Top-Up Bulan Ini',
                     'saldo_masuk_12_bulan' => 0,
                     'saldo_mengendap' => 0,
                     'tabungan_masuk_bulan_ini' => 0,
+                    'tabungan_masuk_periode' => 0,
                     'tabungan_mengendap' => 0,
                 ],
                 'billTrendChart' => [
