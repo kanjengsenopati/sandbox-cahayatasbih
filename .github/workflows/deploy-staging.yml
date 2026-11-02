@@ -52,7 +52,7 @@ jobs:
                 COMPOSER_BIN="$(command -v composer || true)"
             fi
             
-            "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+            COMPOSER_ALLOW_SUPERUSER=1 "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --ignore-platform-reqs
             
             "$PHP_BIN" artisan migrate --force
             "$PHP_BIN" artisan config:cache
