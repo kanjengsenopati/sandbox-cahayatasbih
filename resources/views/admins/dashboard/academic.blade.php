@@ -287,13 +287,29 @@
 @php
     $summary = $biSummary ?? [
         'target_pembayaran' => 0,
+        'target_pembayaran_all' => 0,
+        'target_bulan_ini' => 0,
         'realisasi_pembayaran' => 0,
+        'realisasi_pembayaran_all' => 0,
+        'realisasi_tagihan_bulan_ini' => 0,
         'sisa_tunggakan' => 0,
+        'sisa_tunggakan_all' => 0,
+        'sisa_tunggakan_bulan_ini' => 0,
+        'target_percentage' => 0,
         'realisasi_percentage' => 0,
+        'realisasi_percentage_all' => 0,
+        'persen_capaian_bulan_ini' => 0,
+        'chart_target' => 0,
+        'chart_realisasi' => 0,
+        'chart_percentage' => 0,
         'total_bill_items' => 0,
         'paid_bill_items' => 0,
         'partial_bill_items' => 0,
         'unpaid_bill_items' => 0,
+        'total_bill_items_all' => 0,
+        'paid_bill_items_all' => 0,
+        'partial_bill_items_all' => 0,
+        'unpaid_bill_items_all' => 0,
         'pembayaran_hari_ini' => 0,
         'pembayaran_bulan_ini' => 0,
         'saldo_masuk_hari_ini' => 0,
@@ -364,7 +380,7 @@
                         </div>
                     </div>
                     <div class="mt-1 mb-3">
-                        <x-text.caption class="mb-1 text-nowrap d-block">Periode TA {{ $activeAcademicYearName ?? '-' }}</x-text.caption>
+                        <x-text.caption class="mb-1 text-nowrap d-block">{{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Periode TA ' . ($activeAcademicYearName ?? '-') : 'Target Tagihan ' . ($periodLabel ?? 'Bulan Ini') }}</x-text.caption>
                         <div>
                             <span class="badge tint-primary rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
                                 {{ number_format($summary['total_bill_items']) }} Tagihan
@@ -377,7 +393,7 @@
                         <x-text.amount class="amount-lg amount-primary text-nowrap d-block">Rp {{ number_format($summary['target_pembayaran'], 0, ',', '.') }}</x-text.amount>
                     </div>
                     <div class="w-100 rounded-pill mb-2" style="height: 6px; background-color: #f1f5f9;">
-                        <div class="rounded-pill" style="height: 6px; width: {{ min(100, $summary['realisasi_percentage']) }}%; background-color: #2563EB;"></div>
+                        <div class="rounded-pill" style="height: 6px; width: {{ min(100, $summary['target_percentage'] ?? $summary['realisasi_percentage']) }}%; background-color: #2563EB;"></div>
                     </div>
                     <div class="d-flex flex-column gap-1.5 pt-1">
                         <div class="bi-smooth-badge-row">
@@ -413,7 +429,7 @@
                     </div>
                     <div class="mt-1 mb-3">
                         <x-text.caption class="mb-1 text-nowrap d-block">
-                            {{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Akumulasi Tagihan Terbayar' : 'Realisasi ' . ($periodLabel ?? 'Bulan Ini') }}
+                            {{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Total Kas Masuk (Semua Periode)' : 'Total Kas Masuk ' . ($periodLabel ?? 'Bulan Ini') }}
                         </x-text.caption>
                         <div>
                             <span class="badge tint-emerald rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
@@ -435,7 +451,7 @@
                             </span>
                         </div>
                         <div class="bi-smooth-badge-row">
-                            <x-text.caption class="text-nowrap" style="color: #64748b;">{{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Bulan Ini:' : ($periodLabel ?? 'Bulan Ini') . ':' }}</x-text.caption>
+                            <x-text.caption class="text-nowrap" style="color: #64748b;">{{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Total Kas Masuk:' : 'Kas Masuk ' . ($periodLabel ?? 'Bulan Ini') . ':' }}</x-text.caption>
                             <span class="badge rounded-pill px-2.5 py-0.5 fw-bold" style="background-color: rgba(16, 185, 129, 0.14); color: #047857; font-size: 11px;">
                                 Rp {{ number_format($summary['pembayaran_periode'] ?? $summary['pembayaran_bulan_ini'], 0, ',', '.') }}
                             </span>
@@ -460,10 +476,10 @@
                         </div>
                     </div>
                     <div class="mt-1 mb-3">
-                        <x-text.caption class="mb-1 text-nowrap d-block">Piutang Santri Belum Lunas</x-text.caption>
+                        <x-text.caption class="mb-1 text-nowrap d-block">{{ ($selectedPeriod ?? 'bulan_ini') === 'semua' ? 'Akumulasi Piutang Santri' : 'Sisa Tagihan ' . ($periodLabel ?? 'Bulan Ini') }}</x-text.caption>
                         <div>
                             <span class="badge tint-red rounded-pill px-2.5 py-0.5 fw-bold text-nowrap" style="font-size: 11px;">
-                                {{ max(0, round(100 - ($summary['realisasi_percentage_all'] ?? $summary['realisasi_percentage']), 1)) }}% Outstanding
+                                {{ max(0, round(100 - ($summary['target_percentage'] ?? ($summary['realisasi_percentage_all'] ?? $summary['realisasi_percentage'])), 1)) }}% Outstanding
                             </span>
                         </div>
                     </div>
@@ -650,10 +666,10 @@
                     </div>
                     <div class="action-cluster">
                         <span class="badge tint-primary rounded-pill px-3 py-1.5 fw-bold" style="font-size: 11px;">
-                            Target: Rp {{ number_format($summary['target_pembayaran'], 0, ',', '.') }}
+                            Target: Rp {{ number_format($summary['chart_target'] ?? $summary['target_pembayaran'], 0, ',', '.') }}
                         </span>
                         <span class="badge tint-emerald rounded-pill px-3 py-1.5 fw-bold" style="font-size: 11px;">
-                            Realisasi: Rp {{ number_format($summary['realisasi_pembayaran'], 0, ',', '.') }}
+                            Realisasi: Rp {{ number_format($summary['chart_realisasi'] ?? $summary['realisasi_pembayaran'], 0, ',', '.') }}
                         </span>
                     </div>
                 </div>
@@ -677,7 +693,7 @@
                             <x-text.caption class="fst-normal fw-bold text-dark ms-1">% Capaian</x-text.caption>
                         </span>
                     </div>
-                    <x-text.caption>Rasio Global: <strong style="color: #10B981;">{{ $summary['realisasi_percentage'] }}%</strong></x-text.caption>
+                    <x-text.caption>{{ ($selectedPeriod ?? 'bulan_ini') === 'bulan_ini' ? 'Capaian Bulan Berjalan:' : 'Rasio Global TA:' }} <strong style="color: #10B981;">{{ $summary['chart_percentage'] ?? $summary['realisasi_percentage'] }}%</strong></x-text.caption>
                 </div>
             </div>
         </div>
