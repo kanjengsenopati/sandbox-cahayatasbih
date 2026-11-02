@@ -435,9 +435,15 @@ class StudentBarcodeController extends Controller
         }
 
         $dns1d = new DNS1D;
-        // Native high-resolution C128 barcode (w=12px per module, h=220px ~ 630 DPI print quality, zero interpolation blur)
-        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128', 12, 220);
+        // Generate C128 pada resolusi dasar lalu normalisasi ke ukuran slot kartu santri
+        // (6.5 cm x 0.9 cm => 245 x 34 px). Jangan menaikkan modul width ($w), karena
+        // DNS1D mengalikan jumlah modul (17 digit = 145 modul) sehingga lebar gambar meledak.
+        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 30);
         $imageData = base64_decode($barcodeImage);
+
+        $image = Image::make($imageData);
+        $image->resize(245, 34);
+        $imageData = (string) $image->encode('png');
 
         $rawName = $student->nis ?: $student->name;
         $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.png';
