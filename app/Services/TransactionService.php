@@ -347,18 +347,28 @@ class TransactionService
                             $realBillMap[$bId] = self::ensureBillRecord($studentId, $bId);
                         }
 
-                        $existingBills = Bill::withTrashed()->whereIn('id', array_values($realBillMap))->get()->keyBy('id');
+                        $existingBills = Bill::withTrashed()->with('billType')->whereIn('id', array_values($realBillMap))->get()->keyBy('id');
+                        $forceLunas = strtoupper((string) ($request->payment_option ?? '')) === 'LUNAS';
 
                         $detailsToInsert = [];
+                        $resolvedTotalPayAmount = 0;
                         $now = now();
                         foreach ($rawBillIds as $billId) {
                             $realBillId = $realBillMap[$billId];
                             $rawCustom = $customAmounts[$billId] ?? null;
                             $customAmount = $rawCustom !== null ? intval(preg_replace('/[^0-9]/', '', (string)$rawCustom)) : null;
                             $billObj = $existingBills->get($realBillId);
-                            $amountToSave = ($customAmount !== null && $customAmount > 0)
-                                ? $customAmount
-                                : ($billObj ? max(0, $billObj->amount - $billObj->paid_amount) : 0);
+                            $remainingAmount = $billObj ? max(0, (int) $billObj->amount - (int) $billObj->paid_amount) : 0;
+                            $isFreeInputType = strtoupper($billObj?->billType?->payment_input_type ?? 'FIXED') === 'FREE';
+
+                            // Hardening: Hanya izinkan nominal cicilan (custom_amounts) jika BillType bertipe FREE dan bukan mode LUNAS
+                            if ($isFreeInputType && !$forceLunas && $customAmount !== null && $customAmount > 0) {
+                                $amountToSave = $remainingAmount > 0 ? min($customAmount, $remainingAmount) : $customAmount;
+                            } else {
+                                $amountToSave = $remainingAmount;
+                            }
+
+                            $resolvedTotalPayAmount += $amountToSave;
 
                             $detailsToInsert[] = [
                                 'id' => \Illuminate\Support\Str::uuid()->toString(),
@@ -372,6 +382,10 @@ class TransactionService
 
                         if (!empty($detailsToInsert)) {
                             TransactionDetail::insert($detailsToInsert);
+                        }
+
+                        if ($resolvedTotalPayAmount > 0 && (int) $transaction->pay_amount !== $resolvedTotalPayAmount) {
+                            $transaction->update(['pay_amount' => $resolvedTotalPayAmount]);
                         }
                     } elseif (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_SALDO || ($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_SAVING) {
                         $rawAmount = $request->amount ?? $transaction->pay_amount;

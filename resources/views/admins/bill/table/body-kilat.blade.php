@@ -559,12 +559,21 @@
                 document.querySelectorAll('input[name="bill_ids[]"]').forEach(input => input.remove());
 
                 // Cek apakah ada tagihan dengan tipe Cicilan (FREE) yang dipilih
-                const hasFreeBill = Array.from(selectedCheckboxes).some(cb => (cb.getAttribute('data-payment-input-type') || 'FIXED') === 'FREE');
+                const hasFreeBill = Array.from(selectedCheckboxes).some(
+                    cb => (cb.getAttribute('data-payment-input-type') || 'FIXED').toUpperCase() === 'FREE'
+                );
 
-                // Set payment option: jika ada tagihan Cicilan, otomatis pilih ANGSUR agar kasir bisa ketik nominal bebas langsung
+                // Hardening opsi Tipe Pembayaran (#payment-option):
+                // - Jika semua tagihan Fix Amount (FIXED), hanya tampilkan opsi "Lunas" (opsi "Angsur" dihapus dari DOM).
+                // - Jika ada tagihan Nominal Bebas (FREE), tampilkan keduanya ("Lunas" & "Angsur") dengan default "Lunas".
                 const paymentOption = document.getElementById('payment-option');
                 if (paymentOption) {
-                    paymentOption.value = hasFreeBill ? 'ANGSUR' : 'LUNAS';
+                    if (hasFreeBill) {
+                        paymentOption.innerHTML = '<option value="LUNAS">Lunas</option><option value="ANGSUR">Angsur</option>';
+                    } else {
+                        paymentOption.innerHTML = '<option value="LUNAS">Lunas</option>';
+                    }
+                    paymentOption.value = 'LUNAS';
                 }
 
                 selectedCheckboxes.forEach(checkbox => {
@@ -573,7 +582,7 @@
                     const translatedMonth = checkbox.getAttribute('data-month');
                     const year = checkbox.getAttribute('data-year');
                     const amount = parseInt(checkbox.getAttribute('data-amount'));
-                    const inputType = checkbox.getAttribute('data-payment-input-type') || 'FIXED';
+                    const inputType = (checkbox.getAttribute('data-payment-input-type') || 'FIXED').toUpperCase();
 
                     if (!isNaN(amount)) {
                         // Create a new hidden input for each selected bill ID
@@ -664,9 +673,19 @@
         // Behavior control for Lunas / Angsur
         function updatePaymentOptionBehavior() {
             const paymentOption = document.getElementById('payment-option');
-            const isAngsur = paymentOption && paymentOption.value === 'ANGSUR';
-            
             const customInputs = document.querySelectorAll('.custom-amount-input');
+
+            // Guard tambahan: jika tidak ada item FREE, kunci mutlak ke LUNAS dan hapus opsi ANGSUR jika ada
+            if (customInputs.length === 0 && paymentOption) {
+                const angsurOpt = paymentOption.querySelector('option[value="ANGSUR"]');
+                if (angsurOpt) {
+                    angsurOpt.remove();
+                }
+                paymentOption.value = 'LUNAS';
+            }
+
+            const isAngsur = customInputs.length > 0 && paymentOption && paymentOption.value === 'ANGSUR';
+            
             customInputs.forEach(input => {
                 const billId = input.getAttribute('data-bill-id');
                 const maxAmount = parseInt(input.getAttribute('data-max-amount'));
@@ -709,14 +728,16 @@
         function calculateTotal() {
             const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
             const totalAmountElement = document.getElementById('total-amount');
+            const paymentOption = document.getElementById('payment-option');
+            const isAngsur = paymentOption && paymentOption.value === 'ANGSUR';
             let total = 0;
 
             selectedCheckboxes.forEach(checkbox => {
                 const billId = checkbox.getAttribute('data-bill-id');
-                const inputType = checkbox.getAttribute('data-payment-input-type') || 'FIXED';
+                const inputType = (checkbox.getAttribute('data-payment-input-type') || 'FIXED').toUpperCase();
                 const defaultAmount = parseInt(checkbox.getAttribute('data-amount'));
 
-                if (inputType === 'FREE') {
+                if (inputType === 'FREE' && isAngsur) {
                     const input = document.querySelector(`.custom-amount-input[data-bill-id="${billId}"]`);
                     let amt = input ? parseInt(input.value.replace(/\D/g, '')) : defaultAmount;
                     if (isNaN(amt) || amt < 1) amt = 0;

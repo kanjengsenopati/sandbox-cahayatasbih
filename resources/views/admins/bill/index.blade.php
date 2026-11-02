@@ -569,9 +569,8 @@
                             <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Tipe Pembayaran</span>
                             <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
                                 <div class="card-body p-3">
-                                    <select class="form-select form-select-solid" id="payment-option" required>
+                                    <select class="form-select form-select-solid" name="payment_option" id="payment-option" required>
                                         <option value="LUNAS">Lunas</option>
-                                        <option value="ANGSUR">Angsur</option>
                                     </select>
                                 </div>
                             </div>
