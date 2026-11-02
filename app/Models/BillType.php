@@ -11,6 +11,8 @@ class BillType extends Model
 {
     const TYPE_MONTHLY = 'MONTHLY';
     const TYPE_OTHER = 'OTHER';
+    const INPUT_TYPE_FIXED = 'FIXED';
+    const INPUT_TYPE_FREE = 'FREE';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
@@ -57,6 +59,20 @@ class BillType extends Model
     public function billTypeBank()
     {
         return $this->hasMany(BillTypeBank::class);
+    }
+
+    public function getPaymentInputTypeAttribute($value): string
+    {
+        return strtoupper(trim((string) $value)) === self::INPUT_TYPE_FREE
+            ? self::INPUT_TYPE_FREE
+            : self::INPUT_TYPE_FIXED;
+    }
+
+    public function setPaymentInputTypeAttribute($value): void
+    {
+        $this->attributes['payment_input_type'] = strtoupper(trim((string) $value)) === self::INPUT_TYPE_FREE
+            ? self::INPUT_TYPE_FREE
+            : self::INPUT_TYPE_FIXED;
     }
 
     public function getSchoolTypeAttribute()

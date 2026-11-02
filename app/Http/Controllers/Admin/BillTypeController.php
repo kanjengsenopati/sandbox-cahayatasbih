@@ -240,7 +240,14 @@ class BillTypeController extends Controller
                 $relatedQuery->where('type', $billType->type);
             }
             if (!empty($billType->payment_input_type)) {
-                $relatedQuery->where('payment_input_type', $billType->payment_input_type);
+                if ($billType->payment_input_type === BillType::INPUT_TYPE_FREE) {
+                    $relatedQuery->where('payment_input_type', BillType::INPUT_TYPE_FREE);
+                } else {
+                    $relatedQuery->where(function ($q) {
+                        $q->whereIn('payment_input_type', [BillType::INPUT_TYPE_FIXED, 'FIX'])
+                          ->orWhereNull('payment_input_type');
+                    });
+                }
             }
 
             $relatedBillTypeIds = $relatedQuery->pluck('id')->toArray();
@@ -323,6 +330,16 @@ class BillTypeController extends Controller
         try {
             $validated = $request->validated();
             $billType->update($validated);
+
+            // Sinkronkan payment_input_type pada record duplikat (jika ada) di Tahun Ajaran & POS yang sama agar tidak terjadi kebocoran logika
+            if (!empty($validated['payment_input_type'])) {
+                BillType::where('id', '!=', $billType->id)
+                    ->where('name', $billType->name)
+                    ->where('academic_year_id', $billType->academic_year_id)
+                    ->when(!empty($billType->bill_item_id), fn($q) => $q->where('bill_item_id', $billType->bill_item_id))
+                    ->when(!empty($billType->type), fn($q) => $q->where('type', $billType->type))
+                    ->update(['payment_input_type' => $billType->payment_input_type]);
+            }
 
             if ($request->has('bank_ids')) {
                 $billType->billTypeBank()->delete();
