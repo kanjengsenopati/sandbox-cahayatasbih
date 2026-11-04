@@ -169,7 +169,8 @@
                         if ($currentUser->isKoordinatorCahayaMart()) {
                             $isKoperasiModule = str_contains($sub->url, '/item') || 
                                                 str_contains($sub->url, '/order-item') || 
-                                                str_contains($sub->url, '/pos-transaction');
+                                                str_contains($sub->url, '/pos-transaction') ||
+                                                str_contains($sub->url, 'report-mart-cashflow');
 
                             if (!$isKoperasiModule && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis') || $sub->url === '/outlet')) {
                                 return false;

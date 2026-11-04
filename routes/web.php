@@ -539,6 +539,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-transaction/export-sheets', [ReportTransactionController::class, 'exportSheets'])->name('report-transaction.export-sheets');
     Route::resource('report-transaction', ReportTransactionController::class, ['only' => ['index', 'destroy']]);
 
+    // start report arus kas mart
+    Route::get('report-mart-cashflow/export', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'export'])->name('report-mart-cashflow.export');
+    Route::get('report-mart-cashflow', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'index'])->name('report-mart-cashflow.index');
+    // end report arus kas mart
+
 
     // start ppdb
     Route::resource('ppdb-type', PpdbTypeController::class);
