@@ -244,20 +244,20 @@
                     <!-- Filter Rentang Tanggal -->
                     <div class="d-flex flex-column gap-2 flex-grow-1" style="min-width: 240px; max-width: 340px;">
                         <x-text.label class="text-slate-400">Rentang Tanggal</x-text.label>
-                        <div class="position-relative">
-                            <input class="form-control form-control-sm form-control-solid fw-bold ps-9" placeholder="Pilih Periode Tanggal" id="filter-daterange" readonly />
-                            <i class="fa-solid fa-calendar-days position-absolute top-50 translate-middle-y ms-3 text-muted fs-7"></i>
+                        <div class="position-relative cursor-pointer" id="filter-daterange-wrapper">
+                            <input class="form-control form-control-sm form-control-solid fw-bold ps-9 cursor-pointer" placeholder="Pilih Periode Tanggal" value="Semua Tanggal" id="filter-daterange" readonly style="cursor: pointer !important;" />
+                            <i class="fa-solid fa-calendar-days position-absolute top-50 translate-middle-y ms-3 text-muted fs-7" style="pointer-events: none;"></i>
                         </div>
                     </div>
 
                     <!-- Quick Period Buttons -->
                     <div class="d-flex flex-column gap-2">
                         <x-text.label class="text-slate-400">Preset Periode</x-text.label>
-                        <div class="btn-group" role="group">
+                        <div class="btn-group" role="group" id="preset-period-group">
                             <button type="button" class="btn btn-sm btn-light btn-period" data-period="today">Hari Ini</button>
                             <button type="button" class="btn btn-sm btn-light btn-period" data-period="week">Minggu Ini</button>
                             <button type="button" class="btn btn-sm btn-light btn-period" data-period="month">Bulan Ini</button>
-                            <button type="button" class="btn btn-sm btn-light btn-period active" data-period="all">Semua</button>
+                            <button type="button" class="btn btn-sm btn-primary text-white btn-period active" data-period="all">Semua</button>
                         </div>
                     </div>
 
@@ -307,8 +307,9 @@
     </div>
     <!--end::Post-->
 </div>
+@endsection
 
-@push('scripts')
+@push('js')
 <script>
     $(document).ready(function() {
         let currentSource = '{{ $defaultSource }}';
@@ -317,43 +318,83 @@
         let endDate = '';
         const isRestricted = {{ $isRestricted ? 'true' : 'false' }};
 
+        function setActivePeriodBtn(period) {
+            $('.btn-period').removeClass('active btn-primary text-white').addClass('btn-light');
+            if (period) {
+                $('.btn-period[data-period="' + period + '"]').removeClass('btn-light').addClass('active btn-primary text-white');
+            }
+        }
+
+        function applyCustomDateRange(start, end) {
+            startDate = start.format('YYYY-MM-DD');
+            endDate = end.format('YYYY-MM-DD');
+
+            if (start.isSame(end, 'day')) {
+                $('#filter-daterange').val(start.format('DD MMM YYYY'));
+            } else {
+                $('#filter-daterange').val(startDate + ' s/d ' + endDate);
+            }
+
+            // Sinkronisasi highlight tombol Preset Periode jika rentang tanggal cocok
+            if (start.isSame(moment(), 'day') && end.isSame(moment(), 'day')) {
+                currentPeriod = 'today';
+                setActivePeriodBtn('today');
+            } else if (start.isSame(moment().startOf('isoWeek'), 'day') && end.isSame(moment().endOf('isoWeek'), 'day')) {
+                currentPeriod = 'week';
+                setActivePeriodBtn('week');
+            } else if (start.isSame(moment().startOf('month'), 'day') && end.isSame(moment().endOf('month'), 'day')) {
+                currentPeriod = 'month';
+                setActivePeriodBtn('month');
+            } else {
+                currentPeriod = 'custom';
+                setActivePeriodBtn(null);
+            }
+
+            loadSummary();
+            table.ajax.reload();
+        }
+
         // Inisialisasi Date Range Picker
         $('#filter-daterange').daterangepicker({
             autoUpdateInput: false,
+            startDate: moment().startOf('month'),
+            endDate: moment().endOf('month'),
+            showDropdowns: true,
+            alwaysShowCalendars: true,
             ranges: {
                 'Hari Ini': [moment(), moment()],
                 'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                 '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+                'Minggu Ini': [moment().startOf('isoWeek'), moment().endOf('isoWeek')],
                 '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()],
                 'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-                'Bulan Lalu': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                'Bulan Lalu': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'Tahun Ini': [moment().startOf('year'), moment().endOf('year')]
             },
             locale: {
                 format: 'YYYY-MM-DD',
                 separator: ' s/d ',
                 applyLabel: 'Terapkan',
-                cancelLabel: 'Batal',
-                customRangeLabel: 'Pilih Rentang Bebas'
+                cancelLabel: 'Semua Tanggal',
+                customRangeLabel: 'Pilih Rentang Bebas',
+                daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+                monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                firstDay: 1
             }
+        }, function(start, end) {
+            applyCustomDateRange(start, end);
         });
 
         $('#filter-daterange').on('apply.daterangepicker', function(ev, picker) {
-            startDate = picker.startDate.format('YYYY-MM-DD');
-            endDate = picker.endDate.format('YYYY-MM-DD');
-            $(this).val(startDate + ' s/d ' + endDate);
-            currentPeriod = 'custom';
-            $('.btn-period').removeClass('active btn-primary text-white').addClass('btn-light');
-            loadSummary();
-            table.ajax.reload();
+            applyCustomDateRange(picker.startDate, picker.endDate);
         });
 
         $('#filter-daterange').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
+            $('#filter-daterange').val('Semua Tanggal');
             startDate = '';
             endDate = '';
             currentPeriod = 'all';
-            $('.btn-period').removeClass('active btn-primary text-white').addClass('btn-light');
-            $('.btn-period[data-period="all"]').addClass('active btn-primary text-white').removeClass('btn-light');
+            setActivePeriodBtn('all');
             loadSummary();
             table.ajax.reload();
         });
@@ -370,13 +411,46 @@
 
         // Quick Period Buttons
         $('.btn-period').on('click', function() {
-            $('.btn-period').removeClass('active btn-primary text-white').addClass('btn-light');
-            $(this).addClass('active btn-primary text-white').removeClass('btn-light');
+            const period = $(this).data('period');
+            currentPeriod = period;
+            setActivePeriodBtn(period);
 
-            currentPeriod = $(this).data('period');
-            startDate = '';
-            endDate = '';
-            $('#filter-daterange').val('');
+            const picker = $('#filter-daterange').data('daterangepicker');
+
+            if (period === 'today') {
+                const today = moment();
+                startDate = today.format('YYYY-MM-DD');
+                endDate = today.format('YYYY-MM-DD');
+                $('#filter-daterange').val(today.format('DD MMM YYYY'));
+                if (picker) {
+                    picker.setStartDate(today);
+                    picker.setEndDate(today);
+                }
+            } else if (period === 'week') {
+                const startWeek = moment().startOf('isoWeek');
+                const endWeek = moment().endOf('isoWeek');
+                startDate = startWeek.format('YYYY-MM-DD');
+                endDate = endWeek.format('YYYY-MM-DD');
+                $('#filter-daterange').val(startDate + ' s/d ' + endDate);
+                if (picker) {
+                    picker.setStartDate(startWeek);
+                    picker.setEndDate(endWeek);
+                }
+            } else if (period === 'month') {
+                const startMonth = moment().startOf('month');
+                const endMonth = moment().endOf('month');
+                startDate = startMonth.format('YYYY-MM-DD');
+                endDate = endMonth.format('YYYY-MM-DD');
+                $('#filter-daterange').val(startDate + ' s/d ' + endDate);
+                if (picker) {
+                    picker.setStartDate(startMonth);
+                    picker.setEndDate(endMonth);
+                }
+            } else {
+                startDate = '';
+                endDate = '';
+                $('#filter-daterange').val('Semua Tanggal');
+            }
 
             loadSummary();
             table.ajax.reload();
@@ -389,13 +463,12 @@
             startDate = '';
             endDate = '';
 
-            $('#filter-daterange').val('');
+            $('#filter-daterange').val('Semua Tanggal');
 
             $('.btn-source-filter').removeClass('active');
             $('.btn-source-filter[data-source="' + currentSource + '"]').addClass('active');
 
-            $('.btn-period').removeClass('active btn-primary text-white').addClass('btn-light');
-            $('.btn-period[data-period="all"]').addClass('active btn-primary text-white').removeClass('btn-light');
+            setActivePeriodBtn('all');
 
             loadSummary();
             table.ajax.reload();
@@ -491,4 +564,3 @@
     });
 </script>
 @endpush
-@endsection
