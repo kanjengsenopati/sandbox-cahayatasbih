@@ -234,11 +234,16 @@ class User extends Authenticatable
     {
         $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
         foreach ($roles as $role) {
-            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
+            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi') || str_contains($role, 'pondok mart'))) {
                 return true;
             }
         }
         return false;
+    }
+
+    public function isKoordinatorPondokMart(): bool
+    {
+        return $this->isKoordinatorCahayaMart();
     }
 
     /**
