@@ -412,5 +412,211 @@ class ReportMartCashflowTest extends TestCase
         $responseExport->assertStatus(200);
         $this->assertStringContainsString('.xlsx', $responseExport->headers->get('content-disposition', ''));
     }
+
+    /**
+     * Test Adversarial: User with Mart/Outlet permission can access Arus Kas Mart.
+     */
+    public function test_r1_user_with_mart_report_permission_has_access()
+    {
+        $role = Role::firstOrCreate(['name' => 'Custom Mart Report Staff', 'guard_name' => 'web']);
+        $role->givePermissionTo(['POS Outlet']);
+
+        $transaksiAdmin = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Staff Mart Test',
+            'email' => 'staffmart_' . Str::random(5) . '@test.com',
+            'password' => bcrypt('password'),
+            'avatar' => 'assets/media/avatars/default.png',
+            'role_id' => $role->id,
+            'is_active' => true,
+        ]);
+        $transaksiAdmin->assignRole($role);
+
+        $response = $this->actingAs($transaksiAdmin, 'web')->get(route('report-mart-cashflow.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Arus Kas Mart');
+    }
+
+    /**
+     * Test Adversarial: Summary response must include avg_amount and calculate correct average.
+     */
+    public function test_r2_summary_includes_avg_amount()
+    {
+        $this->createPosTransaction([
+            'payment_code' => 'POS-AVG-01',
+            'pay_amount' => 10000,
+            'created_at' => now(),
+        ]);
+        $this->createPosTransaction([
+            'payment_code' => 'POS-AVG-02',
+            'pay_amount' => 20000,
+            'created_at' => now(),
+        ]);
+
+        $todayStr = Carbon::today()->format('Y-m-d');
+        $response = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $todayStr,
+                'end_date' => $todayStr,
+            ]));
+
+        $response->assertStatus(200);
+        $json = $response->json();
+
+        $this->assertArrayHasKey('avg_amount', $json);
+        $this->assertNotEquals('Rp 0', $json['avg_amount']);
+    }
+
+    /**
+     * Test Adversarial: Single boundary date filtering (start_date only or end_date only).
+     */
+    public function test_r3_single_boundary_date_filtering()
+    {
+        $pastDate = Carbon::now()->subDays(5)->format('Y-m-d H:i:s');
+        $this->createPosTransaction([
+            'payment_code' => 'POS-PAST-001',
+            'created_at' => $pastDate,
+        ]);
+
+        $futureDate = Carbon::now()->addDays(5)->format('Y-m-d H:i:s');
+        $this->createPosTransaction([
+            'payment_code' => 'POS-FUT-002',
+            'created_at' => $futureDate,
+        ]);
+
+        // Filter start_date only
+        $startStr = Carbon::now()->addDays(2)->format('Y-m-d');
+        $resStart = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'start_date' => $startStr,
+            ]));
+        $resStart->assertStatus(200);
+        $codesStart = collect($resStart->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-FUT-002', $codesStart);
+        $this->assertStringNotContainsString('POS-PAST-001', $codesStart);
+
+        // Filter end_date only
+        $endStr = Carbon::now()->subDays(2)->format('Y-m-d');
+        $resEnd = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'end_date' => $endStr,
+            ]));
+        $resEnd->assertStatus(200);
+        $codesEnd = collect($resEnd->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-PAST-001', $codesEnd);
+        $this->assertStringNotContainsString('POS-FUT-002', $codesEnd);
+    }
+
+    /**
+     * Test Adversarial: User assigned to multiple outlets can switch between them and view combined data.
+     */
+    public function test_r4_restricted_user_with_multiple_outlets()
+    {
+        $outletA = $this->unitOutlet; // OUTLET
+        $outletB = Outlet::where('id', '!=', $this->koperasiOutlet->id)
+            ->where('id', '!=', $outletA->id)
+            ->first();
+
+        $outletRole = Role::firstOrCreate(['name' => 'Outlet', 'guard_name' => 'web']);
+
+        // Create test user assigned to Outlet A and Outlet B
+        $multiAdmin = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Multi Outlet Staff Test',
+            'email' => 'multioutlet_' . Str::random(5) . '@test.com',
+            'password' => bcrypt('password'),
+            'avatar' => 'assets/media/avatars/default.png',
+            'role_id' => $outletRole->id,
+            'outlet_id' => $outletA->id,
+            'is_active' => true,
+        ]);
+        $multiAdmin->assignRole('Outlet');
+
+        AdminOutlet::create([
+            'id' => (string) Str::uuid(),
+            'admin_id' => $multiAdmin->id,
+            'outlet_id' => $outletA->id,
+        ]);
+        AdminOutlet::create([
+            'id' => (string) Str::uuid(),
+            'admin_id' => $multiAdmin->id,
+            'outlet_id' => $outletB->id,
+        ]);
+
+        $this->assertTrue(MartUserScopeService::isUserOutletRestricted($multiAdmin));
+        $allowed = MartUserScopeService::getAllowedOutletIds($multiAdmin);
+        $this->assertCount(2, $allowed);
+        $this->assertContains($outletA->id, $allowed);
+        $this->assertContains($outletB->id, $allowed);
+
+        // Transactions at Outlet A and Outlet B
+        $trxA = $this->createPosTransaction([
+            'payment_code' => 'POS-MULT-A-01',
+            'outlet_id' => $outletA->id,
+        ]);
+        $trxB = $this->createPosTransaction([
+            'payment_code' => 'POS-MULT-B-02',
+            'outlet_id' => $outletB->id,
+        ]);
+        $trxKop = $this->createPosTransaction([
+            'payment_code' => 'POS-MULT-KOP-03',
+            'outlet_id' => $this->koperasiOutlet->id,
+        ]);
+
+        // Combined query (outlet_id = 'all')
+        $resAll = $this->actingAs($multiAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', ['data' => 'table', 'outlet_id' => 'all']));
+        $resAll->assertStatus(200);
+        $codesAll = collect($resAll->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-MULT-A-01', $codesAll);
+        $this->assertStringContainsString('POS-MULT-B-02', $codesAll);
+        $this->assertStringNotContainsString('POS-MULT-KOP-03', $codesAll);
+
+        // Filter Outlet A only
+        $resA = $this->actingAs($multiAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', ['data' => 'table', 'outlet_id' => $outletA->id]));
+        $resA->assertStatus(200);
+        $codesA = collect($resA->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-MULT-A-01', $codesA);
+        $this->assertStringNotContainsString('POS-MULT-B-02', $codesA);
+
+        // Verify HTML page includes 'Scope Khusus Outlet' badge and assigned outlet names without redundant dropdown
+        $pageRes = $this->actingAs($multiAdmin, 'web')->get(route('report-mart-cashflow.index'));
+        $pageRes->assertStatus(200);
+        $pageRes->assertSee('Scope Khusus Outlet');
+        $pageRes->assertSee($outletA->name);
+        $pageRes->assertDontSee('Pilih Unit / Outlet');
+    }
+
+    /**
+     * Test Adversarial: Staff user with 0 assigned outlets is still restricted and sees 0 rows, preventing cross-outlet leak.
+     */
+    public function test_r4_restricted_user_with_no_assigned_outlets_sees_nothing_preventing_leak()
+    {
+        $outletRole = Role::firstOrCreate(['name' => 'Outlet', 'guard_name' => 'web']);
+
+        $unassignedAdmin = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Unassigned Staff Test',
+            'email' => 'unassigned_' . Str::random(5) . '@test.com',
+            'password' => bcrypt('password'),
+            'avatar' => 'assets/media/avatars/default.png',
+            'role_id' => $outletRole->id,
+            'outlet_id' => null,
+            'is_active' => true,
+        ]);
+        $unassignedAdmin->assignRole('Outlet');
+
+        $this->assertTrue(MartUserScopeService::isUserOutletRestricted($unassignedAdmin));
+        $this->assertEmpty(MartUserScopeService::getAllowedOutletIds($unassignedAdmin));
+
+        $res = $this->actingAs($unassignedAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', ['data' => 'table']));
+        $res->assertStatus(200);
+        $this->assertCount(0, $res->json()['data'] ?? []);
+    }
 }
 

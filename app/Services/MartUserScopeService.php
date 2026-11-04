@@ -194,9 +194,8 @@ class MartUserScopeService
             return false;
         }
 
-        $assignedOutletIds = method_exists($user, 'getOutletIds') ? $user->getOutletIds() : [];
-
-        return count($assignedOutletIds) > 0;
+        // Any user who is not Super Admin and not Koordinator Pondok Mart is outlet-restricted
+        return true;
     }
 
     /**
