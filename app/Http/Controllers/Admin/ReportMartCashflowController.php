@@ -51,6 +51,8 @@ class ReportMartCashflowController extends Controller
 
         $user = Auth::user();
         $koperasiId = OutletContextService::getKoperasiOutletId();
+        $koperasiOutlet = $koperasiId ? Outlet::withTrashed()->find($koperasiId) : null;
+        $defaultOutlet = Outlet::withTrashed()->where('id', '!=', $koperasiId)->orderBy('created_at')->first();
         $isRestricted = MartUserScopeService::isUserOutletRestricted($user);
         $allowedOutletIds = MartUserScopeService::getAllowedOutletIds($user);
 
@@ -69,27 +71,35 @@ class ReportMartCashflowController extends Controller
                     $q->withTrashed();
                 },
                 'pointOfSaleTransactionDetails' => function ($q) {
-                    $q->withTrashed()->with('item');
+                    $q->withTrashed()->with([
+                        'item' => function ($iq) {
+                            $iq->withTrashed()->with([
+                                'outlet' => function ($oq) {
+                                    $oq->withTrashed();
+                                },
+                            ]);
+                        },
+                    ]);
                 },
             ]);
 
-        // Enforce Outlet Scope Isolation
+        // Enforce Outlet Scope Isolation (including fallback resolution via item.outlet_id when transaction outlet_id is NULL)
         if ($isRestricted) {
-            if ($request->filled('outlet_id') && $request->outlet_id !== 'all' && in_array($request->outlet_id, $allowedOutletIds)) {
-                $query->where('point_of_sale_transactions.outlet_id', $request->outlet_id);
-            } else {
-                $query->whereIn('point_of_sale_transactions.outlet_id', $allowedOutletIds);
-            }
+            $targetOutletIds = ($request->filled('outlet_id') && $request->outlet_id !== 'all' && in_array($request->outlet_id, $allowedOutletIds))
+                ? [$request->outlet_id]
+                : $allowedOutletIds;
+
+            $this->applyAllowedOutletsFilter($query, $targetOutletIds, $koperasiId);
         } else {
             $source = $request->input('source', 'all');
             $outletId = $request->input('outlet_id');
 
             if ($outletId && $outletId !== 'all') {
-                $query->where('point_of_sale_transactions.outlet_id', $outletId);
+                $this->applyAllowedOutletsFilter($query, [$outletId], $koperasiId);
             } elseif ($source === 'koperasi') {
-                $query->where('point_of_sale_transactions.outlet_id', $koperasiId);
+                $this->applyKoperasiSourceFilter($query, $koperasiId);
             } elseif ($source === 'outlet') {
-                $query->where('point_of_sale_transactions.outlet_id', '!=', $koperasiId);
+                $this->applyOutletSourceFilter($query, $koperasiId);
             }
         }
 
@@ -119,14 +129,32 @@ class ReportMartCashflowController extends Controller
         // Handle AJAX DataTables & Summary Requests
         if ($request->ajax() || $request->wantsJson()) {
             if ($request->data === 'summary') {
-                $summaryTotal = (clone $query)->selectRaw('
+                $nonKoperasiTxIds = self::getNonKoperasiItemTransactionIds($koperasiId);
+
+                if (empty($nonKoperasiTxIds)) {
+                    $isOutletSql = "(point_of_sale_transactions.outlet_id IS NOT NULL AND point_of_sale_transactions.outlet_id != ?)";
+                    $isKoperasiSql = "(point_of_sale_transactions.outlet_id = ? OR point_of_sale_transactions.outlet_id IS NULL)";
+                    $bindings = [$koperasiId, $koperasiId, $koperasiId, $koperasiId];
+                } else {
+                    $placeholders = implode(',', array_fill(0, count($nonKoperasiTxIds), '?'));
+                    $isOutletSql = "((point_of_sale_transactions.outlet_id IS NOT NULL AND point_of_sale_transactions.outlet_id != ?) OR (point_of_sale_transactions.outlet_id IS NULL AND point_of_sale_transactions.id IN ({$placeholders})))";
+                    $isKoperasiSql = "(point_of_sale_transactions.outlet_id = ? OR (point_of_sale_transactions.outlet_id IS NULL AND point_of_sale_transactions.id NOT IN ({$placeholders})))";
+                    $bindings = array_merge(
+                        [$koperasiId], $nonKoperasiTxIds,
+                        [$koperasiId], $nonKoperasiTxIds,
+                        [$koperasiId], $nonKoperasiTxIds,
+                        [$koperasiId], $nonKoperasiTxIds
+                    );
+                }
+
+                $summaryTotal = (clone $query)->selectRaw("
                     COUNT(id) as total_count,
                     COALESCE(SUM(pay_amount), 0) as total_amount,
-                    COALESCE(SUM(CASE WHEN outlet_id != ? THEN pay_amount ELSE 0 END), 0) as outlet_amount,
-                    COALESCE(SUM(CASE WHEN outlet_id = ? THEN pay_amount ELSE 0 END), 0) as koperasi_amount,
-                    COUNT(CASE WHEN outlet_id != ? THEN id END) as outlet_count,
-                    COUNT(CASE WHEN outlet_id = ? THEN id END) as koperasi_count
-                ', [$koperasiId, $koperasiId, $koperasiId, $koperasiId])->first();
+                    COALESCE(SUM(CASE WHEN {$isOutletSql} THEN pay_amount ELSE 0 END), 0) as outlet_amount,
+                    COALESCE(SUM(CASE WHEN {$isKoperasiSql} THEN pay_amount ELSE 0 END), 0) as koperasi_amount,
+                    COUNT(CASE WHEN {$isOutletSql} THEN id END) as outlet_count,
+                    COUNT(CASE WHEN {$isKoperasiSql} THEN id END) as koperasi_count
+                ", $bindings)->first();
 
                 $totalCount = (int) ($summaryTotal->total_count ?? 0);
                 $totalAmount = (float) ($summaryTotal->total_amount ?? 0);
@@ -182,17 +210,17 @@ class ReportMartCashflowController extends Controller
                         </div>
                     </div>';
                 })
-                ->addColumn('outlet', function ($row) use ($koperasiId) {
-                    $outletName = e($row->outlet?->name ?? 'Outlet');
-                    $isKoperasi = $row->outlet_id === $koperasiId;
+                ->addColumn('outlet', function ($row) use ($koperasiId, $koperasiOutlet, $defaultOutlet) {
+                    [$isKoperasi, $outletLabel] = self::resolveTransactionUnitInfo($row, $koperasiId, $koperasiOutlet, $defaultOutlet);
+                    $escapedLabel = e($outletLabel);
 
                     if ($isKoperasi) {
                         return '<span class="badge px-3 py-2" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 8px; font-weight: 600;">
-                            <i class="fa-solid fa-store me-1 fs-8 text-primary"></i> ' . $outletName . ' (Pondok Mart)
+                            <i class="fa-solid fa-store me-1 fs-8 text-primary"></i> ' . $escapedLabel . '
                         </span>';
                     } else {
                         return '<span class="badge px-3 py-2" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; font-weight: 600;">
-                            <i class="fa-solid fa-shop me-1 fs-8 text-warning"></i> ' . $outletName . '
+                            <i class="fa-solid fa-shop me-1 fs-8 text-warning"></i> ' . $escapedLabel . '
                         </span>';
                     }
                 })
@@ -291,5 +319,159 @@ class ReportMartCashflowController extends Controller
 
         $filename = 'Laporan_Arus_Kas_Mart_' . now()->format('Ymd_His') . '.xlsx';
         return Excel::download(new ReportMartCashflowExport($request), $filename);
+    }
+
+    /**
+     * Get transaction IDs (with outlet_id IS NULL) that contain items belonging to non-Koperasi outlets.
+     */
+    public static function getNonKoperasiItemTransactionIds(?string $koperasiId, ?array $specificOutletIds = null): array
+    {
+        $itemQuery = \App\Models\Item::withTrashed()->whereNotNull('outlet_id');
+        if ($koperasiId) {
+            $itemQuery->where('outlet_id', '!=', $koperasiId);
+        }
+        if ($specificOutletIds !== null) {
+            $nonKoperasiOutlets = $koperasiId ? array_values(array_diff($specificOutletIds, [$koperasiId])) : $specificOutletIds;
+            if (empty($nonKoperasiOutlets)) {
+                return [];
+            }
+            $itemQuery->whereIn('outlet_id', $nonKoperasiOutlets);
+        }
+
+        $outletItemIds = $itemQuery->pluck('id')->toArray();
+        if (empty($outletItemIds)) {
+            return [];
+        }
+
+        return \Illuminate\Support\Facades\DB::table('point_of_sale_transaction_details')
+            ->whereNull('deleted_at')
+            ->whereIn('item_id', $outletItemIds)
+            ->distinct()
+            ->pluck('point_of_sale_transaction_id')
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Filter query to transactions belonging to the given allowed outlet IDs,
+     * including legacy/null outlet_id transactions resolved via item.outlet_id.
+     */
+    public static function applyAllowedOutletsFilter($query, array $targetOutletIds, ?string $koperasiId): void
+    {
+        if (empty($targetOutletIds)) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $includesKoperasi = $koperasiId && in_array($koperasiId, $targetOutletIds, true);
+        $matchedOutletTxIds = self::getNonKoperasiItemTransactionIds($koperasiId, $targetOutletIds);
+        $allNonKoperasiTxIds = $includesKoperasi ? self::getNonKoperasiItemTransactionIds($koperasiId) : [];
+
+        $query->where(function ($q) use ($targetOutletIds, $includesKoperasi, $matchedOutletTxIds, $allNonKoperasiTxIds) {
+            $q->whereIn('point_of_sale_transactions.outlet_id', $targetOutletIds);
+
+            if ($includesKoperasi) {
+                $q->orWhere(function ($sub) use ($allNonKoperasiTxIds) {
+                    $sub->whereNull('point_of_sale_transactions.outlet_id');
+                    if (!empty($allNonKoperasiTxIds)) {
+                        $sub->whereNotIn('point_of_sale_transactions.id', $allNonKoperasiTxIds);
+                    }
+                });
+            }
+
+            if (!empty($matchedOutletTxIds)) {
+                $q->orWhere(function ($sub) use ($matchedOutletTxIds) {
+                    $sub->whereNull('point_of_sale_transactions.outlet_id')
+                        ->whereIn('point_of_sale_transactions.id', $matchedOutletTxIds);
+                });
+            }
+        });
+    }
+
+    /**
+     * Filter query strictly to Pondok Mart / Koperasi unit transactions.
+     */
+    public static function applyKoperasiSourceFilter($query, ?string $koperasiId): void
+    {
+        $nonKoperasiTxIds = self::getNonKoperasiItemTransactionIds($koperasiId);
+
+        $query->where(function ($q) use ($koperasiId, $nonKoperasiTxIds) {
+            $q->where('point_of_sale_transactions.outlet_id', $koperasiId)
+              ->orWhere(function ($sub) use ($nonKoperasiTxIds) {
+                  $sub->whereNull('point_of_sale_transactions.outlet_id');
+                  if (!empty($nonKoperasiTxIds)) {
+                      $sub->whereNotIn('point_of_sale_transactions.id', $nonKoperasiTxIds);
+                  }
+              });
+        });
+    }
+
+    /**
+     * Filter query strictly to non-Koperasi Outlet unit transactions.
+     */
+    public static function applyOutletSourceFilter($query, ?string $koperasiId): void
+    {
+        $nonKoperasiTxIds = self::getNonKoperasiItemTransactionIds($koperasiId);
+
+        $query->where(function ($q) use ($koperasiId, $nonKoperasiTxIds) {
+            $q->where(function ($sub) use ($koperasiId) {
+                $sub->whereNotNull('point_of_sale_transactions.outlet_id')
+                    ->where('point_of_sale_transactions.outlet_id', '!=', $koperasiId);
+            });
+
+            if (!empty($nonKoperasiTxIds)) {
+                $q->orWhere(function ($sub) use ($nonKoperasiTxIds) {
+                    $sub->whereNull('point_of_sale_transactions.outlet_id')
+                        ->whereIn('point_of_sale_transactions.id', $nonKoperasiTxIds);
+                });
+            }
+        });
+    }
+
+    /**
+     * Resolve effective unit (Koperasi / Pondok Mart vs Outlet) and display label from database.
+     *
+     * @return array{0: bool, 1: string} [$isKoperasi, $outletLabel]
+     */
+    public static function resolveTransactionUnitInfo($row, ?string $koperasiId, ?Outlet $koperasiOutlet = null, ?Outlet $defaultOutlet = null): array
+    {
+        $resolvedOutlet = $row->outlet;
+
+        if (!$resolvedOutlet && $row->relationLoaded('pointOfSaleTransactionDetails')) {
+            // Prioritize any detail item belonging to a non-Koperasi outlet
+            foreach ($row->pointOfSaleTransactionDetails as $detail) {
+                $itemOutlet = $detail->item?->outlet;
+                if ($itemOutlet && $itemOutlet->id !== $koperasiId) {
+                    $resolvedOutlet = $itemOutlet;
+                    break;
+                }
+                if ($itemOutlet && !$resolvedOutlet) {
+                    $resolvedOutlet = $itemOutlet;
+                }
+            }
+        }
+
+        if (!$resolvedOutlet) {
+            $resolvedOutlet = $koperasiOutlet;
+        }
+
+        $isKoperasi = ($row->outlet_id && $row->outlet_id === $koperasiId)
+            || ($resolvedOutlet && $resolvedOutlet->id === $koperasiId)
+            || ($resolvedOutlet && (
+                strtoupper((string) $resolvedOutlet->code) === 'KPR' ||
+                stripos((string) $resolvedOutlet->name, 'koperasi') !== false ||
+                stripos((string) $resolvedOutlet->name, 'mart') !== false
+            ))
+            || (!$row->outlet_id && !$resolvedOutlet);
+
+        if ($isKoperasi) {
+            $dbName = $resolvedOutlet?->name ?? $koperasiOutlet?->name ?? 'KOPERASI';
+            $label = stripos($dbName, 'mart') === false ? ($dbName . ' (Pondok Mart)') : $dbName;
+            return [true, $label];
+        }
+
+        $dbName = $resolvedOutlet?->name ?? $defaultOutlet?->name ?? 'OUTLET';
+        return [false, $dbName];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Http\Controllers\Admin\ReportMartCashflowController;
+use App\Models\Outlet;
 use App\Models\PointOfSaleTransaction;
 use App\Services\MartUserScopeService;
 use App\Services\OutletContextService;
@@ -26,10 +28,16 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
 {
     protected Request $request;
     private int $rowNumber = 0;
+    private ?string $koperasiId = null;
+    private ?Outlet $koperasiOutlet = null;
+    private ?Outlet $defaultOutlet = null;
 
     public function __construct(Request $request)
     {
         $this->request = $request;
+        $this->koperasiId = OutletContextService::getKoperasiOutletId();
+        $this->koperasiOutlet = $this->koperasiId ? Outlet::withTrashed()->find($this->koperasiId) : null;
+        $this->defaultOutlet = Outlet::withTrashed()->where('id', '!=', $this->koperasiId)->orderBy('created_at')->first();
     }
 
     public function title(): string
@@ -45,7 +53,7 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
     public function baseQuery()
     {
         $user = Auth::user();
-        $koperasiId = OutletContextService::getKoperasiOutletId();
+        $koperasiId = $this->koperasiId;
         $isRestricted = MartUserScopeService::isUserOutletRestricted($user);
         $allowedOutletIds = MartUserScopeService::getAllowedOutletIds($user);
 
@@ -60,27 +68,35 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
                     $q->withTrashed();
                 },
                 'pointOfSaleTransactionDetails' => function ($q) {
-                    $q->withTrashed()->with('item');
+                    $q->withTrashed()->with([
+                        'item' => function ($iq) {
+                            $iq->withTrashed()->with([
+                                'outlet' => function ($oq) {
+                                    $oq->withTrashed();
+                                },
+                            ]);
+                        },
+                    ]);
                 },
             ]);
 
         // Outlet Scope Enforcement
         if ($isRestricted) {
-            if ($this->request->filled('outlet_id') && $this->request->outlet_id !== 'all' && in_array($this->request->outlet_id, $allowedOutletIds)) {
-                $query->where('point_of_sale_transactions.outlet_id', $this->request->outlet_id);
-            } else {
-                $query->whereIn('point_of_sale_transactions.outlet_id', $allowedOutletIds);
-            }
+            $targetOutletIds = ($this->request->filled('outlet_id') && $this->request->outlet_id !== 'all' && in_array($this->request->outlet_id, $allowedOutletIds))
+                ? [$this->request->outlet_id]
+                : $allowedOutletIds;
+
+            ReportMartCashflowController::applyAllowedOutletsFilter($query, $targetOutletIds, $koperasiId);
         } else {
             $source = $this->request->input('source', 'all');
             $outletId = $this->request->input('outlet_id');
 
             if ($outletId && $outletId !== 'all') {
-                $query->where('point_of_sale_transactions.outlet_id', $outletId);
+                ReportMartCashflowController::applyAllowedOutletsFilter($query, [$outletId], $koperasiId);
             } elseif ($source === 'koperasi') {
-                $query->where('point_of_sale_transactions.outlet_id', $koperasiId);
+                ReportMartCashflowController::applyKoperasiSourceFilter($query, $koperasiId);
             } elseif ($source === 'outlet') {
-                $query->where('point_of_sale_transactions.outlet_id', '!=', $koperasiId);
+                ReportMartCashflowController::applyOutletSourceFilter($query, $koperasiId);
             }
         }
 
@@ -161,6 +177,13 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
             default => 'Gagal',
         };
 
+        [, $outletLabel] = ReportMartCashflowController::resolveTransactionUnitInfo(
+            $row,
+            $this->koperasiId,
+            $this->koperasiOutlet,
+            $this->defaultOutlet
+        );
+
         return [
             $this->rowNumber,
             $row->payment_code ?? '-',
@@ -168,7 +191,7 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
             $row->student?->nis ?? '-',
             $row->student?->name ?? '-',
             $row->student?->classroom?->name ?? '-',
-            $row->outlet?->name ?? '-',
+            $outletLabel,
             $itemsSummary ?: '-',
             $row->pay_amount,
             $statusText,
