@@ -251,9 +251,16 @@
                                     <option value="{{ $o->id }}">{{ $o->name }} {{ $o->id === $koperasiId ? '(Pondok Mart)' : '' }}</option>
                                 @endforeach
                             @else
-                                @foreach($outlets as $o)
-                                    <option value="{{ $o->id }}" selected>{{ $o->name }}</option>
-                                @endforeach
+                                @if(count($outlets) > 1)
+                                    <option value="all" selected>Semua Outlet Ditugaskan</option>
+                                    @foreach($outlets as $o)
+                                        <option value="{{ $o->id }}">{{ $o->name }}</option>
+                                    @endforeach
+                                @else
+                                    @foreach($outlets as $o)
+                                        <option value="{{ $o->id }}" selected>{{ $o->name }}</option>
+                                    @endforeach
+                                @endif
                             @endif
                         </select>
                     </div>
@@ -441,7 +448,7 @@
             endDate = '';
 
             $('#filter-daterange').val('');
-            $('#filter-outlet-id').val(isRestricted ? $('#filter-outlet-id option:first').val() : 'all');
+            $('#filter-outlet-id').val(isRestricted ? ($('#filter-outlet-id option[value="all"]').length ? 'all' : $('#filter-outlet-id option:first').val()) : 'all');
 
             $('.btn-source-filter').removeClass('active');
             $('.btn-source-filter[data-source="' + currentSource + '"]').addClass('active');

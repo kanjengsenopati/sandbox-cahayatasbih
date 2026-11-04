@@ -66,7 +66,7 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
 
         // Outlet Scope Enforcement
         if ($isRestricted) {
-            if ($this->request->filled('outlet_id') && in_array($this->request->outlet_id, $allowedOutletIds)) {
+            if ($this->request->filled('outlet_id') && $this->request->outlet_id !== 'all' && in_array($this->request->outlet_id, $allowedOutletIds)) {
                 $query->where('point_of_sale_transactions.outlet_id', $this->request->outlet_id);
             } else {
                 $query->whereIn('point_of_sale_transactions.outlet_id', $allowedOutletIds);
@@ -85,9 +85,13 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
         }
 
         // Date Range
-        if ($this->request->filled('start_date') && $this->request->filled('end_date')) {
-            $query->whereDate('point_of_sale_transactions.created_at', '>=', $this->request->start_date)
-                  ->whereDate('point_of_sale_transactions.created_at', '<=', $this->request->end_date);
+        if ($this->request->filled('start_date') || $this->request->filled('end_date')) {
+            if ($this->request->filled('start_date')) {
+                $query->whereDate('point_of_sale_transactions.created_at', '>=', $this->request->start_date);
+            }
+            if ($this->request->filled('end_date')) {
+                $query->whereDate('point_of_sale_transactions.created_at', '<=', $this->request->end_date);
+            }
         } elseif ($this->request->filled('period') && $this->request->period !== 'all') {
             if ($this->request->period === 'today') {
                 $query->whereDate('point_of_sale_transactions.created_at', Carbon::today());
@@ -161,10 +165,10 @@ class ReportMartCashflowExport implements FromGenerator, WithHeadings, ShouldAut
             $this->rowNumber,
             $row->payment_code ?? '-',
             Carbon::parse($row->created_at)->format('d/m/Y H:i'),
-            $row->student->nis ?? '-',
-            $row->student->name ?? '-',
-            $row->student->classroom?->name ?? '-',
-            $row->outlet->name ?? '-',
+            $row->student?->nis ?? '-',
+            $row->student?->name ?? '-',
+            $row->student?->classroom?->name ?? '-',
+            $row->outlet?->name ?? '-',
             $itemsSummary ?: '-',
             $row->pay_amount,
             $statusText,

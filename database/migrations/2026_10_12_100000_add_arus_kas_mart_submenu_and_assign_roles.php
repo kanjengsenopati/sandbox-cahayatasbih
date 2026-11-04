@@ -45,7 +45,7 @@ return new class extends Migration
                     'menu_navigation_id' => $mainMenu->id,
                     'name' => 'Arus Kas Mart',
                     'url' => '/report-mart-cashflow',
-                    'permission' => 'Manage Laporan Pos Multi Outlet,Manage Laporan Transaksi,POS Outlet',
+                    'permission' => 'Manage Laporan Pos Multi Outlet,POS Outlet',
                     'order' => 3,
                     'is_active' => true,
                 ]);
@@ -53,7 +53,7 @@ return new class extends Migration
                 $existing->update([
                     'name' => 'Arus Kas Mart',
                     'url' => '/report-mart-cashflow',
-                    'permission' => 'Manage Laporan Pos Multi Outlet,Manage Laporan Transaksi,POS Outlet',
+                    'permission' => 'Manage Laporan Pos Multi Outlet,POS Outlet',
                     'is_active' => true,
                 ]);
             }

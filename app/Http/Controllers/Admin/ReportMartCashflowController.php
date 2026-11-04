@@ -75,7 +75,7 @@ class ReportMartCashflowController extends Controller
 
         // Enforce Outlet Scope Isolation
         if ($isRestricted) {
-            if ($request->filled('outlet_id') && in_array($request->outlet_id, $allowedOutletIds)) {
+            if ($request->filled('outlet_id') && $request->outlet_id !== 'all' && in_array($request->outlet_id, $allowedOutletIds)) {
                 $query->where('point_of_sale_transactions.outlet_id', $request->outlet_id);
             } else {
                 $query->whereIn('point_of_sale_transactions.outlet_id', $allowedOutletIds);
@@ -94,9 +94,13 @@ class ReportMartCashflowController extends Controller
         }
 
         // Date Range & Period Filtering
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereDate('point_of_sale_transactions.created_at', '>=', $request->start_date)
-                  ->whereDate('point_of_sale_transactions.created_at', '<=', $request->end_date);
+        if ($request->filled('start_date') || $request->filled('end_date')) {
+            if ($request->filled('start_date')) {
+                $query->whereDate('point_of_sale_transactions.created_at', '>=', $request->start_date);
+            }
+            if ($request->filled('end_date')) {
+                $query->whereDate('point_of_sale_transactions.created_at', '<=', $request->end_date);
+            }
         } elseif ($request->filled('period') && $request->period !== 'all') {
             if ($request->period === 'today') {
                 $query->whereDate('point_of_sale_transactions.created_at', Carbon::today());
@@ -135,17 +139,23 @@ class ReportMartCashflowController extends Controller
                     'outlet_count' => number_format($summaryTotal->outlet_count ?? 0, 0, ',', '.') . ' Transaksi',
                     'koperasi_amount' => 'Rp ' . number_format($summaryTotal->koperasi_amount ?? 0, 0, ',', '.'),
                     'koperasi_count' => number_format($summaryTotal->koperasi_count ?? 0, 0, ',', '.') . ' Transaksi',
+                    'avg_amount' => 'Rp ' . number_format($avgAmount, 0, ',', '.'),
                 ]);
             }
 
+            $defaults = [];
             if (!$request->has('draw')) {
-                $request->merge(['draw' => 1]);
+                $defaults['draw'] = 1;
             }
             if (!$request->has('start')) {
-                $request->merge(['start' => 0]);
+                $defaults['start'] = 0;
             }
             if (!$request->has('length')) {
-                $request->merge(['length' => 25]);
+                $defaults['length'] = 25;
+            }
+            if (!empty($defaults)) {
+                $request->merge($defaults);
+                request()->merge($defaults);
             }
 
             $data = $query->latest('point_of_sale_transactions.created_at');
