@@ -105,7 +105,7 @@ class ReportMartCashflowController extends Controller
             if ($request->period === 'today') {
                 $query->whereDate('point_of_sale_transactions.created_at', Carbon::today());
             } elseif ($request->period === 'week') {
-                $query->whereBetween('point_of_sale_transactions.created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('point_of_sale_transactions.created_at', [Carbon::now()->startOfWeek(Carbon::MONDAY), Carbon::now()->endOfWeek(Carbon::SUNDAY)]);
             } elseif ($request->period === 'month') {
                 $query->whereBetween('point_of_sale_transactions.created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
             }

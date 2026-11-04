@@ -134,6 +134,10 @@ class ReportMartCashflowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Arus Kas Mart');
         $response->assertSee('Riwayat Transaksi Belanja Siswa (Saldo)');
+        // Verify scripts are actually rendered into HTML via @stack('js')
+        $response->assertSee("$('#filter-daterange').daterangepicker", false);
+        $response->assertSee("$('#table-mart-cashflow').DataTable", false);
+        $response->assertSee("applyCustomDateRange", false);
 
         // Access route as Koordinator Pondok Mart
         $responseKoord = $this->actingAs($this->koordinatorAdmin, 'web')->get(route('report-mart-cashflow.index'));
@@ -257,6 +261,28 @@ class ReportMartCashflowTest extends TestCase
         $codesToday = collect($resToday->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
         $this->assertStringContainsString('POS-TODAY-222', $codesToday);
         $this->assertStringNotContainsString('POS-OLD-111', $codesToday);
+
+        // Filter via preset period = today
+        $resPeriodToday = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'period' => 'today',
+            ]));
+        $resPeriodToday->assertStatus(200);
+        $codesPeriodToday = collect($resPeriodToday->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-TODAY-222', $codesPeriodToday);
+        $this->assertStringNotContainsString('POS-OLD-111', $codesPeriodToday);
+
+        // Filter via preset period = week
+        $resPeriodWeek = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'period' => 'week',
+            ]));
+        $resPeriodWeek->assertStatus(200);
+        $codesPeriodWeek = collect($resPeriodWeek->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-TODAY-222', $codesPeriodWeek);
+        $this->assertStringNotContainsString('POS-OLD-111', $codesPeriodWeek);
     }
 
     /**
