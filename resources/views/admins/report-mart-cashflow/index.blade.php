@@ -42,18 +42,18 @@
         box-shadow: 0 10px 25px -5px rgba(100, 116, 139, 0.07) !important;
     }
     .summary-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
     }
     .summary-watermark {
         position: absolute;
-        right: -10px;
-        bottom: -15px;
-        font-size: 72px;
+        right: -8px;
+        bottom: -12px;
+        font-size: 56px;
         opacity: 0.04;
         pointer-events: none;
         line-height: 1;
@@ -131,21 +131,21 @@
             @endif
 
             <!-- GRID SUMMARY CARDS -->
-            <div class="row g-6 mb-6">
+            <div class="row g-4 mb-5">
                 <!-- 1. Total Belanja Saldo -->
                 <div class="col-md-3">
-                    <div class="card premium-card summary-card-smooth summary-card-total p-6 h-100">
+                    <div class="card premium-card summary-card-smooth summary-card-total px-5 py-3 h-100">
                         <i class="fa-solid fa-wallet summary-watermark text-primary"></i>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <x-text.label class="text-slate-400">Total Belanja Saldo</x-text.label>
-                            <div class="summary-icon bg-primary text-white shadow-sm">
-                                <i class="fa-solid fa-money-bill-wave fs-5 text-white"></i>
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <div class="d-flex flex-column">
+                                <x-text.label class="text-slate-400 lh-sm mb-0.5">Total Belanja Saldo</x-text.label>
+                                <x-text.amount id="stat-total-amount" class="fs-2 text-primary lh-1 mt-0.5">Rp 0</x-text.amount>
+                            </div>
+                            <div class="summary-icon bg-primary text-white shadow-sm flex-shrink-0">
+                                <i class="fa-solid fa-money-bill-wave fs-6 text-white"></i>
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <x-text.amount id="stat-total-amount" class="fs-2 text-primary">Rp 0</x-text.amount>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between mt-1 pt-1">
                             <x-text.caption class="text-slate-500" id="stat-total-count">0 Transaksi</x-text.caption>
                             <span class="badge bg-light-primary text-primary px-2 py-0.5 fs-9 fw-bold rounded-pill">Total Terfilter</span>
                         </div>
@@ -154,18 +154,18 @@
 
                 <!-- 2. Tagihan Outlet ke Bank Saldo -->
                 <div class="col-md-3">
-                    <div class="card premium-card summary-card-smooth summary-card-outlet p-6 h-100">
+                    <div class="card premium-card summary-card-smooth summary-card-outlet px-5 py-3 h-100">
                         <i class="fa-solid fa-shop summary-watermark text-warning"></i>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <x-text.label class="text-slate-400">Tagihan Saldo Outlet</x-text.label>
-                            <div class="summary-icon bg-warning text-white shadow-sm" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;">
-                                <i class="fa-solid fa-file-invoice-dollar fs-5 text-white"></i>
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <div class="d-flex flex-column">
+                                <x-text.label class="text-slate-400 lh-sm mb-0.5">Tagihan Saldo Outlet</x-text.label>
+                                <x-text.amount id="stat-outlet-amount" class="fs-2 lh-1 mt-0.5" style="color: #d97706 !important;">Rp 0</x-text.amount>
+                            </div>
+                            <div class="summary-icon bg-warning text-white shadow-sm flex-shrink-0" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;">
+                                <i class="fa-solid fa-file-invoice-dollar fs-6 text-white"></i>
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <x-text.amount id="stat-outlet-amount" class="fs-2" style="color: #d97706 !important;">Rp 0</x-text.amount>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between mt-1 pt-1">
                             <x-text.caption class="text-slate-500" id="stat-outlet-count">0 Transaksi</x-text.caption>
                             <span class="badge bg-light-warning text-warning px-2 py-0.5 fs-9 fw-bold rounded-pill">Ditagihkan ke Bank</span>
                         </div>
@@ -174,18 +174,18 @@
 
                 <!-- 3. Belanja di Pondok Mart / Koperasi -->
                 <div class="col-md-3">
-                    <div class="card premium-card summary-card-smooth summary-card-koperasi p-6 h-100">
+                    <div class="card premium-card summary-card-smooth summary-card-koperasi px-5 py-3 h-100">
                         <i class="fa-solid fa-store summary-watermark text-success"></i>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <x-text.label class="text-slate-400">Pondok Mart / Koperasi</x-text.label>
-                            <div class="summary-icon bg-success text-white shadow-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;">
-                                <i class="fa-solid fa-building-columns fs-5 text-white"></i>
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <div class="d-flex flex-column">
+                                <x-text.label class="text-slate-400 lh-sm mb-0.5">Pondok Mart / Koperasi</x-text.label>
+                                <x-text.amount id="stat-koperasi-amount" class="fs-2 lh-1 mt-0.5" style="color: #10b981 !important;">Rp 0</x-text.amount>
+                            </div>
+                            <div class="summary-icon bg-success text-white shadow-sm flex-shrink-0" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;">
+                                <i class="fa-solid fa-building-columns fs-6 text-white"></i>
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <x-text.amount id="stat-koperasi-amount" class="fs-2" style="color: #10b981 !important;">Rp 0</x-text.amount>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between mt-1 pt-1">
                             <x-text.caption class="text-slate-500" id="stat-koperasi-count">0 Transaksi</x-text.caption>
                             <span class="badge bg-light-success text-success px-2 py-0.5 fs-9 fw-bold rounded-pill">Bank Saldo Utama</span>
                         </div>
@@ -194,18 +194,18 @@
 
                 <!-- 4. Rata-rata Belanja -->
                 <div class="col-md-3">
-                    <div class="card premium-card summary-card-smooth summary-card-count p-6 h-100">
+                    <div class="card premium-card summary-card-smooth summary-card-count px-5 py-3 h-100">
                         <i class="fa-solid fa-receipt summary-watermark text-slate-400"></i>
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <x-text.label class="text-slate-400">Rata-rata Belanja</x-text.label>
-                            <div class="summary-icon bg-secondary text-gray-700 shadow-sm">
-                                <i class="fa-solid fa-calculator fs-5 text-gray-700"></i>
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <div class="d-flex flex-column">
+                                <x-text.label class="text-slate-400 lh-sm mb-0.5">Rata-rata Belanja</x-text.label>
+                                <x-text.amount id="stat-avg-amount" class="fs-2 text-dark lh-1 mt-0.5">Rp 0</x-text.amount>
+                            </div>
+                            <div class="summary-icon bg-secondary text-gray-700 shadow-sm flex-shrink-0">
+                                <i class="fa-solid fa-calculator fs-6 text-gray-700"></i>
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <x-text.amount id="stat-avg-amount" class="fs-2 text-dark">Rp 0</x-text.amount>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between mt-1 pt-1">
                             <x-text.caption class="text-slate-500">Nominal per Siswa</x-text.caption>
                             <span class="badge bg-light-secondary text-gray-700 px-2 py-0.5 fs-9 fw-bold rounded-pill">Per Struk</span>
                         </div>
@@ -214,7 +214,7 @@
             </div>
 
             <!-- FILTER CARD -->
-            <div class="card premium-card bg-white p-6 mb-6">
+            <div class="card premium-card bg-white px-5 py-4 mb-5">
                 <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-4">
                     
                     <!-- Filter Sumber Transaksi (Pondok Mart / Koperasi vs Outlet) -->
@@ -241,32 +241,8 @@
                         @endif
                     </div>
 
-                    <!-- Dropdown Pilihan Outlet Spesifik -->
-                    <div class="d-flex flex-column gap-2" style="min-width: 220px;">
-                        <x-text.label class="text-slate-400">Pilih Unit / Outlet</x-text.label>
-                        <select class="form-select form-select-sm form-select-solid fw-bold" id="filter-outlet-id">
-                            @if(!$isRestricted)
-                                <option value="all">Semua Outlet</option>
-                                @foreach($outlets as $o)
-                                    <option value="{{ $o->id }}">{{ $o->name }} {{ $o->id === $koperasiId ? '(Pondok Mart)' : '' }}</option>
-                                @endforeach
-                            @else
-                                @if(count($outlets) > 1)
-                                    <option value="all" selected>Semua Outlet Ditugaskan</option>
-                                    @foreach($outlets as $o)
-                                        <option value="{{ $o->id }}">{{ $o->name }}</option>
-                                    @endforeach
-                                @else
-                                    @foreach($outlets as $o)
-                                        <option value="{{ $o->id }}" selected>{{ $o->name }}</option>
-                                    @endforeach
-                                @endif
-                            @endif
-                        </select>
-                    </div>
-
                     <!-- Filter Rentang Tanggal -->
-                    <div class="d-flex flex-column gap-2" style="min-width: 250px;">
+                    <div class="d-flex flex-column gap-2 flex-grow-1" style="min-width: 240px; max-width: 340px;">
                         <x-text.label class="text-slate-400">Rentang Tanggal</x-text.label>
                         <div class="position-relative">
                             <input class="form-control form-control-sm form-control-solid fw-bold ps-9" placeholder="Pilih Periode Tanggal" id="filter-daterange" readonly />
@@ -388,40 +364,6 @@
             $(this).addClass('active');
             currentSource = $(this).data('source');
 
-            // Reset dropdown outlet jika memilih kelompok sumber
-            if (currentSource === 'koperasi') {
-                $('#filter-outlet-id').val('{{ $koperasiId }}');
-            } else if (currentSource === 'all') {
-                $('#filter-outlet-id').val('all');
-            } else if (currentSource === 'outlet') {
-                // Jika sedang memilih outlet spesifik yang bukan koperasi, pertahankan, jika koperasi reset ke all
-                if ($('#filter-outlet-id').val() === '{{ $koperasiId }}') {
-                    $('#filter-outlet-id').val('all');
-                }
-            }
-
-            loadSummary();
-            table.ajax.reload();
-        });
-
-        // Filter Dropdown Outlet
-        $('#filter-outlet-id').on('change', function() {
-            const selectedVal = $(this).val();
-            if (selectedVal === '{{ $koperasiId }}') {
-                $('.btn-source-filter').removeClass('active');
-                $('.btn-source-filter[data-source="koperasi"]').addClass('active');
-                currentSource = 'koperasi';
-            } else if (selectedVal === 'all') {
-                if (currentSource === 'koperasi') {
-                    currentSource = 'all';
-                    $('.btn-source-filter').removeClass('active');
-                    $('.btn-source-filter[data-source="all"]').addClass('active');
-                }
-            } else {
-                $('.btn-source-filter').removeClass('active');
-                $('.btn-source-filter[data-source="outlet"]').addClass('active');
-                currentSource = 'outlet';
-            }
             loadSummary();
             table.ajax.reload();
         });
@@ -448,7 +390,6 @@
             endDate = '';
 
             $('#filter-daterange').val('');
-            $('#filter-outlet-id').val(isRestricted ? ($('#filter-outlet-id option[value="all"]').length ? 'all' : $('#filter-outlet-id option:first').val()) : 'all');
 
             $('.btn-source-filter').removeClass('active');
             $('.btn-source-filter[data-source="' + currentSource + '"]').addClass('active');
@@ -474,7 +415,6 @@
                 url: "{{ route('report-mart-cashflow.index') }}",
                 data: function(d) {
                     d.source = currentSource;
-                    d.outlet_id = $('#filter-outlet-id').val();
                     d.period = currentPeriod;
                     d.start_date = startDate;
                     d.end_date = endDate;
@@ -516,7 +456,6 @@
                 data: {
                     data: 'summary',
                     source: currentSource,
-                    outlet_id: $('#filter-outlet-id').val(),
                     period: currentPeriod,
                     start_date: startDate,
                     end_date: endDate
@@ -540,7 +479,6 @@
         $('#btn-export-excel').on('click', function() {
             const params = new URLSearchParams({
                 source: currentSource,
-                outlet_id: $('#filter-outlet-id').val() || '',
                 period: currentPeriod,
                 start_date: startDate,
                 end_date: endDate

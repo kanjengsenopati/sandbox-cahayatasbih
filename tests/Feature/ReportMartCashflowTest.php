@@ -583,10 +583,12 @@ class ReportMartCashflowTest extends TestCase
         $this->assertStringContainsString('POS-MULT-A-01', $codesA);
         $this->assertStringNotContainsString('POS-MULT-B-02', $codesA);
 
-        // Verify HTML page includes 'Semua Outlet Ditugaskan' option
+        // Verify HTML page includes 'Scope Khusus Outlet' badge and assigned outlet names without redundant dropdown
         $pageRes = $this->actingAs($multiAdmin, 'web')->get(route('report-mart-cashflow.index'));
         $pageRes->assertStatus(200);
-        $pageRes->assertSee('Semua Outlet Ditugaskan');
+        $pageRes->assertSee('Scope Khusus Outlet');
+        $pageRes->assertSee($outletA->name);
+        $pageRes->assertDontSee('Pilih Unit / Outlet');
     }
 
     /**
