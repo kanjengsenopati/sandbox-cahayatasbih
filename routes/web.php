@@ -541,6 +541,8 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start report arus kas mart
     Route::get('report-mart-cashflow/export', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'export'])->name('report-mart-cashflow.export');
+    Route::post('report-mart-cashflow/handover', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'storeHandover'])->name('report-mart-cashflow.handover.store');
+    Route::delete('report-mart-cashflow/handover/{id}', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'destroyHandover'])->name('report-mart-cashflow.handover.destroy');
     Route::get('report-mart-cashflow', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'index'])->name('report-mart-cashflow.index');
     // end report arus kas mart
 
