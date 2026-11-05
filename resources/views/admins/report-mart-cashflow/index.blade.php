@@ -71,6 +71,12 @@
         color: #ffffff !important;
         border-color: #2563eb !important;
     }
+    /* Sembunyikan kotak pencarian Select2 pada dropdown serah terima dana (kedua sisi) */
+    .select2-container--hide-search .select2-search,
+    .select2-dropdown:has([id*="handover-sender-id"]) .select2-search,
+    .select2-dropdown:has([id*="handover-recipient-id"]) .select2-search {
+        display: none !important;
+    }
     /* Top Navigation Pill Tabs (PakRT Native Vite Glassmorphism) */
     .mart-top-tabs {
         background: rgba(255, 255, 255, 0.85);
@@ -584,6 +590,7 @@
                                                 id="handover-sender-id"
                                                 class="form-select form-select-solid fw-semibold"
                                                 data-control="select2"
+                                                data-hide-search="true"
                                                 data-placeholder="Pilih User Pemberi"
                                                 required>
                                             <option value="">-- Pilih User Pemberi --</option>
@@ -603,6 +610,7 @@
                                                 id="handover-recipient-id"
                                                 class="form-select form-select-solid fw-semibold"
                                                 data-control="select2"
+                                                data-hide-search="true"
                                                 data-placeholder="Pilih User Penerima"
                                                 required>
                                             <option value="">-- Pilih User Penerima --</option>
@@ -1003,10 +1011,18 @@
             }
         });
 
+        // Inisialisasi Select2 tanpa kotak pencarian untuk kedua dropdown (Pemberi & Penerima)
+        if ($.fn.select2) {
+            $('#handover-sender-id, #handover-recipient-id').select2({
+                minimumResultsForSearch: Infinity
+            });
+        }
+
         // DataTables 2: Riwayat Serah Terima Dana (Handover Koperasi -> Outlet)
         const handoverTable = $('#table-mart-handover').DataTable({
             processing: true,
             serverSide: true,
+            searching: false,
             ajax: {
                 url: "{{ route('report-mart-cashflow.index') }}",
                 data: function(d) {
