@@ -532,7 +532,7 @@
                 <!-- 2-COLUMN LAYOUT: FORMULIR SERAH TERIMA (LEFT) & TABEL RIWAYAT (RIGHT) -->
                 <div class="row g-5">
                     <!-- Left Column: Formulir Serah Terima Dana -->
-                    <div class="col-lg-5">
+                    <div class="col-lg-4">
                         <div class="card premium-card bg-white p-6 h-100">
                             <div class="d-flex align-items-center justify-content-between pb-4 mb-4 border-bottom border-gray-200">
                                 <div>
@@ -588,50 +588,49 @@
                                     </div>
                                 </div>
 
-                                <!-- 3. Nama Pemberi & Nama Penerima (Select User) -->
-                                <div class="row g-3 mb-4">
-                                    <div class="col-md-6">
-                                        <label class="form-label mb-1.5">
-                                            <x-text.label class="text-slate-500">Nama Pemberi (Koperasi) <span class="text-danger">*</span></x-text.label>
-                                        </label>
-                                        <select name="sender_id"
-                                                id="handover-sender-id"
-                                                class="form-select form-select-solid fw-semibold"
-                                                data-control="select2"
-                                                data-hide-search="true"
-                                                data-placeholder="Pilih User Pemberi"
-                                                required>
-                                            <option value="">-- Pilih User Pemberi --</option>
-                                            @foreach($koperasiAdmins ?? $admins as $adm)
-                                                <option value="{{ $adm->id }}" {{ $defaultSenderId === $adm->id ? 'selected' : '' }}>
-                                                    {{ $adm->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label mb-1.5">
-                                            <x-text.label class="text-slate-500">Nama Penerima (Outlet) <span class="text-danger">*</span></x-text.label>
-                                        </label>
-                                        <select name="recipient_id"
-                                                id="handover-recipient-id"
-                                                class="form-select form-select-solid fw-semibold"
-                                                data-control="select2"
-                                                data-hide-search="true"
-                                                data-placeholder="Pilih User Penerima"
-                                                required>
-                                            <option value="">-- Pilih User Penerima --</option>
-                                            @foreach($outletAdmins ?? $admins as $adm)
-                                                <option value="{{ $adm->id }}" {{ $defaultRecipientId === $adm->id ? 'selected' : '' }}>
-                                                    {{ $adm->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
+                                <!-- 3. Nama Pemberi (Koperasi) -->
+                                <div class="mb-4">
+                                    <label class="form-label mb-1.5">
+                                        <x-text.label class="text-slate-500">Nama Pemberi (Koperasi) <span class="text-danger">*</span></x-text.label>
+                                    </label>
+                                    <select name="sender_id"
+                                            id="handover-sender-id"
+                                            class="form-select form-select-solid fw-semibold"
+                                            data-control="select2"
+                                            data-hide-search="true"
+                                            data-placeholder="Pilih User Pemberi"
+                                            required>
+                                        <option value="">-- Pilih User Pemberi --</option>
+                                        @foreach($koperasiAdmins ?? $admins as $adm)
+                                            <option value="{{ $adm->id }}" {{ $defaultSenderId === $adm->id ? 'selected' : '' }}>
+                                                {{ $adm->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
-                                <!-- 4. Upload Bukti Transfer -->
+                                <!-- 4. Nama Penerima (Outlet) -->
+                                <div class="mb-4">
+                                    <label class="form-label mb-1.5">
+                                        <x-text.label class="text-slate-500">Nama Penerima (Outlet) <span class="text-danger">*</span></x-text.label>
+                                    </label>
+                                    <select name="recipient_id"
+                                            id="handover-recipient-id"
+                                            class="form-select form-select-solid fw-semibold"
+                                            data-control="select2"
+                                            data-hide-search="true"
+                                            data-placeholder="Pilih User Penerima"
+                                            required>
+                                        <option value="">-- Pilih User Penerima --</option>
+                                        @foreach($outletAdmins ?? $admins as $adm)
+                                            <option value="{{ $adm->id }}" {{ $defaultRecipientId === $adm->id ? 'selected' : '' }}>
+                                                {{ $adm->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <!-- 5. Upload Bukti Transfer -->
                                 <div class="mb-4">
                                     <label class="form-label mb-1.5">
                                         <x-text.label class="text-slate-500">Upload Bukti Transfer / Serah Terima</x-text.label>
@@ -689,7 +688,7 @@
                     </div>
 
                     <!-- Right Column: Tabel Riwayat Serah Terima Dana -->
-                    <div class="col-lg-7">
+                    <div class="col-lg-8">
                         <div class="card premium-card bg-white p-6 h-100">
                             <div class="card-header border-0 px-0 pt-0 pb-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
                                 <div>

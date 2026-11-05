@@ -791,7 +791,7 @@ class ReportMartCashflowController extends Controller
                 $entries[] = [
                     'time' => trim($m[4]),
                     'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); font-weight: 600;"><i class="fa-solid fa-arrows-rotate me-1 fs-9 text-warning"></i> Revisi Nominal</span>',
-                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9">(Koperasi)</span></div>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9 ms-1">(Koperasi)</span></div>',
                     'content' => '<div>Penyesuaian nominal dari <span class="text-muted text-decoration-line-through">' . e(trim($m[2])) . '</span> menjadi <strong class="text-success fs-7">' . e(trim($m[3])) . '</strong></div>' . (trim($m[5]) !== '' ? '<div class="text-gray-700 mt-1"><span class="badge bg-light text-muted fs-9 fw-semibold me-1">Alasan:</span> ' . e(trim($m[5])) . '</div>' : ''),
                 ];
             }
@@ -800,7 +800,7 @@ class ReportMartCashflowController extends Controller
                 $entries[] = [
                     'time' => trim($m[3]),
                     'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(147, 51, 234, 0.1); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.2); font-weight: 600;"><i class="fa-solid fa-thumbs-up me-1 fs-9" style="color: #9333ea;"></i> Revisi Disetujui</span>',
-                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-store fs-8 text-warning"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9">(Outlet)</span></div>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-shop fs-8 text-warning"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9 ms-1">(Outlet)</span></div>',
                     'content' => '<div>Menyetujui revisi nominal penarikan sebesar <strong class="text-success fs-7">' . e(trim($m[1])) . '</strong>. Siap ditransfer oleh Koperasi.</div>',
                 ];
             }
@@ -810,7 +810,7 @@ class ReportMartCashflowController extends Controller
                 $entries[] = [
                     'time' => trim($m[2]),
                     'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 600;"><i class="fa-solid fa-circle-check me-1 fs-9 text-success"></i> Selesai Ditransfer</span>',
-                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9">(Koperasi)</span></div>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9 ms-1">(Koperasi)</span></div>',
                     'content' => '<div>Dana telah ditransfer ke Outlet dan bukti transfer diunggah.</div>' . ($catatan !== '' ? '<div class="text-gray-700 mt-1"><span class="badge bg-light text-muted fs-9 fw-semibold me-1">Catatan:</span> ' . e($catatan) . '</div>' : ''),
                 ];
             }
@@ -819,7 +819,7 @@ class ReportMartCashflowController extends Controller
                 $entries[] = [
                     'time' => trim($m[3]),
                     'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); font-weight: 600;"><i class="fa-solid fa-ban me-1 fs-9 text-danger"></i> Dibatalkan</span>',
-                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-user-xmark fs-8 text-danger"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9">(' . e(trim($m[1])) . ')</span></div>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-user-xmark fs-8 text-danger"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9 ms-1">(' . e(trim($m[1])) . ')</span></div>',
                     'content' => '<div><span class="text-danger fw-semibold">Alasan Pembatalan:</span> ' . e(trim($m[4])) . '</div>',
                 ];
             }
@@ -846,11 +846,36 @@ class ReportMartCashflowController extends Controller
             ];
         }
 
+        $formatTimeTwoLines = function ($rawTimeStr) {
+            $raw = trim((string) $rawTimeStr);
+            $datePart = '';
+            $timePart = '';
+
+            if (preg_match('/^(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s+(\d{1,2}:\d{2})$/u', $raw, $tm)) {
+                $datePart = $tm[1];
+                $timePart = $tm[2] . ' WIB';
+            } elseif (preg_match('/(\d{1,2}:\d{2})/u', $raw, $tm)) {
+                $timePart = $tm[1] . ' WIB';
+                $datePart = trim(str_replace($tm[1], '', $raw));
+            } else {
+                $datePart = $raw;
+            }
+
+            if ($timePart !== '') {
+                return '<div class="d-flex flex-column">
+                    ' . ($datePart ? '<span class="text-muted fs-9 text-nowrap">' . e($datePart) . '</span>' : '') . '
+                    <span class="fw-bold text-gray-800 fs-8 font-monospace text-nowrap">' . e($timePart) . '</span>
+                </div>';
+            }
+
+            return '<span class="text-muted fs-8 font-monospace text-nowrap">' . e($raw) . '</span>';
+        };
+
         $rowsHtml = '';
         foreach ($entries as $idx => $entry) {
             $isLast = ($idx === count($entries) - 1);
             $rowsHtml .= '<tr style="' . ($isLast ? 'border-bottom: none;' : '') . '">
-                <td class="ps-4 py-2 text-muted fs-8 font-monospace text-nowrap align-top">' . $entry['time'] . ' WIB</td>
+                <td class="ps-4 py-2 align-top text-nowrap">' . $formatTimeTwoLines($entry['time']) . '</td>
                 <td class="py-2 text-nowrap align-top">' . $entry['stage_badge'] . '</td>
                 <td class="py-2 text-nowrap align-top">' . $entry['actor'] . '</td>
                 <td class="py-2 pe-4 fs-8 align-top text-break">' . $entry['content'] . '</td>
@@ -873,7 +898,7 @@ class ReportMartCashflowController extends Controller
                 <table class="table table-sm align-middle fs-8 mb-0">
                     <thead style="background-color: #f1f5f9;">
                         <tr class="text-muted fw-bold text-uppercase fs-9">
-                            <th class="ps-4 py-2 w-140px">Waktu</th>
+                            <th class="ps-4 py-2 w-120px">Waktu</th>
                             <th class="py-2 w-130px">Tahap</th>
                             <th class="py-2 w-160px">Aktor</th>
                             <th class="py-2 pe-4">Catatan / Alasan / Log Evidence</th>
