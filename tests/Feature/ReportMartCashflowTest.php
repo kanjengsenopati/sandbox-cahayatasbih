@@ -902,5 +902,95 @@ class ReportMartCashflowTest extends TestCase
         $this->assertEquals('Rp 0', $summaryRestored['handover_submitted_amount']);
         $this->assertEquals('Rp 150.000', $summaryRestored['handover_pending_amount']);
     }
+
+    /**
+     * Test R7: Specific Pemberi (Maulana Syarif, Rani) & Penerima (Gus Rifqi) options,
+     * exclusion of dummy 'Test' & 'oke' data, and Audit Log on OutletHandover.
+     */
+    public function test_r7_handover_koperasi_pemberi_and_outlet_penerima_filter_and_dummy_cleanup()
+    {
+        // 1. Verify view data contains only Maulana Syarif & Rani for Pemberi, and Gus Rifqi for Penerima
+        $response = $this->actingAs($this->superAdmin, 'web')
+            ->get(route('report-mart-cashflow.index', ['tab' => 'handover']));
+
+        $response->assertStatus(200);
+
+        $koperasiAdmins = $response->viewData('koperasiAdmins');
+        $outletAdmins = $response->viewData('outletAdmins');
+
+        $this->assertNotNull($koperasiAdmins);
+        $this->assertNotNull($outletAdmins);
+
+        $pemberiEmails = $koperasiAdmins->pluck('email')->toArray();
+        $this->assertContains('maulanasyarif@gmail.com', $pemberiEmails);
+        $this->assertContains('maulani@gmail.com', $pemberiEmails);
+        $this->assertNotContains('bendaharasmp@gmail.com', $pemberiEmails);
+        $this->assertNotContains('superadmin@gmail.com', $pemberiEmails);
+
+        $penerimaEmails = $outletAdmins->pluck('email')->toArray();
+        $this->assertContains('gusrifqi@email.com', $penerimaEmails);
+        $this->assertNotContains('maulanasyarif@gmail.com', $penerimaEmails);
+
+        // 2. Dummy handovers ('Test' / 'oke') are filtered out from summary and table
+        $testDate = '2096-10-10';
+        $dummyHandover = \App\Models\OutletHandover::create([
+            'handover_type' => \App\Models\OutletHandover::TYPE_KOPERASI_TO_OUTLET,
+            'outlet_id' => $this->koperasiOutlet->id,
+            'recipient_outlet_id' => $this->unitOutlet->id,
+            'recipient_id' => $this->outletStaffAdmin->id,
+            'recipient_name' => $this->outletStaffAdmin->name,
+            'cashier_id' => $this->superAdmin->id,
+            'created_by' => $this->superAdmin->id,
+            'amount' => 546000,
+            'system_amount' => 546000,
+            'discrepancy' => 0,
+            'status' => \App\Models\OutletHandover::STATUS_APPROVED,
+            'handover_date' => $testDate,
+            'notes' => 'oke',
+        ]);
+
+        $summaryRes = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        // Must NOT count dummy handover in submitted amount
+        $this->assertEquals('Rp 0', $summaryRes['handover_submitted_amount']);
+
+        $tableRes = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'handover_table',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200);
+
+        $rows = collect($tableRes->json('data') ?? []);
+        $this->assertCount(0, $rows);
+
+        // 3. Verify Activity Log integration on OutletHandover model
+        $validHandover = \App\Models\OutletHandover::create([
+            'handover_type' => \App\Models\OutletHandover::TYPE_KOPERASI_TO_OUTLET,
+            'outlet_id' => $this->koperasiOutlet->id,
+            'recipient_outlet_id' => $this->unitOutlet->id,
+            'recipient_id' => $this->outletStaffAdmin->id,
+            'recipient_name' => $this->outletStaffAdmin->name,
+            'cashier_id' => $this->koordinatorAdmin->id,
+            'created_by' => $this->koordinatorAdmin->id,
+            'amount' => 250000,
+            'system_amount' => 250000,
+            'discrepancy' => 0,
+            'status' => \App\Models\OutletHandover::STATUS_APPROVED,
+            'handover_date' => $testDate,
+            'notes' => 'Serah terima resmi audit',
+        ]);
+
+        $this->assertDatabaseHas('activity_log', [
+            'subject_type' => \App\Models\OutletHandover::class,
+            'subject_id' => $validHandover->id,
+            'event' => 'created',
+        ]);
+    }
 }
 

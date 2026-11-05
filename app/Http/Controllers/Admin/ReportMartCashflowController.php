@@ -201,7 +201,11 @@ class ReportMartCashflowController extends Controller
                     'recipient' => fn ($q) => $q->withTrashed(),
                     'creator' => fn ($q) => $q->withTrashed(),
                     'cashier' => fn ($q) => $q->withTrashed(),
-                ])->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET);
+                ])->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+                  ->where(function ($q) {
+                      $q->whereNull('notes')
+                        ->orWhereNotIn(DB::raw('LOWER(TRIM(notes))'), ['test', 'oke']);
+                  });
 
                 if ($isRestricted) {
                     if (empty($allowedOutletIds)) {
@@ -431,9 +435,42 @@ class ReportMartCashflowController extends Controller
         }
 
         $admins = Admin::where('is_active', true)->orderBy('name')->get();
+
+        // Filter ketat petugas Koperasi: hanya Maulana Syarif dan Rani (Maulani Izza Maharani)
+        $koperasiAdmins = Admin::where('is_active', true)
+            ->where(function ($q) {
+                $q->where('email', 'maulanasyarif@gmail.com')
+                  ->orWhere('email', 'maulani@gmail.com');
+            })
+            ->orderBy('name')
+            ->get();
+
+        if ($koperasiAdmins->isEmpty()) {
+            $koperasiAdmins = Admin::where('is_active', true)
+                ->where(function ($q) {
+                    $q->where('name', 'like', '%Maulana Syarif%')
+                      ->orWhere('name', 'like', '%Maulani%');
+                })
+                ->orderBy('name')
+                ->get();
+        }
+
+        // Filter ketat penerima Outlet: hanya Gus Maulana Rifqi
+        $outletAdmins = Admin::where('is_active', true)
+            ->where('email', 'gusrifqi@email.com')
+            ->get();
+
+        if ($outletAdmins->isEmpty()) {
+            $outletAdmins = Admin::where('is_active', true)
+                ->where('name', 'like', '%Gus Maulana Rifqi%')
+                ->get();
+        }
+
         $handoverSummary = $this->getHandoverSummaryMetrics($request, $koperasiId, $isRestricted, $allowedOutletIds);
-        $defaultSenderId = $user?->id;
-        $defaultRecipientId = Admin::where('email', 'gusrifqi@email.com')->value('id')
+        $defaultSenderId = $koperasiAdmins->contains('id', $user?->id)
+            ? $user->id
+            : $koperasiAdmins->first()?->id;
+        $defaultRecipientId = $outletAdmins->first()?->id
             ?? ($defaultOutlet ? Admin::where('outlet_id', $defaultOutlet->id)->value('id') : null);
         $defaultRecipientOutletId = $defaultOutlet?->id;
 
@@ -444,6 +481,8 @@ class ReportMartCashflowController extends Controller
             'koperasiId' => $koperasiId,
             'defaultSource' => $defaultSource,
             'admins' => $admins,
+            'koperasiAdmins' => $koperasiAdmins,
+            'outletAdmins' => $outletAdmins,
             'handoverSummary' => $handoverSummary,
             'defaultSenderId' => $defaultSenderId,
             'defaultRecipientId' => $defaultRecipientId,
@@ -490,7 +529,11 @@ class ReportMartCashflowController extends Controller
         $outletSalesAmount = (float) ($salesAggregate->total_amount ?? 0);
 
         $handoverQuery = OutletHandover::query()
-            ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET);
+            ->where('handover_type', OutletHandover::TYPE_KOPERASI_TO_OUTLET)
+            ->where(function ($q) {
+                $q->whereNull('notes')
+                  ->orWhereNotIn(DB::raw('LOWER(TRIM(notes))'), ['test', 'oke']);
+            });
 
         if ($isRestricted) {
             if (empty($allowedOutletIds)) {
