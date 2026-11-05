@@ -587,7 +587,7 @@
                                                 data-placeholder="Pilih User Pemberi"
                                                 required>
                                             <option value="">-- Pilih User Pemberi --</option>
-                                            @foreach($admins as $adm)
+                                            @foreach($koperasiAdmins ?? $admins as $adm)
                                                 <option value="{{ $adm->id }}" {{ $defaultSenderId === $adm->id ? 'selected' : '' }}>
                                                     {{ $adm->name }}
                                                 </option>
@@ -606,7 +606,7 @@
                                                 data-placeholder="Pilih User Penerima"
                                                 required>
                                             <option value="">-- Pilih User Penerima --</option>
-                                            @foreach($admins as $adm)
+                                            @foreach($outletAdmins ?? $admins as $adm)
                                                 <option value="{{ $adm->id }}" {{ $defaultRecipientId === $adm->id ? 'selected' : '' }}>
                                                     {{ $adm->name }}
                                                 </option>
@@ -745,6 +745,7 @@
         let startDate = '';
         let endDate = '';
         let currentPendingRaw = {{ (int) ($handoverSummary['handover_pending_raw'] ?? 0) }};
+        let userManuallyEditedAmount = false;
         const isRestricted = {{ $isRestricted ? 'true' : 'false' }};
 
         // Format angka ke ribuan Indonesia
@@ -936,6 +937,7 @@
 
         // Reset Filter Button
         $('#btn-reset-filter').on('click', function() {
+            userManuallyEditedAmount = false;
             currentSource = isRestricted ? 'outlet' : 'all';
             currentPeriod = 'all';
             startDate = '';
@@ -1078,6 +1080,13 @@
                     .attr('style', 'background-color: rgba(16, 185, 129, 0.14); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);')
                     .text('Lunas Diserahkan');
             }
+
+            // Tampilkan default nominal sebesar sisa dana existing yang ada bila belum diedit manual oleh user
+            if (!userManuallyEditedAmount) {
+                const defaultNominal = currentPendingRaw > 0 ? currentPendingRaw : 0;
+                $('#handover-amount-raw').val(defaultNominal > 0 ? defaultNominal : '');
+                $('#handover-amount-display').val(defaultNominal > 0 ? formatRupiahNumber(defaultNominal) : '');
+            }
         }
 
         // Fungsi Load Summary Cards (Tab 1 & Tab 2)
@@ -1111,6 +1120,7 @@
 
         // Format Input Nominal Serah Terima
         $('#handover-amount-display').on('input', function() {
+            userManuallyEditedAmount = true;
             const rawDigits = $(this).val().replace(/\D/g, '');
             $('#handover-amount-raw').val(rawDigits);
             $(this).val(formatRupiahNumber(rawDigits));
@@ -1118,8 +1128,9 @@
 
         // Tombol "Isi Sisa Belum Diserahkan"
         $('#btn-fill-pending').on('click', function() {
+            userManuallyEditedAmount = true;
             const targetAmount = currentPendingRaw > 0 ? currentPendingRaw : 0;
-            $('#handover-amount-raw').val(targetAmount);
+            $('#handover-amount-raw').val(targetAmount > 0 ? targetAmount : '');
             $('#handover-amount-display').val(targetAmount > 0 ? formatRupiahNumber(targetAmount) : '0');
         });
 
@@ -1179,6 +1190,7 @@
                 },
                 success: function(res) {
                     $btn.prop('disabled', false).html(originalHtml);
+                    userManuallyEditedAmount = false;
 
                     // Reset bukti & catatan, lalu muat ulang metrik dan tabel
                     $('#handover-evidence').val('');
