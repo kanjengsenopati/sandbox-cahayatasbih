@@ -7,6 +7,14 @@
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
         border: none !important;
     }
+    #table-mart-handover tbody tr.child-panel-container > td {
+        background-color: transparent !important;
+        padding: 0 16px 14px 16px !important;
+        border-top: none !important;
+    }
+    .panel-chevron {
+        transition: transform 0.2s ease-in-out;
+    }
     .safe-padding {
         padding-left: 20px !important;
         padding-right: 20px !important;
@@ -697,12 +705,11 @@
                                 <table class="table align-middle table-row-dashed fs-7 gy-3 gs-3" id="table-mart-handover">
                                     <thead>
                                         <tr class="text-start text-muted fw-bolder fs-8 text-uppercase gs-0" style="background-color: #f8fafc; border-radius: 12px;">
-                                            <th class="w-35px ps-3">No</th>
+                                            <th class="w-55px ps-3 text-center">No / Log</th>
                                             <th class="min-w-100px">Tanggal</th>
                                             <th class="min-w-130px">Pemberi (Koperasi)</th>
                                             <th class="min-w-130px">Penerima (Outlet)</th>
                                             <th class="min-w-120px">Nominal</th>
-                                            <th class="min-w-130px">Keterangan</th>
                                             <th class="min-w-100px text-center">Bukti Transfer</th>
                                             <th class="min-w-110px text-center">Status</th>
                                             <th class="min-w-90px text-center pe-3">Aksi</th>
@@ -1085,16 +1092,41 @@
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'ps-3' },
+                {
+                    data: 'DT_RowIndex',
+                    name: 'DT_RowIndex',
+                    orderable: false,
+                    searchable: false,
+                    className: 'ps-3 text-center align-middle',
+                    render: function(data, type, row) {
+                        return '<div class="d-flex align-items-center justify-content-center gap-1.5">' +
+                               '  <button type="button" class="btn btn-icon btn-sm btn-light-primary w-24px h-24px rounded-circle btn-toggle-panel shadow-xs" title="Buka / Tutup Panel Catatan & Log">' +
+                               '    <i class="fa-solid fa-chevron-up fs-9 panel-chevron"></i>' +
+                               '  </button>' +
+                               '  <span class="fs-8 fw-bold text-gray-700">' + data + '</span>' +
+                               '</div>';
+                    }
+                },
                 { data: 'date', name: 'handover_date' },
                 { data: 'sender', name: 'sender', orderable: false },
                 { data: 'recipient', name: 'recipient_name' },
                 { data: 'amount', name: 'amount' },
-                { data: 'notes', name: 'notes' },
                 { data: 'evidence', name: 'evidence', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'status', name: 'status', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center pe-3' }
             ],
+            drawCallback: function(settings) {
+                const api = this.api();
+                api.rows().every(function() {
+                    const row = this;
+                    const data = row.data();
+                    if (data && data.notes_nested_html) {
+                        row.child(data.notes_nested_html, 'child-panel-container p-0 border-0').show();
+                        $(row.node()).addClass('shown');
+                        $(row.node()).find('.panel-chevron').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                    }
+                });
+            },
             order: [[1, 'desc']],
             pageLength: 10,
             language: {
@@ -1298,6 +1330,26 @@
                     }
                 }
             });
+        });
+
+        // Toggle Expandable Panel Keterangan & Log Evidence
+        $('#table-mart-handover tbody').on('click', '.btn-toggle-panel', function(e) {
+            e.stopPropagation();
+            const tr = $(this).closest('tr');
+            const row = handoverTable.row(tr);
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+                tr.find('.panel-chevron').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                const data = row.data();
+                if (data && data.notes_nested_html) {
+                    row.child(data.notes_nested_html, 'child-panel-container p-0 border-0').show();
+                    tr.addClass('shown');
+                    tr.find('.panel-chevron').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                }
+            }
         });
 
         // Preview Bukti Transfer Modal

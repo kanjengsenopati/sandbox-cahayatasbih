@@ -277,6 +277,9 @@ class ReportMartCashflowController extends Controller
                         }
                         return '<span class="text-gray-700 fs-7">' . e($notes) . '</span>';
                     })
+                    ->addColumn('notes_nested_html', function ($row) {
+                        return $this->buildNestedNotesHtml($row);
+                    })
                     ->addColumn('evidence', function ($row) {
                         if ($row->evidence_path) {
                             $url = asset($row->evidence_path);
@@ -465,7 +468,7 @@ class ReportMartCashflowController extends Controller
                         $html .= '</div>';
                         return $html;
                     })
-                    ->rawColumns(['date', 'sender', 'recipient', 'amount', 'notes', 'evidence', 'status', 'action'])
+                    ->rawColumns(['date', 'sender', 'recipient', 'amount', 'notes', 'notes_nested_html', 'evidence', 'status', 'action'])
                     ->make(true);
             }
 
@@ -754,6 +757,134 @@ class ReportMartCashflowController extends Controller
             'handover_pending_raw' => $pendingAmount,
             'handover_pending_amount' => 'Rp ' . number_format($pendingAmount, 0, ',', '.'),
         ];
+    }
+
+    /**
+     * Build auto-expandable nested table HTML for notes and audit evidence log.
+     */
+    protected function buildNestedNotesHtml($row): string
+    {
+        $rawNotes = trim((string) ($row->notes ?? ''));
+
+        // Parse individual log entries and comments
+        $entries = [];
+
+        // Split by newlines or bracket boundaries
+        $rawLines = preg_split('/\r\n|\r|\n/', $rawNotes);
+        $cleanLines = [];
+        foreach ($rawLines as $l) {
+            $l = trim($l);
+            if ($l === '') continue;
+            // If line contains multiple stamps like "[...] [...]", split them
+            $subSegments = preg_split('/(?<=\])\s*(?=\[)/', $l);
+            foreach ($subSegments as $sub) {
+                $sub = trim($sub);
+                if ($sub !== '') {
+                    $cleanLines[] = $sub;
+                }
+            }
+        }
+
+        foreach ($cleanLines as $line) {
+            // Pattern 1: [Revisi Nominal oleh {user} dari {old} menjadi {new} pada {date}]: {reason}
+            if (preg_match('/^\[Revisi Nominal oleh (.*?) dari (.*?) menjadi (.*?) pada (.*?)\]:\s*(.*)$/ui', $line, $m)) {
+                $entries[] = [
+                    'time' => trim($m[4]),
+                    'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); font-weight: 600;"><i class="fa-solid fa-arrows-rotate me-1 fs-9 text-warning"></i> Revisi Nominal</span>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9">(Koperasi)</span></div>',
+                    'content' => '<div>Penyesuaian nominal dari <span class="text-muted text-decoration-line-through">' . e(trim($m[2])) . '</span> menjadi <strong class="text-success fs-7">' . e(trim($m[3])) . '</strong></div>' . (trim($m[5]) !== '' ? '<div class="text-gray-700 mt-1"><span class="badge bg-light text-muted fs-9 fw-semibold me-1">Alasan:</span> ' . e(trim($m[5])) . '</div>' : ''),
+                ];
+            }
+            // Pattern 2: [Revisi nominal sebesar {amount} disetujui oleh {user} pada {date} - Siap diserahkan Koperasi]
+            elseif (preg_match('/^\[Revisi nominal sebesar (.*?) disetujui oleh (.*?) pada (.*?)(?:\s*-\s*Siap diserahkan Koperasi)?\]/ui', $line, $m)) {
+                $entries[] = [
+                    'time' => trim($m[3]),
+                    'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(147, 51, 234, 0.1); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.2); font-weight: 600;"><i class="fa-solid fa-thumbs-up me-1 fs-9" style="color: #9333ea;"></i> Revisi Disetujui</span>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-store fs-8 text-warning"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9">(Outlet)</span></div>',
+                    'content' => '<div>Menyetujui revisi nominal penarikan sebesar <strong class="text-success fs-7">' . e(trim($m[1])) . '</strong>. Siap ditransfer oleh Koperasi.</div>',
+                ];
+            }
+            // Pattern 3: [Diserahkan & ditransfer oleh {user} pada {date}] Catatan: {notes}
+            elseif (preg_match('/^\[Diserahkan & ditransfer oleh (.*?) pada (.*?)\](?:\s*Catatan:\s*(.*))?$/ui', $line, $m)) {
+                $catatan = isset($m[3]) ? trim($m[3]) : '';
+                $entries[] = [
+                    'time' => trim($m[2]),
+                    'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 600;"><i class="fa-solid fa-circle-check me-1 fs-9 text-success"></i> Selesai Ditransfer</span>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-building-columns fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e(trim($m[1])) . '</span> <span class="text-muted fs-9">(Koperasi)</span></div>',
+                    'content' => '<div>Dana telah ditransfer ke Outlet dan bukti transfer diunggah.</div>' . ($catatan !== '' ? '<div class="text-gray-700 mt-1"><span class="badge bg-light text-muted fs-9 fw-semibold me-1">Catatan:</span> ' . e($catatan) . '</div>' : ''),
+                ];
+            }
+            // Pattern 4: [{actorRole} ({user}) pada {date}]: {reason}
+            elseif (preg_match('/^\[(.*?) \((.*?)\) pada (.*?)\]:\s*(.*)$/ui', $line, $m)) {
+                $entries[] = [
+                    'time' => trim($m[3]),
+                    'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); font-weight: 600;"><i class="fa-solid fa-ban me-1 fs-9 text-danger"></i> Dibatalkan</span>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-user-xmark fs-8 text-danger"></i> <span class="fw-bold text-gray-800">' . e(trim($m[2])) . '</span> <span class="text-muted fs-9">(' . e(trim($m[1])) . ')</span></div>',
+                    'content' => '<div><span class="text-danger fw-semibold">Alasan Pembatalan:</span> ' . e(trim($m[4])) . '</div>',
+                ];
+            }
+            // Pattern 5: Regular initial remarks/notes
+            else {
+                $creatorName = $row->creator?->name ?? ($row->recipient?->name ?? 'Pengaju');
+                $entries[] = [
+                    'time' => $row->created_at ? Carbon::parse($row->created_at)->translatedFormat('d M Y H:i') : ($row->handover_date ? Carbon::parse($row->handover_date)->translatedFormat('d M Y') : '-'),
+                    'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); font-weight: 600;"><i class="fa-solid fa-file-pen me-1 fs-9 text-primary"></i> Pengajuan / Catatan</span>',
+                    'actor' => '<div class="d-flex align-items-center gap-1.5"><i class="fa-solid fa-user-pen fs-8 text-primary"></i> <span class="fw-bold text-gray-800">' . e($creatorName) . '</span></div>',
+                    'content' => '<span class="text-gray-800">' . e($line) . '</span>',
+                ];
+            }
+        }
+
+        // If no lines found, provide default creation stamp
+        if (empty($entries)) {
+            $creatorName = $row->creator?->name ?? ($row->recipient?->name ?? 'Pengurus');
+            $entries[] = [
+                'time' => $row->created_at ? Carbon::parse($row->created_at)->translatedFormat('d M Y H:i') : '-',
+                'stage_badge' => '<span class="badge px-2.5 py-1" style="background-color: rgba(100, 116, 139, 0.1); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.2); font-weight: 600;"><i class="fa-solid fa-info me-1 fs-9"></i> Inisiasi</span>',
+                'actor' => '<span class="fw-semibold text-gray-800">' . e($creatorName) . '</span>',
+                'content' => '<span class="text-muted fst-italic fs-8">Tidak ada catatan tambahan yang ditulis pada serah terima ini.</span>',
+            ];
+        }
+
+        $rowsHtml = '';
+        foreach ($entries as $idx => $entry) {
+            $isLast = ($idx === count($entries) - 1);
+            $rowsHtml .= '<tr style="' . ($isLast ? 'border-bottom: none;' : '') . '">
+                <td class="ps-4 py-2 text-muted fs-8 font-monospace text-nowrap align-top">' . $entry['time'] . ' WIB</td>
+                <td class="py-2 text-nowrap align-top">' . $entry['stage_badge'] . '</td>
+                <td class="py-2 text-nowrap align-top">' . $entry['actor'] . '</td>
+                <td class="py-2 pe-4 fs-8 align-top text-break">' . $entry['content'] . '</td>
+            </tr>';
+        }
+
+        return '<div class="nested-notes-panel p-3 my-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+            <div class="d-flex align-items-center justify-content-between mb-2.5 px-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light-primary text-primary fw-bolder fs-9 px-2.5 py-1" style="border-radius: 8px;">
+                        <i class="fa-solid fa-list-check me-1 fs-9"></i> KETERANGAN &amp; LOG EVIDENCE
+                    </span>
+                    <span class="text-muted fs-9">Riwayat empiris catatan serah terima dana Outlet</span>
+                </div>
+                <div>
+                    <span class="text-muted fs-9 fst-italic">Total ' . count($entries) . ' Catatan / Log</span>
+                </div>
+            </div>
+            <div class="table-responsive bg-white rounded-3 border border-gray-200 shadow-xs" style="border-radius: 12px; overflow: hidden;">
+                <table class="table table-sm align-middle fs-8 mb-0">
+                    <thead style="background-color: #f1f5f9;">
+                        <tr class="text-muted fw-bold text-uppercase fs-9">
+                            <th class="ps-4 py-2 w-140px">Waktu</th>
+                            <th class="py-2 w-130px">Tahap</th>
+                            <th class="py-2 w-160px">Aktor</th>
+                            <th class="py-2 pe-4">Catatan / Alasan / Log Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-700">
+                        ' . $rowsHtml . '
+                    </tbody>
+                </table>
+            </div>
+        </div>';
     }
 
     /**
