@@ -844,6 +844,7 @@ class ReportMartCashflowTest extends TestCase
             'created_by' => $this->koordinatorAdmin->id,
             'recipient_id' => $this->outletStaffAdmin->id,
             'amount' => 100000,
+            'status' => \App\Models\OutletHandover::STATUS_PENDING,
             'notes' => 'Transfer pencairan saldo Outlet tahap 1 via Bank Mandiri',
         ]);
 
@@ -852,9 +853,32 @@ class ReportMartCashflowTest extends TestCase
             'receiver_id' => $this->outletStaffAdmin->id,
             'outlet_id' => $this->unitOutlet->id,
             'amount' => 100000,
+            'status' => \App\Models\CashFlow::STATUS_PENDING,
         ]);
 
-        // 5. Verify Summary after Rp 100.000 handover: Diserahkan = Rp 100.000, Belum Diserahkan = Rp 50.000
+        // Prior to confirmation: submitted is still Rp 0, pending is Rp 150.000
+        $summaryPending = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 0', $summaryPending['handover_submitted_amount']);
+        $this->assertEquals('Rp 150.000', $summaryPending['handover_pending_amount']);
+
+        // Recipient confirms handover
+        $confirmRes = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.confirm', $handoverId));
+        $confirmRes->assertStatus(200)->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('outlet_handovers', [
+            'id' => $handoverId,
+            'status' => \App\Models\OutletHandover::STATUS_APPROVED,
+            'verified_by' => $this->outletStaffAdmin->id,
+        ]);
+
+        // 5. Verify Summary after Rp 100.000 handover is approved: Diserahkan = Rp 100.000, Belum Diserahkan = Rp 50.000
         $summaryAfter = $this->actingAs($this->superAdmin, 'web')
             ->getJson(route('report-mart-cashflow.index', [
                 'data' => 'summary',
@@ -991,6 +1015,163 @@ class ReportMartCashflowTest extends TestCase
             'subject_id' => $validHandover->id,
             'event' => 'created',
         ]);
+    }
+
+    /**
+     * Test R8: Handover Business Workflow:
+     * - Created with status PENDING and CashFlow PENDING.
+     * - Only recipient (or Super Admin) can confirm -> status becomes APPROVED, CashFlow APPROVED.
+     * - Other users cannot confirm (403).
+     * - Rejection / Cancellation with required reason -> status becomes REJECTED, CashFlow REJECTED.
+     * - Diserahkan amount stays at Rp 0 and pending amount rolls back to original value.
+     */
+    public function test_r8_handover_pending_confirmation_workflow_and_rollback()
+    {
+        $testDate = '2097-01-15';
+
+        // 1. Create POS sales at unit outlet: Rp 200.000
+        $this->createPosTransaction([
+            'payment_code' => 'POS-R8-001',
+            'outlet_id' => $this->unitOutlet->id,
+            'student_id' => $this->studentA->id,
+            'admin_id' => $this->outletStaffAdmin->id,
+            'pay_amount' => 200000,
+            'created_at' => Carbon::parse($testDate . ' 10:00:00'),
+        ]);
+
+        // Initial summary: Total = 200.000, Submitted = 0, Pending = 200.000
+        $summaryInit = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 200.000', $summaryInit['handover_total_amount']);
+        $this->assertEquals('Rp 0', $summaryInit['handover_submitted_amount']);
+        $this->assertEquals('Rp 200.000', $summaryInit['handover_pending_amount']);
+
+        // 2. Koperasi officer (Maulana Syarif) submits Handover of Rp 120.000
+        $storeRes = $this->actingAs($this->koordinatorAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.store'), [
+                'handover_date' => $testDate,
+                'amount' => '120.000',
+                'sender_id' => $this->koordinatorAdmin->id,
+                'recipient_id' => $this->outletStaffAdmin->id,
+                'recipient_outlet_id' => $this->unitOutlet->id,
+                'notes' => 'Pencairan sebagian saldo outlet ke Gus Rifqi',
+            ]);
+
+        $storeRes->assertStatus(200)->assertJsonPath('success', true);
+        $handoverId = $storeRes->json('data.id');
+
+        // Check DB: PENDING status
+        $this->assertDatabaseHas('outlet_handovers', [
+            'id' => $handoverId,
+            'status' => \App\Models\OutletHandover::STATUS_PENDING,
+            'amount' => 120000,
+        ]);
+        $this->assertDatabaseHas('cash_flows', [
+            'amount' => 120000,
+            'status' => \App\Models\CashFlow::STATUS_PENDING,
+        ]);
+
+        // While pending: submitted amount is still Rp 0, pending amount is still Rp 200.000!
+        $summaryPending = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 0', $summaryPending['handover_submitted_amount']);
+        $this->assertEquals('Rp 200.000', $summaryPending['handover_pending_amount']);
+
+        // 3. Unauthorized user (sender or random staff who is NOT recipient and not Super Admin) tries to confirm -> 403
+        $unauthorizedConfirm = $this->actingAs($this->koordinatorAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.confirm', $handoverId));
+        $unauthorizedConfirm->assertStatus(403);
+
+        // 4. Designated recipient confirms -> Success 200
+        $confirmRes = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.confirm', $handoverId));
+        $confirmRes->assertStatus(200)->assertJsonPath('success', true);
+
+        // Verify status is now APPROVED and verified_by is set
+        $this->assertDatabaseHas('outlet_handovers', [
+            'id' => $handoverId,
+            'status' => \App\Models\OutletHandover::STATUS_APPROVED,
+            'verified_by' => $this->outletStaffAdmin->id,
+        ]);
+        $this->assertDatabaseHas('cash_flows', [
+            'amount' => 120000,
+            'status' => \App\Models\CashFlow::STATUS_APPROVED,
+        ]);
+
+        // Summary is now updated: submitted = 120.000, pending = 80.000
+        $summaryConfirmed = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 120.000', $summaryConfirmed['handover_submitted_amount']);
+        $this->assertEquals('Rp 80.000', $summaryConfirmed['handover_pending_amount']);
+
+        // Cannot confirm again -> 422
+        $duplicateConfirm = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.confirm', $handoverId));
+        $duplicateConfirm->assertStatus(422);
+
+        // 5. Test Reject / Cancel (Rollback) flow on a second handover
+        $storeRes2 = $this->actingAs($this->koordinatorAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.store'), [
+                'handover_date' => $testDate,
+                'amount' => '80.000',
+                'sender_id' => $this->koordinatorAdmin->id,
+                'recipient_id' => $this->outletStaffAdmin->id,
+                'recipient_outlet_id' => $this->unitOutlet->id,
+                'notes' => 'Pencairan sisa dana tahap 2',
+            ]);
+
+        $storeRes2->assertStatus(200);
+        $handoverId2 = $storeRes2->json('data.id');
+
+        // Reject without reason fails validation -> 422
+        $rejectNoReason = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.reject', $handoverId2), [
+                'reason' => '',
+            ]);
+        $rejectNoReason->assertStatus(422);
+
+        // Reject with valid reason -> 200
+        $rejectRes = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.reject', $handoverId2), [
+                'reason' => 'Nominal transfer bank belum masuk ke rekening outlet',
+            ]);
+        $rejectRes->assertStatus(200)->assertJsonPath('success', true);
+
+        // Verify status becomes REJECTED and CashFlow is REJECTED
+        $this->assertDatabaseHas('outlet_handovers', [
+            'id' => $handoverId2,
+            'status' => \App\Models\OutletHandover::STATUS_REJECTED,
+        ]);
+        $this->assertDatabaseHas('cash_flows', [
+            'amount' => 80000,
+            'status' => \App\Models\CashFlow::STATUS_REJECTED,
+        ]);
+
+        // Summary metrics: rejected handover is rolled back, so remaining pending is still Rp 80.000!
+        $summaryRollback = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 120.000', $summaryRollback['handover_submitted_amount']);
+        $this->assertEquals('Rp 80.000', $summaryRollback['handover_pending_amount']);
     }
 }
 

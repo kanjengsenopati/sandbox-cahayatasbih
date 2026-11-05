@@ -700,7 +700,8 @@
                                             <th class="min-w-120px">Nominal</th>
                                             <th class="min-w-130px">Keterangan</th>
                                             <th class="min-w-100px text-center">Bukti Transfer</th>
-                                            <th class="min-w-60px text-center pe-3">Aksi</th>
+                                            <th class="min-w-110px text-center">Status</th>
+                                            <th class="min-w-90px text-center pe-3">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-700 fw-semibold">
@@ -1040,6 +1041,7 @@
                 { data: 'amount', name: 'amount' },
                 { data: 'notes', name: 'notes' },
                 { data: 'evidence', name: 'evidence', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'status', name: 'status', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center pe-3' }
             ],
             order: [[1, 'desc']],
@@ -1255,6 +1257,166 @@
             $('#modal-evidence-download').attr('href', url);
             $('#modal-evidence-caption').text('Nominal Diserahkan: ' + amount);
             $('#modal-preview-evidence').modal('show');
+        });
+
+        // Konfirmasi Penerimaan Serah Terima Dana
+        $(document).on('click', '.btn-confirm-handover', function() {
+            const confirmUrl = $(this).data('url');
+            const amount = $(this).data('amount');
+            const sender = $(this).data('sender');
+
+            const executeConfirm = function() {
+                $.ajax({
+                    url: confirmUrl,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    success: function(res) {
+                        loadSummary();
+                        handoverTable.ajax.reload();
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Dikonfirmasi!',
+                                text: res.message || 'Serah terima dana berhasil dikonfirmasi.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Gagal mengonfirmasi serah terima dana.';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                        } else {
+                            alert(msg);
+                        }
+                    }
+                });
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Konfirmasi Penerimaan Dana?',
+                    html: '<div class="text-start fs-7 text-gray-700">' +
+                          '<p class="mb-2">Pastikan Anda telah memeriksa mutasi transfer atau dana tunai yang diserahkan:</p>' +
+                          '<div class="p-3 rounded mb-2" style="background-color: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">' +
+                          '<div><strong>Nominal Diserahkan:</strong> <span class="text-success fw-bolder fs-6">' + amount + '</span></div>' +
+                          '<div class="text-muted fs-8 mt-1"><strong>Pemberi (Koperasi):</strong> ' + sender + '</div>' +
+                          '</div>' +
+                          '<p class="mb-0 text-muted fst-italic fs-8">*Setelah dikonfirmasi, transaksi ini resmi selesai dan tercatat aktif pada arus kas penerima.</p>' +
+                          '</div>',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Ya, Konfirmasi Terima',
+                    cancelButtonText: 'Batal'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        executeConfirm();
+                    }
+                });
+            } else if (confirm('Konfirmasi penerimaan dana sebesar ' + amount + '?')) {
+                executeConfirm();
+            }
+        });
+
+        // Tolak / Batalkan Serah Terima Dana (Rollback)
+        $(document).on('click', '.btn-reject-handover', function() {
+            const rejectUrl = $(this).data('url');
+            const amount = $(this).data('amount');
+            const actionLabel = $(this).data('action-label') || 'Batalkan';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: actionLabel + ' Serah Terima Dana?',
+                    html: '<div class="text-start fs-7 text-gray-700">' +
+                          '<p class="mb-2">Transaksi sebesar <strong class="text-danger">' + amount + '</strong> akan di-rollback kembali utuh ke tagihan dana belum diserahkan.</p>' +
+                          '<label class="form-label fw-bold text-gray-800 fs-8 mt-2">Alasan Pembatalan / Masalah Transfer <span class="text-danger">*</span>:</label>' +
+                          '</div>',
+                    input: 'textarea',
+                    inputPlaceholder: 'Tuliskan alasan spesifik di sini (minimal 3 karakter)...',
+                    inputAttributes: {
+                        'aria-label': 'Tuliskan alasan di sini',
+                        'style': 'height: 90px; font-size: 13px; border-radius: 10px;'
+                    },
+                    inputValidator: (value) => {
+                        if (!value || value.trim().length < 3) {
+                            return 'Alasan pembatalan / penolakan wajib diisi (minimal 3 karakter)!';
+                        }
+                    },
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-ban me-1"></i> Ya, ' + actionLabel,
+                    cancelButtonText: 'Kembali'
+                }).then(function(result) {
+                    if (result.isConfirmed && result.value) {
+                        $.ajax({
+                            url: rejectUrl,
+                            type: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                reason: result.value
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                loadSummary();
+                                handoverTable.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil ' + actionLabel,
+                                    text: res.message || 'Transaksi telah dibatalkan dan saldo di-rollback.',
+                                    timer: 2200,
+                                    showConfirmButton: false
+                                });
+                            },
+                            error: function(xhr) {
+                                const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                                    ? xhr.responseJSON.message
+                                    : 'Gagal memproses pembatalan serah terima.';
+                                Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                            }
+                        });
+                    }
+                });
+            } else {
+                const reason = prompt('Tuliskan alasan pembatalan / penolakan serah terima ' + amount + ':');
+                if (reason && reason.trim().length >= 3) {
+                    $.ajax({
+                        url: rejectUrl,
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            reason: reason
+                        },
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        success: function(res) {
+                            loadSummary();
+                            handoverTable.ajax.reload();
+                            alert(res.message || 'Transaksi dibatalkan.');
+                        },
+                        error: function(xhr) {
+                            alert(xhr.responseJSON ? xhr.responseJSON.message : 'Gagal.');
+                        }
+                    });
+                }
+            }
         });
 
         // Hapus Riwayat Serah Terima Dana
