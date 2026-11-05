@@ -528,15 +528,15 @@
                         <div class="card premium-card bg-white p-6 h-100">
                             <div class="d-flex align-items-center justify-content-between pb-4 mb-4 border-bottom border-gray-200">
                                 <div>
-                                    <x-text.h2>Formulir Serah Terima Dana</x-text.h2>
-                                    <x-text.caption class="text-slate-400">Input pencairan dana transaksi saldo dari Koperasi ke Pengelola Outlet</x-text.caption>
+                                    <x-text.h2>{{ ($isOutletStaff ?? false) ? 'Pengajuan Penarikan Dana Outlet' : 'Formulir Serah Terima Dana' }}</x-text.h2>
+                                    <x-text.caption class="text-slate-400">{{ ($isOutletStaff ?? false) ? 'Ajukan pencairan dana transaksi saldo santri ke Pengelola Koperasi' : 'Input pencairan dana transaksi saldo dari Koperasi ke Pengelola Outlet' }}</x-text.caption>
                                 </div>
                                 <div class="summary-icon bg-light-primary text-primary">
-                                    <i class="fa-solid fa-paper-plane fs-6 text-primary"></i>
+                                    <i class="fa-solid {{ ($isOutletStaff ?? false) ? 'fa-paper-plane' : 'fa-hand-holding-dollar' }} fs-6 text-primary"></i>
                                 </div>
                             </div>
 
-                            <form id="form-mart-handover" action="{{ route('report-mart-cashflow.handover.store') }}" method="POST" enctype="multipart/form-data">
+                            <form id="form-mart-handover" action="{{ ($isOutletStaff ?? false) ? route('report-mart-cashflow.handover.request') : route('report-mart-cashflow.handover.store') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <input type="hidden" name="recipient_outlet_id" value="{{ $defaultRecipientOutletId }}">
 
@@ -670,7 +670,11 @@
 
                                 <!-- Submit Button -->
                                 <button type="submit" class="btn btn-primary w-100 fw-bolder py-3 shadow-sm" id="btn-submit-handover" style="border-radius: 14px;">
-                                    <i class="fa-solid fa-check-double me-2"></i> Simpan & Serahkan Dana ke Outlet
+                                    @if($isOutletStaff ?? false)
+                                        <i class="fa-solid fa-paper-plane me-2"></i> Kirim Pengajuan Penarikan ke Koperasi
+                                    @else
+                                        <i class="fa-solid fa-check-double me-2"></i> Simpan & Serahkan Dana ke Outlet
+                                    @endif
                                 </button>
                             </form>
                         </div>
@@ -741,6 +745,53 @@
                     <i class="fa-solid fa-up-right-from-square me-1 fs-8"></i> Buka Ukuran Penuh di Tab Baru
                 </a>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Serahkan Dana ke Outlet (Upload Bukti Transfer) -->
+<div class="modal fade" id="modal-accept-handover" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px">
+        <div class="modal-content premium-card overflow-hidden">
+            <div class="modal-header border-0 pb-2 pt-5 px-6 d-flex align-items-center justify-content-between">
+                <div>
+                    <x-text.h2>Serahkan Dana ke Outlet</x-text.h2>
+                    <x-text.caption class="text-slate-400">Unggah foto bukti transfer / struk untuk menyelesaikan serah terima</x-text.caption>
+                </div>
+                <button type="button" class="btn btn-icon btn-sm btn-light-secondary rounded-circle" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark fs-6"></i>
+                </button>
+            </div>
+            <form id="form-accept-handover" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body px-6 py-4">
+                    <div class="p-3 mb-4 rounded-3" style="background-color: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-gray-600 fs-7 fw-semibold">Nominal Diserahkan:</span>
+                            <span class="text-success fw-bolder fs-4" id="accept-modal-amount">Rp 0</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-gray-600 fs-8 fw-semibold">Penerima (Outlet):</span>
+                            <span class="text-gray-900 fw-bold fs-7" id="accept-modal-recipient">-</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-1.5 fs-8 fw-bold text-gray-700">Foto Bukti Transfer / Struk Penyerahan <span class="text-danger">*</span></label>
+                        <input type="file" name="evidence" id="accept-handover-evidence" class="form-control form-control-solid fs-7" accept="image/jpeg,image/png,image/jpg,image/webp,application/pdf" required>
+                        <span class="text-muted fs-9 mt-1 d-block">Format: JPG, PNG, WEBP, atau PDF (Maks. 3MB)</span>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label mb-1.5 fs-8 fw-bold text-gray-700">Catatan Tambahan (Opsional)</label>
+                        <textarea name="notes" id="accept-handover-notes" rows="2" class="form-control form-control-solid fs-7" placeholder="Contoh: Transfer via BCA / Mandiri Rekening Outlet..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-5 px-6 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-light-secondary fw-semibold px-4 py-2" data-bs-dismiss="modal" style="border-radius: 12px;">Batal</button>
+                    <button type="submit" class="btn btn-success fw-bolder px-5 py-2" id="btn-submit-accept-handover" style="border-radius: 12px;">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Transfer & Selesaikan
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1257,6 +1308,225 @@
             $('#modal-evidence-download').attr('href', url);
             $('#modal-evidence-caption').text('Nominal Diserahkan: ' + amount);
             $('#modal-preview-evidence').modal('show');
+        });
+
+        // Buka Modal Terima Pengajuan / Transfer Dana ke Outlet
+        $(document).on('click', '.btn-accept-handover', function() {
+            const acceptUrl = $(this).data('url');
+            const amount = $(this).data('amount');
+            const recipient = $(this).data('recipient');
+
+            $('#form-accept-handover').attr('action', acceptUrl);
+            $('#accept-modal-amount').text(amount);
+            $('#accept-modal-recipient').text(recipient);
+            $('#accept-handover-evidence').val('');
+            $('#accept-handover-notes').val('');
+            $('#modal-accept-handover').modal('show');
+        });
+
+        // Submit Form Accept Handover (Upload Bukti Transfer)
+        $('#form-accept-handover').on('submit', function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('accept-handover-evidence');
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Bukti Belum Dipilih', text: 'Wajib mengunggah foto bukti transfer / struk penyerahan.' });
+                } else {
+                    alert('Wajib mengunggah foto bukti transfer / struk penyerahan.');
+                }
+                return;
+            }
+
+            const formData = new FormData(this);
+            const $btn = $('#btn-submit-accept-handover');
+            const originalHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Mengunggah...');
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                success: function(res) {
+                    $btn.prop('disabled', false).html(originalHtml);
+                    $('#modal-accept-handover').modal('hide');
+                    loadSummary();
+                    handoverTable.ajax.reload();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Serah Terima Selesai!',
+                            text: res.message || 'Dana berhasil diserahkan ke Outlet.',
+                            timer: 2200,
+                            showConfirmButton: false
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false).html(originalHtml);
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message
+                        : 'Gagal menyelesaikan serah terima dana.';
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                    } else {
+                        alert(msg);
+                    }
+                }
+            });
+        });
+
+        // Revisi Nominal Pengajuan oleh Koperasi
+        $(document).on('click', '.btn-revise-handover', function() {
+            const reviseUrl = $(this).data('url');
+            const currentAmountFormatted = $(this).data('amount');
+            const currentAmountRaw = $(this).data('amount-raw') || 0;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Revisi Nominal Penarikan',
+                    html: '<div class="text-start fs-7 text-gray-700">' +
+                          '<p class="mb-2">Nominal Pengajuan Semula: <strong class="text-primary">' + currentAmountFormatted + '</strong></p>' +
+                          '<div class="mb-3">' +
+                          '  <label class="form-label fw-bold text-gray-800 fs-8 mb-1">Nominal Revisi Baru (Rp) <span class="text-danger">*</span>:</label>' +
+                          '  <input type="number" id="swal-revise-amount" class="form-control form-control-solid fs-7 fw-bold" placeholder="Contoh: 500000" min="1" value="' + currentAmountRaw + '">' +
+                          '</div>' +
+                          '<div>' +
+                          '  <label class="form-label fw-bold text-gray-800 fs-8 mb-1">Alasan Penyesuaian / Revisi <span class="text-danger">*</span>:</label>' +
+                          '  <textarea id="swal-revise-reason" rows="2" class="form-control form-control-solid fs-7" placeholder="Contoh: Saldo kas tunai yang tersedia saat ini Rp 500.000, sisanya besok..."></textarea>' +
+                          '</div>' +
+                          '<p class="mb-0 text-muted fst-italic fs-9 mt-2">*Pengajuan revisi akan dikirim ke Pengelola Outlet untuk disetujui terlebih dahulu.</p>' +
+                          '</div>',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d97706',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i> Ajukan Revisi',
+                    cancelButtonText: 'Batal',
+                    preConfirm: () => {
+                        const newAmount = parseInt(document.getElementById('swal-revise-amount').value || '0', 10);
+                        const reason = (document.getElementById('swal-revise-reason').value || '').trim();
+
+                        if (!newAmount || newAmount <= 0) {
+                            Swal.showValidationMessage('Nominal revisi harus lebih dari Rp 0!');
+                            return false;
+                        }
+                        if (!reason || reason.length < 3) {
+                            Swal.showValidationMessage('Alasan revisi wajib diisi (minimal 3 karakter)!');
+                            return false;
+                        }
+
+                        return { amount: newAmount, reason: reason };
+                    }
+                }).then(function(result) {
+                    if (result.isConfirmed && result.value) {
+                        $.ajax({
+                            url: reviseUrl,
+                            type: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                amount: result.value.amount,
+                                reason: result.value.reason
+                            },
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            success: function(res) {
+                                loadSummary();
+                                handoverTable.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Revisi Terkirim!',
+                                    text: res.message || 'Nominal revisi telah diajukan ke Outlet.',
+                                    timer: 2200,
+                                    showConfirmButton: false
+                                });
+                            },
+                            error: function(xhr) {
+                                const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                                    ? xhr.responseJSON.message
+                                    : 'Gagal mengajukan revisi nominal.';
+                                Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        // Setujui Revisi Nominal oleh Outlet
+        $(document).on('click', '.btn-accept-revision', function() {
+            const acceptRevisionUrl = $(this).data('url');
+            const amount = $(this).data('amount');
+
+            const executeAcceptRevision = function() {
+                $.ajax({
+                    url: acceptRevisionUrl,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    success: function(res) {
+                        loadSummary();
+                        handoverTable.ajax.reload();
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Revisi Disetujui!',
+                                text: res.message || 'Persetujuan revisi berhasil disimpan.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        const msg = (xhr.responseJSON && xhr.responseJSON.message)
+                            ? xhr.responseJSON.message
+                            : 'Gagal menyetujui revisi nominal.';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'error', title: 'Gagal', text: msg });
+                        } else {
+                            alert(msg);
+                        }
+                    }
+                });
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Setujui Revisi Nominal?',
+                    html: '<div class="text-start fs-7 text-gray-700">' +
+                          '<p class="mb-2">Anda akan menyetujui penyesuaian nominal penarikan dana menjadi:</p>' +
+                          '<div class="p-3 rounded mb-2 text-center" style="background-color: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">' +
+                          '<span class="text-success fw-bolder fs-4">' + amount + '</span>' +
+                          '</div>' +
+                          '<p class="mb-0 text-muted fst-italic fs-8">*Setelah disetujui, Koperasi dapat segera melakukan proses transfer dan serah terima dana.</p>' +
+                          '</div>',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-thumbs-up me-1"></i> Ya, Setujui',
+                    cancelButtonText: 'Batal'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        executeAcceptRevision();
+                    }
+                });
+            } else if (confirm('Setujui revisi nominal sebesar ' + amount + '?')) {
+                executeAcceptRevision();
+            }
         });
 
         // Konfirmasi Penerimaan Serah Terima Dana

@@ -541,6 +541,10 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start report arus kas mart
     Route::get('report-mart-cashflow/export', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'export'])->name('report-mart-cashflow.export');
+    Route::post('report-mart-cashflow/handover/request', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'requestWithdrawal'])->name('report-mart-cashflow.handover.request');
+    Route::post('report-mart-cashflow/handover/{id}/accept-handover', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'acceptAndHandover'])->name('report-mart-cashflow.handover.accept-handover');
+    Route::post('report-mart-cashflow/handover/{id}/revise', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'reviseNominal'])->name('report-mart-cashflow.handover.revise');
+    Route::post('report-mart-cashflow/handover/{id}/accept-revision', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'acceptRevision'])->name('report-mart-cashflow.handover.accept-revision');
     Route::post('report-mart-cashflow/handover', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'storeHandover'])->name('report-mart-cashflow.handover.store');
     Route::post('report-mart-cashflow/handover/{id}/confirm', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'confirmHandover'])->name('report-mart-cashflow.handover.confirm');
     Route::post('report-mart-cashflow/handover/{id}/reject', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'rejectHandover'])->name('report-mart-cashflow.handover.reject');

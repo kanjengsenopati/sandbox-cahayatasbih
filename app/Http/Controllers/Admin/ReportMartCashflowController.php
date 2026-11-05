@@ -298,10 +298,22 @@ class ReportMartCashflowController extends Controller
                             $verifiedAt = $row->verified_at ? Carbon::parse($row->verified_at)->translatedFormat('d/m H:i') : '';
                             return '<div class="d-flex flex-column align-items-center">
                                 <span class="badge px-3 py-1.5" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; font-weight: 600;">
-                                    <i class="fa-solid fa-circle-check me-1 fs-8 text-success"></i> Dikonfirmasi
+                                    <i class="fa-solid fa-circle-check me-1 fs-8 text-success"></i> Selesai
                                 </span>
                                 ' . ($verifiedAt ? '<span class="text-muted fs-9 mt-1" style="font-size: 10px;">' . $verifiedAt . ' WIB</span>' : '') . '
                             </div>';
+                        } elseif ($row->status === OutletHandover::STATUS_REQUESTED) {
+                            return '<span class="badge px-3 py-1.5" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 8px; font-weight: 600;">
+                                <i class="fa-solid fa-paper-plane me-1 fs-8 text-primary"></i> Diajukan Outlet
+                            </span>';
+                        } elseif ($row->status === OutletHandover::STATUS_REVISED) {
+                            return '<span class="badge px-3 py-1.5" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; font-weight: 600;" title="Menunggu Persetujuan Outlet">
+                                <i class="fa-solid fa-arrows-rotate me-1 fs-8 text-warning"></i> Revisi Nominal
+                            </span>';
+                        } elseif ($row->status === OutletHandover::STATUS_REVISION_AGREED) {
+                            return '<span class="badge px-3 py-1.5" style="background-color: rgba(147, 51, 234, 0.1); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.2); border-radius: 8px; font-weight: 600;">
+                                <i class="fa-solid fa-thumbs-up me-1 fs-8" style="color: #9333ea;"></i> Revisi Disetujui
+                            </span>';
                         } elseif ($row->status === OutletHandover::STATUS_PENDING) {
                             return '<span class="badge px-3 py-1.5" style="background-color: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; font-weight: 600;">
                                 <i class="fa-solid fa-clock me-1 fs-8 text-warning"></i> Menunggu Konfirmasi
@@ -313,22 +325,104 @@ class ReportMartCashflowController extends Controller
                         }
                     })
                     ->addColumn('action', function ($row) use ($isRestricted, $user) {
-                        $html = '<div class="d-flex align-items-center justify-content-center gap-2">';
+                        $html = '<div class="d-flex align-items-center justify-content-center gap-1.5 flex-wrap">';
                         $isRecipient = ($row->recipient_id && $row->recipient_id === $user->id) ||
                                        ($row->recipient && strtolower($row->recipient->email) === strtolower($user->email)) ||
                                        stripos($user->name, 'rifqi') !== false ||
                                        strtolower($user->email) === 'gusrifqi@email.com';
-                        $isSender = ($row->created_by && $row->created_by === $user->id) ||
-                                    ($row->cashier_id && $row->cashier_id === $user->id);
+                        $isKoperasi = ($row->cashier_id && $row->cashier_id === $user->id) ||
+                                      ($row->created_by && $row->created_by === $user->id) ||
+                                      (method_exists($user, 'isKoordinatorPondokMart') && $user->isKoordinatorPondokMart()) ||
+                                      in_array($user->email, ['maulanasyarif@gmail.com', 'maulani@gmail.com']);
                         $isSuperAdmin = $user->isSuperAdmin();
 
                         $confirmUrl = route('report-mart-cashflow.handover.confirm', $row->id);
+                        $acceptHandoverUrl = route('report-mart-cashflow.handover.accept-handover', $row->id);
+                        $reviseUrl = route('report-mart-cashflow.handover.revise', $row->id);
+                        $acceptRevisionUrl = route('report-mart-cashflow.handover.accept-revision', $row->id);
                         $rejectUrl = route('report-mart-cashflow.handover.reject', $row->id);
                         $deleteUrl = route('report-mart-cashflow.handover.destroy', $row->id);
                         $amountFormatted = 'Rp ' . number_format($row->amount, 0, ',', '.');
                         $senderName = $row->cashier?->name ?? 'Koperasi';
+                        $recipientName = $row->recipient?->name ?? 'Pengelola Outlet';
 
-                        if ($row->status === OutletHandover::STATUS_PENDING) {
+                        // 1. Status REQUESTED (Diajukan Outlet)
+                        if ($row->status === OutletHandover::STATUS_REQUESTED) {
+                            if ($isKoperasi || $isSuperAdmin) {
+                                $html .= '<button type="button" class="btn btn-sm btn-success px-2 py-1 fw-bold btn-accept-handover d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($acceptHandoverUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-recipient="' . e($recipientName) . '"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Terima Pengajuan & Serahkan Dana">
+                                    <i class="fa-solid fa-hand-holding-dollar fs-8"></i> Terima
+                                </button>';
+                                $html .= '<button type="button" class="btn btn-sm btn-warning px-2 py-1 fw-bold btn-revise-handover d-inline-flex align-items-center gap-1 text-white"
+                                    data-url="' . e($reviseUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-amount-raw="' . e($row->amount) . '"
+                                    style="border-radius: 8px; font-size: 11px; background-color: #d97706; border-color: #d97706;"
+                                    title="Revisi Nominal Penarikan">
+                                    <i class="fa-solid fa-pen-to-square fs-8 text-white"></i> Revisi
+                                </button>';
+                                $html .= '<button type="button" class="btn btn-sm btn-light-danger px-2 py-1 fw-bold btn-reject-handover d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($rejectUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-action-label="Tolak"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Tolak Pengajuan Penarikan">
+                                    <i class="fa-solid fa-xmark fs-8"></i> Tolak
+                                </button>';
+                            } elseif ($isRecipient) {
+                                $html .= '<button type="button" class="btn btn-sm btn-light-danger px-2 py-1 fw-bold btn-reject-handover d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($rejectUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-action-label="Batalkan"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Batalkan Pengajuan">
+                                    <i class="fa-solid fa-ban fs-8"></i> Batalkan
+                                </button>';
+                            }
+                        }
+                        // 2. Status REVISED (Direvisi Koperasi, menunggu respon Outlet)
+                        elseif ($row->status === OutletHandover::STATUS_REVISED) {
+                            if ($isRecipient || $isSuperAdmin) {
+                                $html .= '<button type="button" class="btn btn-sm btn-success px-2 py-1 fw-bold btn-accept-revision d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($acceptRevisionUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Setujui Nominal Revisi">
+                                    <i class="fa-solid fa-thumbs-up fs-8"></i> Setuju
+                                </button>';
+                                $html .= '<button type="button" class="btn btn-sm btn-light-danger px-2 py-1 fw-bold btn-reject-handover d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($rejectUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-action-label="Tolak Revisi"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Tolak Revisi Nominal">
+                                    <i class="fa-solid fa-xmark fs-8"></i> Tolak
+                                </button>';
+                            } elseif ($isKoperasi) {
+                                $html .= '<span class="text-muted fs-9 fst-italic">Menunggu Respon Outlet</span>';
+                            }
+                        }
+                        // 3. Status REVISION_AGREED (Outlet Setuju Revisi, Siap Diserahkan Koperasi)
+                        elseif ($row->status === OutletHandover::STATUS_REVISION_AGREED) {
+                            if ($isKoperasi || $isSuperAdmin) {
+                                $html .= '<button type="button" class="btn btn-sm btn-success px-2.5 py-1 fw-bold btn-accept-handover d-inline-flex align-items-center gap-1"
+                                    data-url="' . e($acceptHandoverUrl) . '"
+                                    data-amount="' . e($amountFormatted) . '"
+                                    data-recipient="' . e($recipientName) . '"
+                                    style="border-radius: 8px; font-size: 11px;"
+                                    title="Transfer & Selesaikan Serah Terima">
+                                    <i class="fa-solid fa-paper-plane fs-8"></i> Transfer Dana
+                                </button>';
+                            } elseif ($isRecipient) {
+                                $html .= '<span class="text-muted fs-9 fst-italic">Menunggu Transfer Koperasi</span>';
+                            }
+                        }
+                        // 4. Status PENDING (Serah terima Koperasi ke Outlet menunggu konfirmasi)
+                        elseif ($row->status === OutletHandover::STATUS_PENDING) {
                             if ($isRecipient || $isSuperAdmin) {
                                 $html .= '<button type="button" class="btn btn-sm btn-success px-2.5 py-1 fw-bold btn-confirm-handover d-inline-flex align-items-center gap-1"
                                     data-url="' . e($confirmUrl) . '"
@@ -346,7 +440,7 @@ class ReportMartCashflowController extends Controller
                                     title="Tolak Serah Terima">
                                     <i class="fa-solid fa-xmark fs-8"></i> Tolak
                                 </button>';
-                            } elseif ($isSender) {
+                            } elseif ($isKoperasi) {
                                 $html .= '<button type="button" class="btn btn-sm btn-light-danger px-2.5 py-1 fw-bold btn-reject-handover d-inline-flex align-items-center gap-1"
                                     data-url="' . e($rejectUrl) . '"
                                     data-amount="' . e($amountFormatted) . '"
@@ -358,13 +452,13 @@ class ReportMartCashflowController extends Controller
                             }
                         }
 
-                        if ($isSuperAdmin || (!$isRestricted && $isSender)) {
-                            $html .= '<button type="button" class="btn btn-icon btn-light-danger w-30px h-30px rounded-circle btn-delete-handover" data-url="' . e($deleteUrl) . '" data-amount="' . e($amountFormatted) . '" title="Hapus Riwayat">
+                        if ($isSuperAdmin || (!$isRestricted && ($isKoperasi || $isRecipient))) {
+                            $html .= '<button type="button" class="btn btn-icon btn-light-danger w-28px h-28px rounded-circle btn-delete-handover" data-url="' . e($deleteUrl) . '" data-amount="' . e($amountFormatted) . '" title="Hapus Riwayat">
                                 <i class="fa-solid fa-trash-can fs-8"></i>
                             </button>';
                         }
 
-                        if ($html === '<div class="d-flex align-items-center justify-content-center gap-2">') {
+                        if ($html === '<div class="d-flex align-items-center justify-content-center gap-1.5 flex-wrap">') {
                             $html .= '<span class="text-muted fs-8">-</span>';
                         }
 
@@ -544,6 +638,12 @@ class ReportMartCashflowController extends Controller
             ?? ($defaultOutlet ? Admin::where('outlet_id', $defaultOutlet->id)->value('id') : null);
         $defaultRecipientOutletId = $defaultOutlet?->id;
 
+        $isOutletStaff = ($user && (
+            stripos($user->name, 'rifqi') !== false ||
+            strtolower($user->email) === 'gusrifqi@email.com' ||
+            ($user->outlet_id && $user->outlet_id !== $koperasiId)
+        ));
+
         return view('admins.report-mart-cashflow.index', [
             'isRestricted' => $isRestricted,
             'allowedOutletIds' => $allowedOutletIds,
@@ -557,6 +657,7 @@ class ReportMartCashflowController extends Controller
             'defaultSenderId' => $defaultSenderId,
             'defaultRecipientId' => $defaultRecipientId,
             'defaultRecipientOutletId' => $defaultRecipientOutletId,
+            'isOutletStaff' => $isOutletStaff,
         ]);
     }
 
@@ -780,6 +881,452 @@ class ReportMartCashflowController extends Controller
     }
 
     /**
+     * Outlet Manager submits a Withdrawal Request to Koperasi.
+     */
+    public function requestWithdrawal(Request $request)
+    {
+        if (!$this->checkAuthorization()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk mengajukan penarikan dana.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengajukan penarikan dana.');
+        }
+
+        if (!$request->filled('recipient_id')) {
+            $request->merge(['recipient_id' => Auth::id()]);
+        }
+
+        $request->validate([
+            'handover_date' => 'required|date',
+            'amount' => 'required',
+            'sender_id' => 'required|exists:admins,id',
+            'recipient_id' => 'required|exists:admins,id',
+            'recipient_outlet_id' => 'nullable|exists:outlets,id',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $amount = (float) preg_replace('/\D/', '', (string) $request->amount);
+        if ($amount <= 0) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Nominal penarikan dana yang diajukan harus lebih dari Rp 0.'], 422);
+            }
+            return redirect()->back()->with('error', 'Nominal penarikan dana yang diajukan harus lebih dari Rp 0.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $koperasiId = OutletContextService::getKoperasiOutletId();
+            $recipientAdmin = Admin::withTrashed()->findOrFail($request->recipient_id);
+
+            $recipientOutletId = $request->input('recipient_outlet_id');
+            if (!$recipientOutletId) {
+                if ($recipientAdmin->outlet_id && $recipientAdmin->outlet_id !== $koperasiId) {
+                    $recipientOutletId = $recipientAdmin->outlet_id;
+                } else {
+                    $recipientOutletId = Outlet::withTrashed()
+                        ->where('id', '!=', $koperasiId)
+                        ->orderBy('created_at')
+                        ->value('id');
+                }
+            }
+
+            $metricsBefore = $this->getHandoverSummaryMetrics(new Request(), $koperasiId, false, []);
+            $systemAmount = (float) ($metricsBefore['handover_pending_raw'] ?? $amount);
+            $discrepancy = $amount - $systemAmount;
+
+            $handover = OutletHandover::create([
+                'handover_type' => OutletHandover::TYPE_KOPERASI_TO_OUTLET,
+                'outlet_id' => $koperasiId,
+                'recipient_outlet_id' => $recipientOutletId,
+                'recipient_id' => $recipientAdmin->id,
+                'recipient_name' => $recipientAdmin->name,
+                'cashier_id' => $request->sender_id,
+                'amount' => $amount,
+                'system_amount' => $systemAmount,
+                'discrepancy' => $discrepancy,
+                'status' => OutletHandover::STATUS_REQUESTED,
+                'handover_date' => $request->handover_date,
+                'evidence_path' => null,
+                'created_by' => Auth::id() ?? $recipientAdmin->id,
+                'notes' => $request->notes,
+            ]);
+
+            if (function_exists('activity')) {
+                activity('outlet_handover')
+                    ->performedOn($handover)
+                    ->causedBy(Auth::user())
+                    ->withProperties([
+                        'handover_id' => $handover->id,
+                        'amount' => $amount,
+                        'applicant' => $recipientAdmin->name,
+                    ])
+                    ->log('Mengajukan penarikan dana saldo outlet sebesar Rp ' . number_format($amount, 0, ',', '.') . ' ke Koperasi');
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pengajuan penarikan dana sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dikirim ke Koperasi.',
+                    'data' => $handover,
+                ]);
+            }
+
+            return redirect()->route('report-mart-cashflow.index', ['tab' => 'handover'])
+                ->with('success', 'Pengajuan penarikan dana sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dikirim ke Koperasi.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengajukan penarikan dana: ' . $e->getMessage(),
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal mengajukan penarikan dana: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Koperasi accepts request, uploads proof of transfer, and completes the handover.
+     */
+    public function acceptAndHandover(Request $request, string $id)
+    {
+        if (!$this->checkAuthorization()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk memproses serah terima dana.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk memproses serah terima dana.');
+        }
+
+        $request->validate([
+            'evidence' => 'required|file|mimes:jpeg,png,jpg,gif,svg,webp,pdf|max:3072',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $handover = OutletHandover::with(['recipient', 'cashier'])->findOrFail($id);
+
+            $allowedStatuses = [
+                OutletHandover::STATUS_REQUESTED,
+                OutletHandover::STATUS_REVISION_AGREED,
+                OutletHandover::STATUS_PENDING,
+            ];
+
+            if (!in_array($handover->status, $allowedStatuses)) {
+                DB::rollBack();
+                $msg = $handover->status === OutletHandover::STATUS_APPROVED
+                    ? 'Serah terima dana ini sudah diselesaikan sebelumnya.'
+                    : 'Serah terima dana ini tidak dalam status siap serah terima (Status: ' . $handover->status . ').';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $user = Auth::user();
+            $isSender = ($handover->cashier_id && $handover->cashier_id === $user->id) ||
+                        ($handover->created_by && $handover->created_by === $user->id) ||
+                        (method_exists($user, 'isKoordinatorPondokMart') && $user->isKoordinatorPondokMart()) ||
+                        in_array($user->email, ['maulanasyarif@gmail.com', 'maulani@gmail.com']);
+
+            if (!$isSender && !$user->isSuperAdmin()) {
+                DB::rollBack();
+                $msg = 'Hanya Pengurus Koperasi atau Super Admin yang berhak memproses dan menyerahkan dana ini.';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 403);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $evidencePath = $handover->evidence_path;
+            if ($request->hasFile('evidence')) {
+                $file = $request->file('evidence');
+                $path = $file->store('images/handovers', ['disk' => 'public']);
+                $evidencePath = 'storage/' . $path;
+            }
+
+            $stamp = '[Diserahkan & ditransfer oleh ' . $user->name . ' pada ' . now()->translatedFormat('d M Y H:i') . ']';
+            if ($request->filled('notes')) {
+                $stamp .= ' Catatan: ' . trim($request->notes);
+            }
+            $newNotes = $handover->notes ? $handover->notes . PHP_EOL . $stamp : $stamp;
+
+            $handover->update([
+                'status' => OutletHandover::STATUS_APPROVED,
+                'verified_by' => $user->id,
+                'verified_at' => now(),
+                'evidence_path' => $evidencePath,
+                'notes' => $newNotes,
+            ]);
+
+            // Create or update CashFlow
+            $cashFlow = CashFlow::where('description', 'like', '%[Handover ID: ' . $id . ']%')->first();
+            if ($cashFlow) {
+                $cashFlow->update([
+                    'status' => CashFlow::STATUS_APPROVED,
+                    'proof_of_payment' => $evidencePath ?? $cashFlow->proof_of_payment,
+                    'amount' => $handover->amount,
+                ]);
+            } else {
+                $category = CashFlowCategory::firstOrCreate(
+                    ['name' => 'Serah Terima Dana'],
+                    ['description' => 'Pemasukan dari Serah Terima Dana / Penarikan Koperasi ke Outlet']
+                );
+                $cashflowCount = CashFlow::whereDate('created_at', now())->count();
+                $paymentCode = 'INC-HDV-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
+                $flowDesc = 'Penerimaan Serah Terima Saldo dari Koperasi. Catatan: ' . ($handover->notes ?? '-') . " [Handover ID: {$handover->id}]";
+
+                CashFlow::create([
+                    'sender_id' => $handover->cashier_id ?? $user->id,
+                    'receiver_id' => $handover->recipient_id,
+                    'outlet_id' => $handover->recipient_outlet_id,
+                    'cash_flow_category_id' => $category->id,
+                    'payment_code' => $paymentCode,
+                    'type' => CashFlow::TYPE_INCOME,
+                    'amount' => $handover->amount,
+                    'date' => $handover->handover_date,
+                    'description' => $flowDesc,
+                    'status' => CashFlow::STATUS_APPROVED,
+                    'proof_of_payment' => $evidencePath,
+                    'payment_method' => 'Transfer',
+                ]);
+            }
+
+            if (function_exists('activity')) {
+                activity('outlet_handover')
+                    ->performedOn($handover)
+                    ->causedBy($user)
+                    ->withProperties([
+                        'handover_id' => $handover->id,
+                        'amount' => $handover->amount,
+                        'handler' => $user->name,
+                    ])
+                    ->log('Menerima dan menyerahkan dana outlet sebesar Rp ' . number_format($handover->amount, 0, ',', '.'));
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Serah terima dana sebesar Rp ' . number_format($handover->amount, 0, ',', '.') . ' berhasil diselesaikan dan dicatat aktif.',
+                    'data' => $handover,
+                ]);
+            }
+
+            return redirect()->route('report-mart-cashflow.index', ['tab' => 'handover'])
+                ->with('success', 'Serah terima dana sebesar Rp ' . number_format($handover->amount, 0, ',', '.') . ' berhasil diselesaikan dan dicatat aktif.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memproses serah terima dana: ' . $e->getMessage(),
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal memproses serah terima dana: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Koperasi proposes a revised amount for the withdrawal request.
+     */
+    public function reviseNominal(Request $request, string $id)
+    {
+        if (!$this->checkAuthorization()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk merevisi nominal serah terima dana.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk merevisi nominal serah terima dana.');
+        }
+
+        if (!$request->has('revised_amount') && $request->has('amount')) {
+            $request->merge(['revised_amount' => $request->amount]);
+        }
+
+        $request->validate([
+            'revised_amount' => 'required',
+            'reason' => 'required|string|min:3|max:500',
+        ], [
+            'revised_amount.required' => 'Nominal revisi wajib diisi.',
+            'reason.required' => 'Alasan revisi nominal wajib diisi.',
+            'reason.min' => 'Alasan revisi minimal 3 karakter.',
+        ]);
+
+        $newAmount = (float) preg_replace('/\D/', '', (string) $request->revised_amount);
+        if ($newAmount <= 0) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Nominal revisi harus lebih dari Rp 0.'], 422);
+            }
+            return redirect()->back()->with('error', 'Nominal revisi harus lebih dari Rp 0.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $handover = OutletHandover::with(['recipient', 'cashier'])->findOrFail($id);
+
+            if ($handover->status !== OutletHandover::STATUS_REQUESTED) {
+                DB::rollBack();
+                $msg = 'Hanya pengajuan dengan status Diajukan yang dapat direvisi nominalnya.';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $user = Auth::user();
+            $isSender = ($handover->cashier_id && $handover->cashier_id === $user->id) ||
+                        (method_exists($user, 'isKoordinatorPondokMart') && $user->isKoordinatorPondokMart()) ||
+                        in_array($user->email, ['maulanasyarif@gmail.com', 'maulani@gmail.com']);
+
+            if (!$isSender && !$user->isSuperAdmin()) {
+                DB::rollBack();
+                $msg = 'Hanya Pengurus Koperasi atau Super Admin yang berhak merevisi nominal pengajuan ini.';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 403);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $oldFormatted = 'Rp ' . number_format($handover->amount, 0, ',', '.');
+            $newFormatted = 'Rp ' . number_format($newAmount, 0, ',', '.');
+            $revStamp = '[Revisi Nominal oleh ' . $user->name . ' dari ' . $oldFormatted . ' menjadi ' . $newFormatted . ' pada ' . now()->translatedFormat('d M Y H:i') . ']: ' . trim($request->reason);
+            $newNotes = $handover->notes ? $handover->notes . PHP_EOL . $revStamp : $revStamp;
+
+            $handover->update([
+                'amount' => $newAmount,
+                'status' => OutletHandover::STATUS_REVISED,
+                'notes' => $newNotes,
+            ]);
+
+            if (function_exists('activity')) {
+                activity('outlet_handover')
+                    ->performedOn($handover)
+                    ->causedBy($user)
+                    ->withProperties([
+                        'handover_id' => $handover->id,
+                        'old_amount' => $handover->amount,
+                        'revised_amount' => $newAmount,
+                        'reason' => $request->reason,
+                    ])
+                    ->log('Merevisi nominal penarikan outlet dari ' . $oldFormatted . ' menjadi ' . $newFormatted . ' dengan alasan: ' . $request->reason);
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Nominal pengajuan berhasil direvisi menjadi ' . $newFormatted . '. Menunggu persetujuan Pengelola Outlet.',
+                    'data' => $handover,
+                ]);
+            }
+
+            return redirect()->route('report-mart-cashflow.index', ['tab' => 'handover'])
+                ->with('success', 'Nominal pengajuan berhasil direvisi menjadi ' . $newFormatted . '. Menunggu persetujuan Pengelola Outlet.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal merevisi nominal: ' . $e->getMessage(),
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal merevisi nominal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Outlet Manager accepts the revised amount proposed by Koperasi.
+     */
+    public function acceptRevision(Request $request, string $id)
+    {
+        if (!$this->checkAuthorization()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk menyetujui revisi nominal.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menyetujui revisi nominal.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $handover = OutletHandover::with(['recipient', 'cashier'])->findOrFail($id);
+
+            if ($handover->status !== OutletHandover::STATUS_REVISED) {
+                DB::rollBack();
+                $msg = 'Hanya pengajuan dengan status Revisi Nominal yang dapat disetujui persetujuannya.';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $user = Auth::user();
+            $isRecipient = ($handover->recipient_id && $handover->recipient_id === $user->id) ||
+                           ($handover->recipient && strtolower($handover->recipient->email) === strtolower($user->email)) ||
+                           stripos($user->name, 'rifqi') !== false ||
+                           strtolower($user->email) === 'gusrifqi@email.com';
+
+            if (!$isRecipient && !$user->isSuperAdmin()) {
+                DB::rollBack();
+                $msg = 'Hanya Pengelola Outlet yang berwenang atau Super Admin yang berhak menyetujui revisi nominal ini.';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 403);
+                }
+                return redirect()->back()->with('error', $msg);
+            }
+
+            $agreeStamp = '[Revisi nominal sebesar Rp ' . number_format($handover->amount, 0, ',', '.') . ' disetujui oleh ' . $user->name . ' pada ' . now()->translatedFormat('d M Y H:i') . ' - Siap diserahkan Koperasi]';
+            $newNotes = $handover->notes ? $handover->notes . PHP_EOL . $agreeStamp : $agreeStamp;
+
+            $handover->update([
+                'status' => OutletHandover::STATUS_REVISION_AGREED,
+                'notes' => $newNotes,
+            ]);
+
+            if (function_exists('activity')) {
+                activity('outlet_handover')
+                    ->performedOn($handover)
+                    ->causedBy($user)
+                    ->withProperties([
+                        'handover_id' => $handover->id,
+                        'amount' => $handover->amount,
+                        'approver' => $user->name,
+                    ])
+                    ->log('Menyetujui revisi nominal penarikan outlet sebesar Rp ' . number_format($handover->amount, 0, ',', '.'));
+            }
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Persetujuan revisi nominal berhasil disimpan. Koperasi dapat melanjutkan proses transfer / serah terima.',
+                    'data' => $handover,
+                ]);
+            }
+
+            return redirect()->route('report-mart-cashflow.index', ['tab' => 'handover'])
+                ->with('success', 'Persetujuan revisi nominal berhasil disimpan. Koperasi dapat melanjutkan proses transfer / serah terima.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyetujui revisi: ' . $e->getMessage(),
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal menyetujui revisi: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Confirm a Handover by the designated recipient or Super Admin.
      */
     public function confirmHandover(Request $request, string $id)
@@ -896,7 +1443,14 @@ class ReportMartCashflowController extends Controller
 
             $handover = OutletHandover::with(['recipient', 'cashier', 'creator'])->findOrFail($id);
 
-            if ($handover->status !== OutletHandover::STATUS_PENDING) {
+            $allowedRejectStatuses = [
+                OutletHandover::STATUS_PENDING,
+                OutletHandover::STATUS_REQUESTED,
+                OutletHandover::STATUS_REVISED,
+                OutletHandover::STATUS_REVISION_AGREED,
+            ];
+
+            if (!in_array($handover->status, $allowedRejectStatuses)) {
                 DB::rollBack();
                 $msg = $handover->status === OutletHandover::STATUS_APPROVED
                     ? 'Serah terima dana ini sudah dikonfirmasi dan tidak dapat dibatalkan melalui aksi ini.'
@@ -913,7 +1467,9 @@ class ReportMartCashflowController extends Controller
                            stripos($user->name, 'rifqi') !== false ||
                            strtolower($user->email) === 'gusrifqi@email.com';
             $isSender = ($handover->created_by && $handover->created_by === $user->id) ||
-                        ($handover->cashier_id && $handover->cashier_id === $user->id);
+                        ($handover->cashier_id && $handover->cashier_id === $user->id) ||
+                        (method_exists($user, 'isKoordinatorPondokMart') && $user->isKoordinatorPondokMart()) ||
+                        in_array($user->email, ['maulanasyarif@gmail.com', 'maulani@gmail.com']);
 
             if (!$isRecipient && !$isSender && !$user->isSuperAdmin()) {
                 DB::rollBack();
