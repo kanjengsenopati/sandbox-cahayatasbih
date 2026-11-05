@@ -315,7 +315,9 @@ class ReportMartCashflowController extends Controller
                     ->addColumn('action', function ($row) use ($isRestricted, $user) {
                         $html = '<div class="d-flex align-items-center justify-content-center gap-2">';
                         $isRecipient = ($row->recipient_id && $row->recipient_id === $user->id) ||
-                                       ($row->recipient && strtolower($row->recipient->email) === strtolower($user->email));
+                                       ($row->recipient && strtolower($row->recipient->email) === strtolower($user->email)) ||
+                                       stripos($user->name, 'rifqi') !== false ||
+                                       strtolower($user->email) === 'gusrifqi@email.com';
                         $isSender = ($row->created_by && $row->created_by === $user->id) ||
                                     ($row->cashier_id && $row->cashier_id === $user->id);
                         $isSuperAdmin = $user->isSuperAdmin();
@@ -522,16 +524,17 @@ class ReportMartCashflowController extends Controller
                 ->get();
         }
 
-        // Filter ketat penerima Outlet: hanya Gus Maulana Rifqi
+        // Filter pengelola outlet: semua yang bernama Rifqi Abdillah, Gus Rifqi, Maulana Rifqi Abdillah, atau variasi Rifqi
         $outletAdmins = Admin::where('is_active', true)
-            ->where('email', 'gusrifqi@email.com')
+            ->where(function ($q) {
+                $q->where('email', 'gusrifqi@email.com')
+                  ->orWhere('name', 'like', '%Rifqi Abdillah%')
+                  ->orWhere('name', 'like', '%Gus Rifqi%')
+                  ->orWhere('name', 'like', '%Maulana Rifqi%')
+                  ->orWhere('name', 'like', '%Rifqi%');
+            })
+            ->orderBy('name')
             ->get();
-
-        if ($outletAdmins->isEmpty()) {
-            $outletAdmins = Admin::where('is_active', true)
-                ->where('name', 'like', '%Gus Maulana Rifqi%')
-                ->get();
-        }
 
         $handoverSummary = $this->getHandoverSummaryMetrics($request, $koperasiId, $isRestricted, $allowedOutletIds);
         $defaultSenderId = $koperasiAdmins->contains('id', $user?->id)
@@ -806,11 +809,13 @@ class ReportMartCashflowController extends Controller
 
             $user = Auth::user();
             $isRecipient = ($handover->recipient_id && $handover->recipient_id === $user->id) ||
-                           ($handover->recipient && strtolower($handover->recipient->email) === strtolower($user->email));
+                           ($handover->recipient && strtolower($handover->recipient->email) === strtolower($user->email)) ||
+                           stripos($user->name, 'rifqi') !== false ||
+                           strtolower($user->email) === 'gusrifqi@email.com';
 
             if (!$isRecipient && !$user->isSuperAdmin()) {
                 DB::rollBack();
-                $msg = 'Hanya Penerima yang ditunjuk (' . ($handover->recipient?->name ?? 'Gus Maulana Rifqi') . ') atau Super Admin yang berhak mengonfirmasi serah terima ini.';
+                $msg = 'Hanya Pengelola Outlet yang berwenang (' . ($handover->recipient?->name ?? 'Gus Maulana Rifqi') . ') atau Super Admin yang berhak mengonfirmasi serah terima ini.';
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => $msg], 403);
                 }
@@ -904,7 +909,9 @@ class ReportMartCashflowController extends Controller
 
             $user = Auth::user();
             $isRecipient = ($handover->recipient_id && $handover->recipient_id === $user->id) ||
-                           ($handover->recipient && strtolower($handover->recipient->email) === strtolower($user->email));
+                           ($handover->recipient && strtolower($handover->recipient->email) === strtolower($user->email)) ||
+                           stripos($user->name, 'rifqi') !== false ||
+                           strtolower($user->email) === 'gusrifqi@email.com';
             $isSender = ($handover->created_by && $handover->created_by === $user->id) ||
                         ($handover->cashier_id && $handover->cashier_id === $user->id);
 

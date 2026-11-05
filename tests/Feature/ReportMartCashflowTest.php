@@ -933,7 +933,26 @@ class ReportMartCashflowTest extends TestCase
      */
     public function test_r7_handover_koperasi_pemberi_and_outlet_penerima_filter_and_dummy_cleanup()
     {
-        // 1. Verify view data contains only Maulana Syarif & Rani for Pemberi, and Gus Rifqi for Penerima
+        // 1. Verify view data contains only Maulana Syarif & Rani for Pemberi, and Gus Rifqi / Rifqi Abdillah / Maulana Rifqi Abdillah for Penerima
+        $adminRifqiAbdillah = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Rifqi Abdillah',
+            'email' => 'rifqiabdillah@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => 'assets/media/avatars/default.png',
+            'role_id' => $this->superAdmin->role_id,
+            'is_active' => true,
+        ]);
+        $adminMaulanaRifqi = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Maulana Rifqi Abdillah',
+            'email' => 'maulanarifqi@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => 'assets/media/avatars/default.png',
+            'role_id' => $this->superAdmin->role_id,
+            'is_active' => true,
+        ]);
+
         $response = $this->actingAs($this->superAdmin, 'web')
             ->get(route('report-mart-cashflow.index', ['tab' => 'handover']));
 
@@ -954,6 +973,11 @@ class ReportMartCashflowTest extends TestCase
         $penerimaEmails = $outletAdmins->pluck('email')->toArray();
         $this->assertContains('gusrifqi@email.com', $penerimaEmails);
         $this->assertNotContains('maulanasyarif@gmail.com', $penerimaEmails);
+
+        $penerimaNames = $outletAdmins->pluck('name')->toArray();
+        $this->assertContains('GUS MAULANA RIFQI', $penerimaNames);
+        $this->assertContains('Rifqi Abdillah', $penerimaNames);
+        $this->assertContains('Maulana Rifqi Abdillah', $penerimaNames);
 
         // 2. Dummy handovers ('Test' / 'oke') are filtered out from summary and table
         $testDate = '2096-10-10';
