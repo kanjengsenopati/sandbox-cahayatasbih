@@ -1387,6 +1387,7 @@
             const reviseUrl = $(this).data('url');
             const currentAmountFormatted = $(this).data('amount');
             const currentAmountRaw = $(this).data('amount-raw') || 0;
+            const initialFormatted = currentAmountRaw > 0 ? formatRupiahNumber(currentAmountRaw) : '';
 
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
@@ -1396,11 +1397,14 @@
                           '<p class="mb-2">Nominal Pengajuan Semula: <strong class="text-primary">' + currentAmountFormatted + '</strong></p>' +
                           '<div class="mb-3">' +
                           '  <label class="form-label fw-bold text-gray-800 fs-8 mb-1">Nominal Revisi Baru (Rp) <span class="text-danger">*</span>:</label>' +
-                          '  <input type="number" id="swal-revise-amount" class="form-control form-control-solid fs-7 fw-bold" placeholder="Contoh: 500000" min="1" value="' + currentAmountRaw + '">' +
+                          '  <div class="input-group input-group-solid" style="border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0;">' +
+                          '    <span class="input-group-text bg-light-primary text-primary fw-bolder fs-7 px-3 border-0">Rp</span>' +
+                          '    <input type="text" inputmode="numeric" id="swal-revise-amount" class="form-control form-control-solid fs-7 fw-bold border-0" placeholder="0" value="' + initialFormatted + '" style="outline: none;">' +
+                          '  </div>' +
                           '</div>' +
                           '<div>' +
                           '  <label class="form-label fw-bold text-gray-800 fs-8 mb-1">Alasan Penyesuaian / Revisi <span class="text-danger">*</span>:</label>' +
-                          '  <textarea id="swal-revise-reason" rows="2" class="form-control form-control-solid fs-7" placeholder="Contoh: Saldo kas tunai yang tersedia saat ini Rp 500.000, sisanya besok..."></textarea>' +
+                          '  <textarea id="swal-revise-reason" rows="2" class="form-control form-control-solid fs-7" placeholder="Contoh: Saldo kas tunai yang tersedia saat ini Rp 500.000, sisanya besok..." style="border-radius: 10px;"></textarea>' +
                           '</div>' +
                           '<p class="mb-0 text-muted fst-italic fs-9 mt-2">*Pengajuan revisi akan dikirim ke Pengelola Outlet untuk disetujui terlebih dahulu.</p>' +
                           '</div>',
@@ -1409,8 +1413,20 @@
                     cancelButtonColor: '#64748b',
                     confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i> Ajukan Revisi',
                     cancelButtonText: 'Batal',
+                    didOpen: () => {
+                        const inputAmount = document.getElementById('swal-revise-amount');
+                        if (inputAmount) {
+                            inputAmount.addEventListener('input', function() {
+                                const rawDigits = this.value.replace(/\D/g, '');
+                                this.value = formatRupiahNumber(rawDigits);
+                            });
+                            inputAmount.focus();
+                            inputAmount.select();
+                        }
+                    },
                     preConfirm: () => {
-                        const newAmount = parseInt(document.getElementById('swal-revise-amount').value || '0', 10);
+                        const rawDigits = (document.getElementById('swal-revise-amount').value || '').replace(/\D/g, '');
+                        const newAmount = parseInt(rawDigits || '0', 10);
                         const reason = (document.getElementById('swal-revise-reason').value || '').trim();
 
                         if (!newAmount || newAmount <= 0) {
@@ -1432,6 +1448,7 @@
                             data: {
                                 _token: '{{ csrf_token() }}',
                                 amount: result.value.amount,
+                                revised_amount: result.value.amount,
                                 reason: result.value.reason
                             },
                             headers: {
