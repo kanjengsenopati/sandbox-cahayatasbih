@@ -69,9 +69,9 @@ class ReportMartCashflowTest extends TestCase
     /**
      * Helper to create a POS transaction.
      */
-    protected function createPosTransaction(array $attributes = []): PointOfSaleTransaction
+    protected function createPosTransaction(array $attributes = [], ?Item $customItem = null): PointOfSaleTransaction
     {
-        $item = Item::first() ?? Item::create([
+        $item = $customItem ?? Item::first() ?? Item::create([
             'id' => (string) Str::uuid(),
             'name' => 'Roti Coklat',
             'category_item_id' => (string) Str::uuid(),
@@ -643,6 +643,124 @@ class ReportMartCashflowTest extends TestCase
             ->getJson(route('report-mart-cashflow.index', ['data' => 'table']));
         $res->assertStatus(200);
         $this->assertCount(0, $res->json()['data'] ?? []);
+    }
+
+    /**
+     * Test R5: Transactions with outlet_id = NULL (e.g. POS-CHM-...) accurately resolve their Unit / Outlet
+     * from the database item's outlet_id (KOPERASI vs OUTLET) across table badges, source filters, and summary cards.
+     */
+    public function test_r5_unit_outlet_column_and_filters_resolve_null_outlet_transactions_from_database_items()
+    {
+        $futureDate = '2098-10-11';
+        $futureDateTime = '2098-10-11 15:51:07';
+
+        $koperasiItem = Item::whereNull('outlet_id')
+            ->orWhere('outlet_id', $this->koperasiOutlet->id)
+            ->first();
+
+        $outletItem = Item::where('outlet_id', $this->unitOutlet->id)->first();
+        if (!$outletItem) {
+            $outletItem = Item::create([
+                'id' => (string) Str::uuid(),
+                'outlet_id' => $this->unitOutlet->id,
+                'category_item_id' => $koperasiItem->category_item_id,
+                'name' => 'TAHU BAKSO TEST',
+                'code' => 'TBT_' . Str::random(4),
+                'price' => 6000,
+                'selling_price' => 8000,
+                'profit' => 2000,
+                'stock' => 20,
+                'is_active' => true,
+            ]);
+        }
+
+        // 1. Transaction with outlet_id = NULL but item belongs to OUTLET (like POS-CHM-20261011155107-8ZLP)
+        $this->createPosTransaction([
+            'payment_code' => 'POS-CHM-OUTLET-NULL',
+            'outlet_id' => null,
+            'pay_amount' => 8000,
+            'created_at' => $futureDateTime,
+        ], $outletItem);
+
+        // 2. Transaction with outlet_id = NULL and item belongs to KOPERASI
+        $this->createPosTransaction([
+            'payment_code' => 'POS-CHM-KOPERASI-NULL',
+            'outlet_id' => null,
+            'pay_amount' => 10000,
+            'created_at' => $futureDateTime,
+        ], $koperasiItem);
+
+        // Verify Table Badges for Super Admin (source = all)
+        $resAll = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'start_date' => $futureDate,
+                'end_date' => $futureDate,
+            ]));
+        $resAll->assertStatus(200);
+        $rowsAll = collect($resAll->json()['data'] ?? []);
+        $this->assertCount(2, $rowsAll);
+
+        $outletRow = $rowsAll->first(fn ($r) => str_contains($r['payment_code'], 'POS-CHM-OUTLET-NULL'));
+        $koperasiRow = $rowsAll->first(fn ($r) => str_contains($r['payment_code'], 'POS-CHM-KOPERASI-NULL'));
+
+        $this->assertNotNull($outletRow);
+        $this->assertNotNull($koperasiRow);
+
+        // Database unit names: OUTLET vs KOPERASI (Pondok Mart)
+        $this->assertStringContainsString($this->unitOutlet->name, $outletRow['outlet']);
+        $this->assertStringNotContainsString('Pondok Mart', $outletRow['outlet']);
+        $this->assertStringContainsString($this->koperasiOutlet->name . ' (Pondok Mart)', $koperasiRow['outlet']);
+
+        // Verify Filter source = outlet includes POS-CHM-OUTLET-NULL and excludes POS-CHM-KOPERASI-NULL
+        $resOutlet = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'source' => 'outlet',
+                'start_date' => $futureDate,
+                'end_date' => $futureDate,
+            ]));
+        $codesOutlet = collect($resOutlet->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-CHM-OUTLET-NULL', $codesOutlet);
+        $this->assertStringNotContainsString('POS-CHM-KOPERASI-NULL', $codesOutlet);
+
+        // Verify Filter source = koperasi includes POS-CHM-KOPERASI-NULL and excludes POS-CHM-OUTLET-NULL
+        $resKoperasi = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'source' => 'koperasi',
+                'start_date' => $futureDate,
+                'end_date' => $futureDate,
+            ]));
+        $codesKoperasi = collect($resKoperasi->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-CHM-KOPERASI-NULL', $codesKoperasi);
+        $this->assertStringNotContainsString('POS-CHM-OUTLET-NULL', $codesKoperasi);
+
+        // Verify Summary Cards include both null-outlet transactions in their respective unit totals
+        $resSummary = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $futureDate,
+                'end_date' => $futureDate,
+            ]));
+        $summary = $resSummary->json();
+        $this->assertEquals('Rp 18.000', $summary['total_amount']);
+        $this->assertEquals('2 Transaksi', $summary['total_count']);
+        $this->assertEquals('Rp 8.000', $summary['outlet_amount']);
+        $this->assertEquals('1 Transaksi', $summary['outlet_count']);
+        $this->assertEquals('Rp 10.000', $summary['koperasi_amount']);
+        $this->assertEquals('1 Transaksi', $summary['koperasi_count']);
+
+        // Verify Restricted Outlet Staff (Gus Maulana Rifqi) sees POS-CHM-OUTLET-NULL and NOT POS-CHM-KOPERASI-NULL
+        $resRestricted = $this->actingAs($this->outletStaffAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'table',
+                'start_date' => $futureDate,
+                'end_date' => $futureDate,
+            ]));
+        $codesRestricted = collect($resRestricted->json()['data'] ?? [])->pluck('payment_code')->implode(' ');
+        $this->assertStringContainsString('POS-CHM-OUTLET-NULL', $codesRestricted);
+        $this->assertStringNotContainsString('POS-CHM-KOPERASI-NULL', $codesRestricted);
     }
 }
 
