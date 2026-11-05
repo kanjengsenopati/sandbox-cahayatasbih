@@ -762,5 +762,145 @@ class ReportMartCashflowTest extends TestCase
         $this->assertStringContainsString('POS-CHM-OUTLET-NULL', $codesRestricted);
         $this->assertStringNotContainsString('POS-CHM-KOPERASI-NULL', $codesRestricted);
     }
+
+    /**
+     * Test R6: Handover Tab UI, 3 summary cards (Total Transaksi Outlet, Dana Sudah Diserahkan, Dana Belum Diserahkan),
+     * storeHandover (nominal, pemberi, penerima, bukti transfer, keterangan), handover_table DataTables, and destroyHandover.
+     */
+    public function test_r6_handover_tab_summary_store_table_and_destroy_workflow()
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $testDate = '2097-11-05';
+        $testDateTime = '2097-11-05 10:00:00';
+
+        // 1. Verify HTML renders Top Tabs & Handover Form elements
+        $pageRes = $this->actingAs($this->superAdmin, 'web')->get(route('report-mart-cashflow.index', ['tab' => 'handover']));
+        $pageRes->assertStatus(200);
+        $pageRes->assertSee('Serah Terima Dana (Handover Outlet)');
+        $pageRes->assertSee('Total Transaksi Outlet');
+        $pageRes->assertSee('Dana Sudah Diserahkan');
+        $pageRes->assertSee('Dana Belum Diserahkan');
+        $pageRes->assertSee('Formulir Serah Terima Dana');
+        $pageRes->assertSee('Nama Pemberi (Koperasi)');
+        $pageRes->assertSee('Nama Penerima (Outlet)');
+        $pageRes->assertSee('Upload Bukti Transfer / Serah Terima');
+
+        // 2. Create 2 Outlet student Saldo transactions on $testDate totaling Rp 150.000
+        $this->createPosTransaction([
+            'payment_code' => 'POS-HDV-OTL-01',
+            'outlet_id' => $this->unitOutlet->id,
+            'pay_amount' => 90000,
+            'created_at' => $testDateTime,
+        ]);
+        $this->createPosTransaction([
+            'payment_code' => 'POS-HDV-OTL-02',
+            'outlet_id' => $this->unitOutlet->id,
+            'pay_amount' => 60000,
+            'created_at' => $testDateTime,
+        ]);
+
+        // 3. Verify Summary before handover: Total Outlet = Rp 150.000, Diserahkan = Rp 0, Belum Diserahkan = Rp 150.000
+        $summaryBefore = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 150.000', $summaryBefore['handover_total_amount']);
+        $this->assertEquals('2 Transaksi', $summaryBefore['handover_total_count']);
+        $this->assertEquals('Rp 0', $summaryBefore['handover_submitted_amount']);
+        $this->assertEquals('Rp 150.000', $summaryBefore['handover_pending_amount']);
+        $this->assertEquals(150000, $summaryBefore['handover_pending_raw']);
+
+        // 4. Submit Handover of Rp 100.000 from Koordinator (Maulana Syarif) to Outlet Staff (Gus Maulana Rifqi) with evidence & notes
+        $fakeEvidence = \Illuminate\Http\UploadedFile::fake()->create('bukti-transfer-mandiri.jpg', 120, 'image/jpeg');
+
+        $storeRes = $this->actingAs($this->superAdmin, 'web')
+            ->postJson(route('report-mart-cashflow.handover.store'), [
+                'handover_date' => $testDate,
+                'amount' => '100.000',
+                'sender_id' => $this->koordinatorAdmin->id,
+                'recipient_id' => $this->outletStaffAdmin->id,
+                'recipient_outlet_id' => $this->unitOutlet->id,
+                'evidence' => $fakeEvidence,
+                'notes' => 'Transfer pencairan saldo Outlet tahap 1 via Bank Mandiri',
+            ]);
+
+        $storeRes->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        $handoverId = $storeRes->json('data.id');
+        $this->assertNotNull($handoverId);
+
+        // Verify database records in outlet_handovers and cash_flows
+        $this->assertDatabaseHas('outlet_handovers', [
+            'id' => $handoverId,
+            'handover_type' => \App\Models\OutletHandover::TYPE_KOPERASI_TO_OUTLET,
+            'outlet_id' => $this->koperasiOutlet->id,
+            'recipient_outlet_id' => $this->unitOutlet->id,
+            'cashier_id' => $this->koordinatorAdmin->id,
+            'created_by' => $this->koordinatorAdmin->id,
+            'recipient_id' => $this->outletStaffAdmin->id,
+            'amount' => 100000,
+            'notes' => 'Transfer pencairan saldo Outlet tahap 1 via Bank Mandiri',
+        ]);
+
+        $this->assertDatabaseHas('cash_flows', [
+            'sender_id' => $this->koordinatorAdmin->id,
+            'receiver_id' => $this->outletStaffAdmin->id,
+            'outlet_id' => $this->unitOutlet->id,
+            'amount' => 100000,
+        ]);
+
+        // 5. Verify Summary after Rp 100.000 handover: Diserahkan = Rp 100.000, Belum Diserahkan = Rp 50.000
+        $summaryAfter = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 150.000', $summaryAfter['handover_total_amount']);
+        $this->assertEquals('Rp 100.000', $summaryAfter['handover_submitted_amount']);
+        $this->assertEquals('1x Penyerahan', $summaryAfter['handover_submitted_count']);
+        $this->assertEquals('Rp 50.000', $summaryAfter['handover_pending_amount']);
+        $this->assertEquals(50000, $summaryAfter['handover_pending_raw']);
+
+        // 6. Verify Handover DataTable returns the row with Pemberi, Penerima, Nominal, Notes, and Bukti Transfer
+        $tableRes = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'handover_table',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200);
+
+        $rows = collect($tableRes->json('data') ?? []);
+        $this->assertCount(1, $rows);
+        $firstRow = $rows->first();
+        $this->assertStringContainsString($this->koordinatorAdmin->name, $firstRow['sender']);
+        $this->assertStringContainsString($this->outletStaffAdmin->name, $firstRow['recipient']);
+        $this->assertStringContainsString('Rp 100.000', $firstRow['amount']);
+        $this->assertStringContainsString('Transfer pencairan saldo Outlet tahap 1 via Bank Mandiri', $firstRow['notes']);
+        $this->assertStringContainsString('Lihat Bukti', $firstRow['evidence']);
+
+        // 7. Delete Handover and verify metrics return to Rp 0 submitted / Rp 150.000 pending
+        $delRes = $this->actingAs($this->superAdmin, 'web')
+            ->deleteJson(route('report-mart-cashflow.handover.destroy', $handoverId));
+        $delRes->assertStatus(200)->assertJsonPath('success', true);
+
+        $this->assertSoftDeleted('outlet_handovers', ['id' => $handoverId]);
+
+        $summaryRestored = $this->actingAs($this->superAdmin, 'web')
+            ->getJson(route('report-mart-cashflow.index', [
+                'data' => 'summary',
+                'start_date' => $testDate,
+                'end_date' => $testDate,
+            ]))->assertStatus(200)->json();
+
+        $this->assertEquals('Rp 0', $summaryRestored['handover_submitted_amount']);
+        $this->assertEquals('Rp 150.000', $summaryRestored['handover_pending_amount']);
+    }
 }
 
