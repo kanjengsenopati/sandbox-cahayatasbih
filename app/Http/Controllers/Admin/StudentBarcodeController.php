@@ -89,10 +89,14 @@ class StudentBarcodeController extends Controller
                     }
 
                     // 3. Quick Generate Button & Download Button
-                    $btnGenerate = "<a href='{$actionEditUrl}' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px' " .
-                        "onclick=\"return confirm('Apakah Anda yakin ingin generate acak barcode baru untuk santri {$safeName}? Barcode lama akan disimpan dan dapat di-rollback.');\" " .
+                    $btnGenerate = "<button type='button' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px btn-quick-generate-barcode' " .
+                        "data-id='{$data->id}' " .
+                        "data-name='{$safeName}' " .
+                        "data-nis='{$safeNis}' " .
+                        "data-barcode='{$safeBarcode}' " .
+                        "data-url='{$actionEditUrl}' " .
                         "title='Generate Acak Baru & Unduh JPG'>" .
-                        "<i class='fas fa-sync-alt fa-xs'></i></a>";
+                        "<i class='fas fa-sync-alt fa-xs'></i></button>";
 
                     $btnDownload = "<a href='{$actionDownloadUrl}' class='btn btn-icon btn-light-success btn-sm w-30px h-30px' " .
                         "title='Unduh Gambar Barcode JPG'>" .
@@ -296,6 +300,16 @@ class StudentBarcodeController extends Controller
             'admin_id' => auth()->id(),
         ]);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Barcode baru untuk {$student->name} berhasil di-generate.",
+                'barcode' => $newBarcode,
+                'previous_barcode' => $oldBarcode,
+                'download_url' => route('student-barcode.download-png', $student->id),
+            ]);
+        }
+
         return $this->downloadBarcodePng($student->id);
     }
 
@@ -435,56 +449,51 @@ class StudentBarcodeController extends Controller
     /**
      * Generate barcode image in JPEG format (100% quality) on a solid white (#ffffff) canvas
      * sized to the student card barcode slot (6.5 cm x 0.9 cm => 245 x 34 px)
-     * with integer module width (zero anti-aliasing blur) and ISO Quiet Zone margins.
+     * stretched to 231 px (~94.3% width) with proportional 7 px white margins on left & right
+     * using Nearest-Neighbor scaling (zero anti-aliasing blur).
      */
     public function generateBarcodeJpeg(string $barcode): string
     {
         $targetWidth = 245;
         $targetHeight = 34;
-        $minQuietZone = 10; // Minimal 10px margin putih di kiri dan kanan
-        $maxBarWidth = $targetWidth - ($minQuietZone * 2); // 225px
+        $marginPx = 7; // Margin putih proporsional 7px di kiri dan 7px di kanan
+        $stretchedBarWidth = $targetWidth - ($marginPx * 2); // 231px (~94.3% lebar kanvas)
 
         $dns1d = new DNS1D;
+        // Render pada resolusi dasar tinggi (w=6) agar proporsi rasio modul sangat presisi
+        $rawPng = base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 6, $targetHeight));
+        $srcIm = imagecreatefromstring($rawPng);
+        $srcW = imagesx($srcIm);
+        $srcH = imagesy($srcIm);
 
-        // Cek apakah modul bulat w=2 muat tanpa resize di dalam area aktif 225px
-        $tryW2 = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 2, $targetHeight)));
-        if ($tryW2->width() <= $maxBarWidth) {
-            $rawImage = $tryW2;
-        } else {
-            // Gunakan modul bulat w=1 (16 digit = 123px, 17 digit = 145px) -> 0% blur + Quiet Zone lebar
-            $rawImage = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 1, $targetHeight)));
-        }
+        // Tempatkan di atas layer putih terlebih dahulu agar background transparan DNS1D menjadi putih murni
+        $whiteSrc = imagecreatetruecolor($srcW, $srcH);
+        $whiteSrcCol = imagecolorallocate($whiteSrc, 255, 255, 255);
+        imagefill($whiteSrc, 0, 0, $whiteSrcCol);
+        imagecopy($whiteSrc, $srcIm, 0, 0, 0, 0, $srcW, $srcH);
+        imagedestroy($srcIm);
 
-        // Tempatkan di atas kanvas putih solid (#ffffff) terlebih dahulu
-        $barCanvas = Image::canvas($rawImage->width(), $rawImage->height(), '#ffffff');
-        $barCanvas->insert($rawImage, 'top-left', 0, 0);
+        // Kanvas akhir 245 x 34 px dengan Nearest-Neighbor stretch ke 231 px (0% blur)
+        $dstIm = imagecreatetruecolor($targetWidth, $targetHeight);
+        $whiteDstCol = imagecolorallocate($dstIm, 255, 255, 255);
+        imagefill($dstIm, 0, 0, $whiteDstCol);
+        imagecopyresized($dstIm, $whiteSrc, $marginPx, 0, 0, 0, $stretchedBarWidth, $targetHeight, $srcW, $srcH);
+        imagedestroy($whiteSrc);
 
-        // Fallback nearest-neighbor (tanpa anti-aliasing blur) hanya jika ada barcode kustom ekstra panjang (>225 modul)
-        if ($barCanvas->width() > $maxBarWidth) {
-            $srcGd = $barCanvas->getCore();
-            $dstGd = imagecreatetruecolor($maxBarWidth, $targetHeight);
-            $white = imagecolorallocate($dstGd, 255, 255, 255);
-            imagefill($dstGd, 0, 0, $white);
-            imagecopyresized($dstGd, $srcGd, 0, 0, 0, 0, $maxBarWidth, $targetHeight, $barCanvas->width(), $barCanvas->height());
-            $barCanvas = Image::make($dstGd);
-        }
-
-        $canvas = Image::canvas($targetWidth, $targetHeight, '#ffffff');
-        $canvas->insert($barCanvas, 'center');
-
+        $canvas = Image::make($dstIm);
         return (string) $canvas->encode('jpg', 100);
     }
 
     /**
-     * Generate high-resolution barcode PNG base64 with solid white background and built-in
-     * Quiet Zone (12 modules left & right) for crisp PDF Card printing (A4 & PVC).
+     * Generate high-resolution barcode PNG base64 with solid white background and proportional
+     * Quiet Zone (4 modules left & right) for crisp PDF Card printing (A4 & PVC).
      */
     public static function generatePrintableBarcodeBase64(string $barcode): string
     {
         $dns1d = new DNS1D;
         $moduleWidth = 3;
         $barHeight = 60;
-        $quietZonePx = $moduleWidth * 12; // 12x module width quiet zone on left and right
+        $quietZonePx = $moduleWidth * 4; // 4x module width proportional quiet zone on left and right
 
         $rawImage = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', $moduleWidth, $barHeight)));
         $canvasWidth = $rawImage->width() + ($quietZonePx * 2);

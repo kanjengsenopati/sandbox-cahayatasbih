@@ -187,54 +187,67 @@
             <!--begin::Modal Edit Barcode Shortcut-->
             <div class="modal fade" id="modalEditBarcode" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered mw-500px">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="fw-bolder modal-title"><i class="fas fa-barcode text-primary me-2"></i>Edit / Ganti Barcode Santri</h3>
-                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
-                                <i class="fa fa-times"></i>
+                    <div class="modal-content" style="border-radius: 24px; border: none; box-shadow: 0 8px 30px rgba(0,0,0,0.08); overflow: hidden;">
+                        <div class="modal-header d-flex align-items-center justify-content-between" style="padding: 22px 24px 16px 24px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(180deg, rgba(248,250,252,0.9) 0%, #ffffff 100%);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="symbol symbol-40px">
+                                    <span class="symbol-label bg-primary bg-opacity-10 text-primary" style="border-radius: 12px;">
+                                        <i class="fas fa-barcode fs-4 text-primary"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bolder text-gray-900 mb-0" style="font-size: 16px;">Edit / Ganti Barcode Santri</h3>
+                                    <div class="text-muted" style="font-size: 12px;">Perbarui kode kartu santri & unduh gambar barcode</div>
+                                </div>
                             </div>
+                            <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-primary rounded-circle" data-bs-dismiss="modal">
+                                <i class="fa fa-times"></i>
+                            </button>
                         </div>
                         <form id="formEditBarcode">
                             @csrf
                             <input type="hidden" id="edit_student_id">
-                            <div class="modal-body py-4 px-lg-8">
-                                <div class="d-flex align-items-center p-3 mb-4 rounded bg-light-primary border border-primary border-dashed">
-                                    <div class="symbol symbol-40px me-3">
-                                        <span class="symbol-label bg-primary text-white fw-bold"><i class="fa fa-user"></i></span>
+                            <div class="modal-body py-5 px-6">
+                                <div class="d-flex align-items-center mb-5" style="border-radius: 18px; background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(16,185,129,0.06) 100%); border: 1px solid rgba(37,99,235,0.12); padding: 14px 16px;">
+                                    <div class="symbol symbol-45px me-3">
+                                        <span class="symbol-label bg-primary text-white fw-bold" style="border-radius: 14px;"><i class="fa fa-user-graduate fs-5 text-white"></i></span>
                                     </div>
                                     <div>
-                                        <div class="fw-bolder text-gray-900 fs-6" id="edit_student_name">-</div>
-                                        <div class="text-muted fs-8">NIS: <span id="edit_student_nis">-</span></div>
+                                        <div class="text-uppercase fw-bold text-primary" style="font-size: 10px; letter-spacing: 0.08em;">Identitas Santri</div>
+                                        <div class="fw-bolder text-gray-900" style="font-size: 15px;" id="edit_student_name">-</div>
+                                        <div class="text-muted fw-medium" style="font-size: 12px;">NIS: <span class="fw-bold text-gray-700" id="edit_student_nis">-</span></div>
                                     </div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label text-muted fs-8 text-uppercase fw-bold">Barcode Saat Ini</label>
-                                    <div class="p-2 bg-light rounded border font-monospace fw-bold text-gray-700" id="edit_current_barcode">-</div>
+                                <div class="mb-4">
+                                    <label class="form-label text-muted text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.08em;">Barcode Saat Ini</label>
+                                    <div class="p-3 bg-light rounded-3 border border-gray-200 font-monospace fw-bolder text-gray-800 fs-6" id="edit_current_barcode">-</div>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="edit_input_barcode" class="form-label fw-bold required">Barcode Baru</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control font-monospace" id="edit_input_barcode" name="barcode" placeholder="Ketik atau scan barcode..." required autocomplete="off">
-                                        <button type="button" class="btn btn-secondary" id="btn_generate_modal_barcode" title="Generate Otomatis Barcode Acak Unik">
-                                            <i class="fas fa-magic me-1"></i> Acak
+                                <div class="mb-4">
+                                    <label for="edit_input_barcode" class="form-label text-uppercase fw-bold text-gray-700 required mb-2" style="font-size: 11px; letter-spacing: 0.08em;">Barcode Baru</label>
+                                    <div class="input-group input-group-solid border border-gray-300" style="border-radius: 14px; overflow: hidden;">
+                                        <input type="text" class="form-control form-control-solid border-0 font-monospace fw-bold fs-6 ps-4" id="edit_input_barcode" name="barcode" placeholder="Ketik atau scan barcode..." required autocomplete="off">
+                                        <button type="button" class="btn btn-light-primary fw-bold px-4" id="btn_generate_modal_barcode" title="Generate Otomatis 16 Digit Unik">
+                                            <i class="fas fa-magic me-1"></i> Generate 16 Digit
                                         </button>
                                     </div>
-                                    <div class="form-text text-muted fs-8">Barcode wajib unik across santri.</div>
+                                    <div class="form-text text-muted mt-2" style="font-size: 12px;">Setiap barcode wajib unik untuk masing-masing santri.</div>
                                 </div>
 
-                                <div class="form-check form-check-custom form-check-solid mt-3">
-                                    <input class="form-check-input" type="checkbox" id="edit_download_png" />
-                                    <label class="form-check-label text-gray-800 fw-semibold fs-7" for="edit_download_png">
-                                        Unduh file barcode (.jpg) setelah disimpan
-                                    </label>
+                                <div class="p-3 rounded-3 bg-light-success bg-opacity-50 border border-success border-opacity-25">
+                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                        <input class="form-check-input" type="checkbox" id="edit_download_png" />
+                                        <label class="form-check-label text-gray-800 fw-semibold fs-7 cursor-pointer" for="edit_download_png">
+                                            Otomatis unduh file barcode (<strong>.jpg</strong>) setelah disimpan
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                                <button type="submit" class="btn btn-primary" id="btn_save_barcode">
-                                    <span class="indicator-label"><i class="fa fa-save me-1"></i> Simpan</span>
+                            <div class="modal-footer border-0 pt-0 pb-5 px-6 justify-content-end gap-2">
+                                <button type="button" class="btn btn-light fw-bold px-5" style="border-radius: 12px;" data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn btn-primary fw-bold px-6" style="border-radius: 12px;" id="btn_save_barcode">
+                                    <span class="indicator-label"><i class="fa fa-save me-1"></i> Simpan Perubahan</span>
                                     <span class="indicator-progress d-none">Menyimpan... <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                                 </button>
                             </div>

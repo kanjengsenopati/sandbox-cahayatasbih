@@ -247,20 +247,25 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertEquals(34, $imageSize[1]);
         $this->assertEquals(IMAGETYPE_JPEG, $imageSize[2]);
 
-        // Verify pixel sharpness (0 gray blur) and left/right Quiet Zone (minimum 10px pure white)
+        // Verify pixel sharpness (0 gray blur) and proportional 7px left/right Quiet Zone (231px stretched barcode)
         $gdImg = imagecreatefromstring($jpgResponse->getContent());
         $this->assertNotFalse($gdImg);
         $grayBlurCount = 0;
         for ($x = 0; $x < 245; $x++) {
             $rgb = imagecolorat($gdImg, $x, 17);
             $r = ($rgb >> 16) & 0xFF;
-            if ($x < 10 || $x >= 235) {
+            if ($x < 7 || $x >= 238) {
                 $this->assertGreaterThanOrEqual(250, $r, "Quiet Zone pixel at x={$x} must be pure white");
             }
             if ($r >= 30 && $r <= 225) {
                 $grayBlurCount++;
             }
         }
+        // First bar at x=7 and last bar at x=237 must be pure black (proving full 231px stretch)
+        $firstBarR = (imagecolorat($gdImg, 7, 17) >> 16) & 0xFF;
+        $lastBarR = (imagecolorat($gdImg, 237, 17) >> 16) & 0xFF;
+        $this->assertLessThan(30, $firstBarR, 'First barcode bar must start at x=7');
+        $this->assertLessThan(30, $lastBarR, 'Last barcode bar must end at x=237');
         $this->assertEquals(0, $grayBlurCount, 'Barcode bars must have zero anti-aliasing gray blur');
         imagedestroy($gdImg);
     }
