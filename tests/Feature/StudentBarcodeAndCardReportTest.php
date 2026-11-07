@@ -225,24 +225,26 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $rusakRow = $rows->first(fn ($r) => str_contains($r['student_info'] ?? '', $this->student1->nis));
         $this->assertNotNull($rusakRow);
         $this->assertStringContainsString('data:image/png;base64,', $rusakRow['barcode']);
-        $this->assertStringContainsString('Download PNG (HD)', $rusakRow['barcode']);
+        $this->assertStringContainsString('Download JPG (HD)', $rusakRow['barcode']);
 
         $unreadableRow = $rows->first(fn ($r) => str_contains($r['student_info'] ?? '', $this->student2->nis));
         $this->assertNotNull($unreadableRow);
         $this->assertStringContainsString('inline-barcode-wrapper', $unreadableRow['barcode']);
         $this->assertStringContainsString('inline-barcode-input', $unreadableRow['barcode']);
-        $this->assertStringNotContainsString('Download PNG (HD)', $unreadableRow['barcode']);
+        $this->assertStringNotContainsString('Download JPG (HD)', $unreadableRow['barcode']);
 
-        // Verify HD PNG Download resolution
-        $pngResponse = $this->actingAs($this->admin, 'web')
+        // Verify JPEG Download format, dimensions (245 x 34 px), and white background
+        $jpgResponse = $this->actingAs($this->admin, 'web')
             ->get(route('student-barcode.download-png', $this->student1->id));
 
-        $pngResponse->assertStatus(200);
-        $pngResponse->assertHeader('Content-Type', 'image/png');
-        $imageSize = getimagesizefromstring($pngResponse->getContent());
+        $jpgResponse->assertStatus(200);
+        $jpgResponse->assertHeader('Content-Type', 'image/jpeg');
+        $this->assertStringContainsString('.jpg', (string) $jpgResponse->headers->get('Content-Disposition'));
+        $imageSize = getimagesizefromstring($jpgResponse->getContent());
         $this->assertNotFalse($imageSize);
-        $this->assertGreaterThanOrEqual(1000, $imageSize[0]); // HD width > 1000px
-        $this->assertEquals(220, $imageSize[1]); // HD height = 220px
+        $this->assertEquals(245, $imageSize[0]);
+        $this->assertEquals(34, $imageSize[1]);
+        $this->assertEquals(IMAGETYPE_JPEG, $imageSize[2]);
     }
 
     public function test_auto_lock_prevents_duplicate_pending_card_report()

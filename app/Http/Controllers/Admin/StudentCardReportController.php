@@ -99,7 +99,7 @@ class StudentCardReportController extends Controller
                         "</div>";
                     }
 
-                    // 2. Opsi Kendala Kartu Rusak atau Hilang: Tampilkan Gambar Barcode di bawah angka + Download PNG (HD Quality)
+                    // 2. Opsi Kendala Kartu Rusak atau Hilang: Tampilkan Gambar Barcode di bawah angka + Download JPG (HD Quality)
                     if ($barcode && in_array($data->issue_type, [StudentCardReport::ISSUE_RUSAK, StudentCardReport::ISSUE_HILANG], true)) {
                         $dns1d = new DNS1D();
                         $barcodeBase64 = $dns1d->getBarcodePNG($barcode, 'C128', 4, 60);
@@ -108,11 +108,11 @@ class StudentCardReportController extends Controller
 
                         return "<div class='d-inline-flex flex-column align-items-start'>" .
                             "<span class='font-monospace fw-bold text-gray-800 fs-7 mb-1'>{$safeBarcode}</span>" .
-                            "<a href='{$downloadUrl}' class='d-inline-block bg-white border border-gray-300 rounded px-2 py-1 shadow-xs text-decoration-none' title='Klik untuk Download Barcode PNG (HD)'>" .
+                            "<a href='{$downloadUrl}' class='d-inline-block bg-white border border-gray-300 rounded px-2 py-1 shadow-xs text-decoration-none' title='Klik untuk Download Barcode JPG (HD)'>" .
                                 "<img src='data:image/png;base64,{$barcodeBase64}' alt='Barcode {$safeBarcode}' style='height: 32px; width: auto; max-width: 175px; display: block; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated;' />" .
                             "</a>" .
                             "<a href='{$downloadUrl}' class='text-primary fw-bold fs-9 mt-1 text-hover-underline d-inline-flex align-items-center'>" .
-                                "<i class='fas fa-download text-primary fs-9 me-1'></i>Download PNG (HD)" .
+                                "<i class='fas fa-download text-primary fs-9 me-1'></i>Download JPG (HD)" .
                             "</a>" .
                         "</div>";
                     }
