@@ -124,8 +124,11 @@
                     <label class="fs-6 fw-bold form-label required" for="modal_school_id">Sekolah / UPT</label>
                     <select name="school_id" class="form-select form-select-solid" id="modal_school_id" required>
                         <option value="">Pilih Sekolah</option>
+                        @php
+                            $currentSchoolId = $selectedSchoolId ?? $student->school_id ?? $student->classroom?->school_id;
+                        @endphp
                         @foreach ($schools as $school)
-                            <option value="{{ $school->id }}" {{ @$student->school_id == $school->id ? 'selected' : '' }}>
+                            <option value="{{ $school->id }}" {{ $currentSchoolId == $school->id ? 'selected' : '' }}>
                                 {{ $school->name }}
                             </option>
                         @endforeach
