@@ -227,7 +227,7 @@
                                 <div class="form-check form-check-custom form-check-solid mt-3">
                                     <input class="form-check-input" type="checkbox" id="edit_download_png" />
                                     <label class="form-check-label text-gray-800 fw-semibold fs-7" for="edit_download_png">
-                                        Unduh file barcode (.png) setelah disimpan
+                                        Unduh file barcode (.jpg) setelah disimpan
                                     </label>
                                 </div>
                             </div>

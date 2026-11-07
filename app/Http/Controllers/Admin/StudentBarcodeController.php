@@ -91,11 +91,11 @@ class StudentBarcodeController extends Controller
                     // 3. Quick Generate Button & Download Button
                     $btnGenerate = "<a href='{$actionEditUrl}' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px' " .
                         "onclick=\"return confirm('Apakah Anda yakin ingin generate acak barcode baru untuk santri {$safeName}? Barcode lama akan disimpan dan dapat di-rollback.');\" " .
-                        "title='Generate Acak Baru & Unduh PNG'>" .
+                        "title='Generate Acak Baru & Unduh JPG'>" .
                         "<i class='fas fa-sync-alt fa-xs'></i></a>";
 
                     $btnDownload = "<a href='{$actionDownloadUrl}' class='btn btn-icon btn-light-success btn-sm w-30px h-30px' " .
-                        "title='Unduh Gambar Barcode PNG'>" .
+                        "title='Unduh Gambar Barcode JPG'>" .
                         "<i class='fas fa-download fa-xs'></i></a>";
 
                     return "<div class='d-flex align-items-center justify-content-center flex-nowrap'>" .
@@ -143,32 +143,18 @@ class StudentBarcodeController extends Controller
 
         // Generate barcode images for each user and resize them
         foreach ($users as $user) {
-            $dns1d = new DNS1D;
+            if (empty($user['barcode'])) {
+                continue;
+            }
 
-            // Generate the barcode in base64 PNG format with higher resolution
-            $barcodeImage = $dns1d->getBarcodePNG($user['barcode'], 'C128', 3, 100); // Width and height scaling
-            $imageData = base64_decode($barcodeImage);
-
-            // Load the barcode image using Intervention Image
-            $image = Image::make($imageData);
-
-            // Resize the image to the desired dimensions in cm
-            // Convert dimensions from cm to pixels
-            $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels (now width)
-            $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels (now height)
-
-            // Resize the image without losing quality
-            $image->resize($widthInPixels, $heightInPixels, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize(); // Prevent upsizing
-            });
+            $jpegData = $this->generateBarcodeJpeg($user['barcode']);
 
             // Create a custom filename for each barcode image
-            $fileName = $user['nis'] ? $user['nis'] . '.png' : $user['name'] . '.png';
+            $fileName = ($user['nis'] ? $user['nis'] : $user['name']) . '.jpg';
             $filePath = $tempFolder . $fileName;
 
-            // Save the resized image to the temporary folder in PNG format first
-            $image->save($filePath, 100, 'png'); // Save as PNG for better quality
+            // Save the resized image to the temporary folder in JPEG format
+            file_put_contents($filePath, $jpegData);
 
             // Add the image path to the array for zipping
             $barcodeImages[] = $filePath;
@@ -424,7 +410,7 @@ class StudentBarcodeController extends Controller
     }
 
     /**
-     * Download barcode PNG for student in HD quality (Best Resolution).
+     * Download barcode JPEG for student with solid white background (245 x 34 px).
      */
     public function downloadBarcodePng($id)
     {
@@ -434,25 +420,38 @@ class StudentBarcodeController extends Controller
             return redirect()->back()->with('error', 'Santri belum memiliki barcode.');
         }
 
+        $imageData = $this->generateBarcodeJpeg($student->barcode);
+
+        $rawName = $student->nis ?: $student->name;
+        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.jpg';
+
+        return response($imageData, 200, [
+            'Content-Type' => 'image/jpeg',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
+    }
+
+    /**
+     * Generate barcode image in JPEG format (100% quality) on a solid white (#ffffff) canvas
+     * sized to the student card barcode slot (6.5 cm x 0.9 cm => 245 x 34 px).
+     */
+    private function generateBarcodeJpeg(string $barcode): string
+    {
         $dns1d = new DNS1D;
         // Generate C128 pada resolusi dasar lalu normalisasi ke ukuran slot kartu santri
         // (6.5 cm x 0.9 cm => 245 x 34 px). Jangan menaikkan modul width ($w), karena
         // DNS1D mengalikan jumlah modul (17 digit = 145 modul) sehingga lebar gambar meledak.
-        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 30);
-        $imageData = base64_decode($barcodeImage);
+        $barcodePngBase64 = $dns1d->getBarcodePNG($barcode, 'C128', 2, 30);
+        $rawImage = Image::make(base64_decode($barcodePngBase64));
 
-        $image = Image::make($imageData);
-        $image->resize(245, 34);
-        $imageData = (string) $image->encode('png');
+        // Tempatkan di atas kanvas putih solid (#ffffff) terlebih dahulu agar area transparan
+        // dari DNS1D tidak berubah menjadi hitam saat di-resize atau di-encode ke JPEG.
+        $canvas = Image::canvas($rawImage->width(), $rawImage->height(), '#ffffff');
+        $canvas->insert($rawImage, 'top-left', 0, 0);
+        $canvas->resize(245, 34);
 
-        $rawName = $student->nis ?: $student->name;
-        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.png';
-
-        return response($imageData, 200, [
-            'Content-Type' => 'image/png',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-        ]);
+        return (string) $canvas->encode('jpg', 100);
     }
 
 

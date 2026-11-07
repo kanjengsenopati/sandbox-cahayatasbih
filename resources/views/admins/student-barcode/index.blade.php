@@ -157,11 +157,11 @@
                                     <div class="form-text text-muted fs-8">Setiap barcode santri wajib unik (minimal 5 karakter, maksimal 64 karakter).</div>
                                 </div>
 
-                                <!-- Checkbox Download PNG -->
+                                <!-- Checkbox Download JPG -->
                                 <div class="form-check form-check-custom form-check-solid mt-4">
                                     <input class="form-check-input" type="checkbox" id="edit_download_png" checked />
                                     <label class="form-check-label text-gray-800 fw-semibold fs-7" for="edit_download_png">
-                                        Unduh file gambar barcode (.png) setelah berhasil disimpan
+                                        Unduh file gambar barcode (.jpg) setelah berhasil disimpan
                                     </label>
                                 </div>
                             </div>
