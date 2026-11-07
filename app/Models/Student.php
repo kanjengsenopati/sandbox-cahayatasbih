@@ -252,7 +252,7 @@ class Student extends Model
     public static function generateUniqueBarcode(): string
     {
         do {
-            $code = substr(str_shuffle(str_repeat('0123456789', 17)), 0, 17);
+            $code = substr(str_shuffle(str_repeat('0123456789', 16)), 0, 16);
         } while (self::where('barcode', $code)->exists());
 
         return $code;
