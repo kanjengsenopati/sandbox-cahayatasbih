@@ -104,8 +104,8 @@
                                             <!--begin::Input-->
                                             <div class="position-relative">
                                                 <input type="password" class="form-control form-control-solid" id="password"
-                                                    placeholder="{{ route('user.create') ? 'Contoh: User123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
-                                                    name="password" value="{{ old('password') }}" />
+                                                    placeholder="Masukkan Password"
+                                                    name="password" value="{{ old('password', '12345678') }}" />
                                                 <span
                                                     class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
                                                     data-kt-password-meter-control="visibility">
@@ -114,6 +114,7 @@
                                                 </span>
                                             </div>
                                             <!--end::Input-->
+                                            <div class="text-muted fs-8 mt-1">Default password: <code>12345678</code> (dapat disesuaikan jika diperlukan).</div>
                                         </div>
                                         <div class="fv-row mb-6">
                                             <!--begin::Label-->
@@ -128,7 +129,7 @@
                                                 <input type="password" class="form-control form-control-solid"
                                                     id="password_confirmation" name="password_confirmation"
                                                     placeholder="Konfirmasi Password Harus Sama Dengan Password"
-                                                    value="{{ old('password_confirmation') }}" />
+                                                    value="{{ old('password_confirmation', '12345678') }}" />
                                                 <span
                                                     class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
                                                     data-kt-password-meter-control="visibility">

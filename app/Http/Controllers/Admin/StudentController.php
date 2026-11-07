@@ -512,11 +512,11 @@ class StudentController extends Controller
 
         if (request()->ajax()) {
             return response()->json([
-                'html' => view('admins.student.partials.edit-modal-body', compact('student', 'schools', 'classrooms', 'saldo', 'hosts'))->render()
+                'html' => view('admins.student.partials.edit-modal-body', compact('student', 'schools', 'classrooms', 'saldo', 'hosts', 'selectedSchoolId'))->render()
             ]);
         }
 
-        return view('admins.student.create-edit', compact('student', 'schools', 'classrooms', 'saldo', 'hosts'));
+        return view('admins.student.create-edit', compact('student', 'schools', 'classrooms', 'saldo', 'hosts', 'selectedSchoolId'));
     }
 
     /**
