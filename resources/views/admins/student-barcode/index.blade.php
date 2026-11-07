@@ -108,67 +108,119 @@
             </div>
             <!--end::Card-->
 
+            <!--begin::Premium Modal Styles-->
+            <style>
+                .pakrt-modal-content {
+                    border-radius: 24px !important;
+                    border: none !important;
+                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+                    overflow: hidden;
+                }
+                .pakrt-modal-header {
+                    padding: 22px 24px 16px 24px !important;
+                    border-bottom: 1px solid #f1f5f9 !important;
+                    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, #ffffff 100%);
+                }
+                .pakrt-student-card {
+                    border-radius: 18px;
+                    background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%);
+                    border: 1px solid rgba(37, 99, 235, 0.12);
+                    padding: 14px 16px;
+                }
+                .pakrt-code-box {
+                    border-radius: 14px;
+                    padding: 10px 14px;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    letter-spacing: 0.06em;
+                }
+                .pakrt-swal-popup {
+                    border-radius: 24px !important;
+                    padding: 24px !important;
+                    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12) !important;
+                }
+            </style>
+            <!--end::Premium Modal Styles-->
+
             <!--begin::Modal Edit Barcode-->
             <div class="modal fade" id="modalEditBarcode" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered mw-500px">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 class="fw-bolder modal-title"><i class="fas fa-barcode text-primary me-2"></i>Edit Barcode Santri</h3>
-                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal">
-                                <i class="fa fa-times"></i>
+                    <div class="modal-content pakrt-modal-content">
+                        <div class="modal-header pakrt-modal-header d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="symbol symbol-40px">
+                                    <span class="symbol-label bg-primary bg-opacity-10 text-primary" style="border-radius: 12px;">
+                                        <i class="fas fa-barcode fs-4 text-primary"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bolder text-gray-900 mb-0" style="font-size: 16px;">Edit Barcode Santri</h3>
+                                    <div class="text-muted" style="font-size: 12px;">Perbarui atau acak kode unik kartu santri</div>
+                                </div>
                             </div>
+                            <button type="button" class="btn btn-icon btn-sm btn-light btn-active-light-primary rounded-circle" data-bs-dismiss="modal">
+                                <i class="fa fa-times"></i>
+                            </button>
                         </div>
                         <form id="formEditBarcode">
                             @csrf
                             <input type="hidden" id="edit_student_id">
-                            <div class="modal-body py-4 px-lg-8">
+                            <div class="modal-body py-5 px-6">
                                 <!-- Student Info Preview -->
-                                <div class="d-flex align-items-center p-3 mb-4 rounded bg-light-primary border border-primary border-dashed">
-                                    <div class="symbol symbol-40px me-3">
-                                        <span class="symbol-label bg-primary text-white fw-bold"><i class="fa fa-user"></i></span>
+                                <div class="d-flex align-items-center mb-5 pakrt-student-card">
+                                    <div class="symbol symbol-45px me-3">
+                                        <span class="symbol-label bg-primary text-white fw-bold" style="border-radius: 14px;">
+                                            <i class="fa fa-user-graduate fs-5 text-white"></i>
+                                        </span>
                                     </div>
-                                    <div>
-                                        <div class="fw-bolder text-gray-900 fs-6" id="edit_student_name">-</div>
-                                        <div class="text-muted fs-8">NIS: <span id="edit_student_nis">-</span></div>
+                                    <div class="flex-grow-1">
+                                        <div class="text-uppercase fw-bold text-primary" style="font-size: 10px; letter-spacing: 0.08em;">Identitas Santri</div>
+                                        <div class="fw-bolder text-gray-900" style="font-size: 15px;" id="edit_student_name">-</div>
+                                        <div class="text-muted fw-medium" style="font-size: 12px;">NIS: <span class="fw-bold text-gray-700" id="edit_student_nis">-</span></div>
                                     </div>
                                 </div>
 
-                                <!-- Current Barcode -->
-                                <div class="mb-3">
-                                    <label class="form-label text-muted fs-8 text-uppercase fw-bold">Barcode Saat Ini</label>
-                                    <div class="p-2 bg-light rounded border font-monospace fw-bold text-gray-700" id="edit_current_barcode">-</div>
-                                </div>
-
-                                <!-- Previous Barcode (if any) -->
-                                <div class="mb-3 d-none" id="container_prev_barcode">
-                                    <label class="form-label text-muted fs-8 text-uppercase fw-bold">Barcode Sebelumnya (State Sebelum Diubah)</label>
-                                    <div class="p-2 bg-light-warning rounded border border-warning font-monospace text-gray-800" id="edit_previous_barcode">-</div>
+                                <!-- Current & Previous Barcode Grid -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12" id="col_current_barcode">
+                                        <label class="form-label text-muted text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.08em;">Barcode Aktif Saat Ini</label>
+                                        <div class="pakrt-code-box bg-light border border-gray-200 fw-bolder text-gray-800 fs-6" id="edit_current_barcode">-</div>
+                                    </div>
+                                    <div class="col-12 d-none" id="container_prev_barcode">
+                                        <label class="form-label text-warning text-uppercase fw-bold mb-1" style="font-size: 11px; letter-spacing: 0.08em;">
+                                            <i class="fa fa-history me-1 text-warning"></i>Riwayat Sebelumnya (Tersedia untuk Rollback)
+                                        </label>
+                                        <div class="pakrt-code-box bg-light-warning border border-warning border-dashed fw-bold text-gray-800 fs-7" id="edit_previous_barcode">-</div>
+                                    </div>
                                 </div>
 
                                 <!-- New Barcode Input -->
-                                <div class="mb-3">
-                                    <label for="edit_input_barcode" class="form-label fw-bold required">Barcode Baru</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control font-monospace" id="edit_input_barcode" name="barcode" placeholder="Ketik atau scan barcode baru..." required autocomplete="off">
-                                        <button type="button" class="btn btn-secondary" id="btn_generate_modal_barcode" title="Generate Otomatis Barcode Acak Unik">
-                                            <i class="fas fa-magic me-1"></i> Acak
+                                <div class="mb-4">
+                                    <label for="edit_input_barcode" class="form-label text-uppercase fw-bold text-gray-700 required mb-2" style="font-size: 11px; letter-spacing: 0.08em;">Barcode Baru</label>
+                                    <div class="input-group input-group-solid border border-gray-300" style="border-radius: 14px; overflow: hidden;">
+                                        <input type="text" class="form-control form-control-solid border-0 font-monospace fw-bold fs-6 ps-4" id="edit_input_barcode" name="barcode" placeholder="Ketik atau scan barcode baru..." required autocomplete="off">
+                                        <button type="button" class="btn btn-light-primary fw-bold px-4" id="btn_generate_modal_barcode" title="Generate Otomatis 16 Digit Unik">
+                                            <i class="fas fa-magic me-1"></i> Generate 16 Digit
                                         </button>
                                     </div>
-                                    <div class="form-text text-muted fs-8">Setiap barcode santri wajib unik (minimal 5 karakter, maksimal 64 karakter).</div>
+                                    <div class="form-text text-muted mt-2" style="font-size: 12px;">
+                                        <i class="fa fa-info-circle me-1 text-primary"></i>Format rekomendasi: <strong>16 digit angka</strong> (Code 128C murni) agar pemindaian kasir instan.
+                                    </div>
                                 </div>
 
                                 <!-- Checkbox Download JPG -->
-                                <div class="form-check form-check-custom form-check-solid mt-4">
-                                    <input class="form-check-input" type="checkbox" id="edit_download_png" checked />
-                                    <label class="form-check-label text-gray-800 fw-semibold fs-7" for="edit_download_png">
-                                        Unduh file gambar barcode (.jpg) setelah berhasil disimpan
-                                    </label>
+                                <div class="p-3 rounded-3 bg-light-success bg-opacity-50 border border-success border-opacity-25">
+                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                        <input class="form-check-input" type="checkbox" id="edit_download_png" checked />
+                                        <label class="form-check-label text-gray-800 fw-semibold fs-7 cursor-pointer" for="edit_download_png">
+                                            Otomatis unduh file gambar barcode (<strong>.jpg</strong>) setelah disimpan
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                                <button type="submit" class="btn btn-primary" id="btn_save_barcode">
-                                    <span class="indicator-label"><i class="fa fa-save me-1"></i> Simpan Barcode</span>
+                            <div class="modal-footer border-0 pt-0 pb-5 px-6 justify-content-end gap-2">
+                                <button type="button" class="btn btn-light fw-bold px-5" style="border-radius: 12px;" data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn btn-primary fw-bold px-6" style="border-radius: 12px;" id="btn_save_barcode">
+                                    <span class="indicator-label"><i class="fa fa-save me-1"></i> Simpan Perubahan</span>
                                     <span class="indicator-progress d-none">Menyimpan... <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                                 </button>
                             </div>
@@ -317,16 +369,90 @@
         // Generate Random Unique Barcode in Modal
         $('#btn_generate_modal_barcode').on('click', function() {
             var btn = $(this);
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memuat...');
 
             $.get('{{ route('student-barcode.generate-unique') }}', function(res) {
-                btn.prop('disabled', false).html('<i class="fas fa-magic me-1"></i> Acak');
+                btn.prop('disabled', false).html('<i class="fas fa-magic me-1"></i> Generate 16 Digit');
                 if (res.barcode) {
                     $('#edit_input_barcode').val(res.barcode);
                 }
             }).fail(function() {
-                btn.prop('disabled', false).html('<i class="fas fa-magic me-1"></i> Acak');
+                btn.prop('disabled', false).html('<i class="fas fa-magic me-1"></i> Generate 16 Digit');
                 Swal.fire('Error', 'Gagal menghasilkan barcode otomatis.', 'error');
+            });
+        });
+
+        // ==================== QUICK GENERATE BARCODE HANDLER (MODERN MODAL) ====================
+        $(document).on('click', '.btn-quick-generate-barcode', function() {
+            var studentId = $(this).data('id');
+            var studentName = $(this).data('name');
+            var studentNis = $(this).data('nis') || '-';
+            var currentBarcode = $(this).data('barcode') || 'Belum ada';
+            var actionUrl = $(this).data('url');
+
+            Swal.fire({
+                title: '<span class="fw-bolder text-gray-900 fs-4">Generate Barcode Baru?</span>',
+                html: `
+                    <div class="text-start mt-2">
+                        <div class="pakrt-student-card mb-4">
+                            <div class="text-uppercase fw-bold text-primary" style="font-size: 10px; letter-spacing: 0.08em;">Santri Terpilih</div>
+                            <div class="fw-bolder text-gray-900 fs-6 mt-1">${studentName}</div>
+                            <div class="text-muted fs-8">NIS: <strong>${studentNis}</strong></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="text-uppercase fw-bold text-muted mb-1" style="font-size: 10px; letter-spacing: 0.08em;">Barcode Saat Ini (Disimpan ke Rollback)</div>
+                            <div class="pakrt-code-box bg-light border border-gray-200 fw-bold text-gray-700 fs-7">${currentBarcode}</div>
+                        </div>
+                        <div class="p-3 rounded-3 bg-light-info border border-info border-opacity-25 text-gray-700 fs-7">
+                            <i class="fas fa-sync-alt text-info me-1"></i> Sistem akan membuat <strong>16 digit barcode unik baru</strong> dan langsung mengunduh gambar <strong>.jpg</strong> siap cetak.
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563EB',
+                cancelButtonColor: '#f1f5f9',
+                confirmButtonText: '<i class="fas fa-bolt me-1"></i> Ya, Generate & Unduh JPG',
+                cancelButtonText: '<span class="text-gray-700 fw-bold">Batal</span>',
+                customClass: {
+                    popup: 'pakrt-swal-popup'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Membuat Barcode Baru...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        customClass: { popup: 'pakrt-swal-popup' },
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: actionUrl,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            table.ajax.reload(null, false);
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: response.message || 'Barcode baru berhasil di-generate.',
+                                icon: 'success',
+                                timer: 1800,
+                                showConfirmButton: false,
+                                customClass: { popup: 'pakrt-swal-popup' }
+                            });
+
+                            if (response.download_url) {
+                                window.location.href = response.download_url;
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Gagal', 'Terjadi kesalahan saat men-generate barcode baru.', 'error');
+                        }
+                    });
+                }
             });
         });
 
@@ -406,14 +532,28 @@
             }
 
             Swal.fire({
-                title: 'Rollback Barcode?',
-                html: 'Apakah Anda yakin ingin mengembalikan barcode santri <strong>' + studentName + '</strong> ke barcode sebelumnya: <br><br><span class="badge badge-light-warning fs-5 font-monospace text-dark p-2">' + prevBarcode + '</span>',
-                icon: 'question',
+                title: '<span class="fw-bolder text-gray-900 fs-4">Rollback Barcode Santri?</span>',
+                html: `
+                    <div class="text-start mt-2">
+                        <div class="pakrt-student-card mb-4">
+                            <div class="text-uppercase fw-bold text-primary" style="font-size: 10px; letter-spacing: 0.08em;">Santri Terpilih</div>
+                            <div class="fw-bolder text-gray-900 fs-6 mt-1">${studentName}</div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="text-uppercase fw-bold text-warning mb-1" style="font-size: 10px; letter-spacing: 0.08em;">Kembalikan ke Barcode Sebelumnya</div>
+                            <div class="pakrt-code-box bg-light-warning border border-warning fw-bolder text-gray-900 fs-6 text-center">${prevBarcode}</div>
+                        </div>
+                    </div>
+                `,
+                icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#f1f5f9',
                 confirmButtonText: '<i class="fas fa-undo me-1"></i> Ya, Kembalikan!',
-                cancelButtonText: 'Batal'
+                cancelButtonText: '<span class="text-gray-700 fw-bold">Batal</span>',
+                customClass: {
+                    popup: 'pakrt-swal-popup'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     var rollbackUrl = '{{ route('student-barcode.rollback-barcode', ':id') }}'.replace(':id', studentId);
