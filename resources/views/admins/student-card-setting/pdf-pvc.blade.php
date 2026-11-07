@@ -63,7 +63,8 @@
         }
         .code-box {
             background-color: #ffffff;
-            padding: 0;
+            padding: 0.4mm 1mm;
+            box-sizing: border-box;
             text-align: center;
         }
         .code-box img {

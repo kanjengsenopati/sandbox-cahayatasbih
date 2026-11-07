@@ -85,7 +85,8 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertNotEmpty($barcode1);
         $this->assertNotEmpty($barcode2);
         $this->assertNotEquals($barcode1, $barcode2);
-        $this->assertEquals(17, strlen($barcode1));
+        $this->assertEquals(16, strlen($barcode1));
+        $this->assertTrue(ctype_digit($barcode1));
     }
 
     public function test_update_barcode_fails_on_duplicate()
@@ -233,7 +234,7 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertStringContainsString('inline-barcode-input', $unreadableRow['barcode']);
         $this->assertStringNotContainsString('Download JPG (HD)', $unreadableRow['barcode']);
 
-        // Verify JPEG Download format, dimensions (245 x 34 px), and white background
+        // Verify JPEG Download format, dimensions (245 x 34 px), white Quiet Zone, and zero anti-aliasing blur
         $jpgResponse = $this->actingAs($this->admin, 'web')
             ->get(route('student-barcode.download-png', $this->student1->id));
 
@@ -245,6 +246,23 @@ class StudentBarcodeAndCardReportTest extends TestCase
         $this->assertEquals(245, $imageSize[0]);
         $this->assertEquals(34, $imageSize[1]);
         $this->assertEquals(IMAGETYPE_JPEG, $imageSize[2]);
+
+        // Verify pixel sharpness (0 gray blur) and left/right Quiet Zone (minimum 10px pure white)
+        $gdImg = imagecreatefromstring($jpgResponse->getContent());
+        $this->assertNotFalse($gdImg);
+        $grayBlurCount = 0;
+        for ($x = 0; $x < 245; $x++) {
+            $rgb = imagecolorat($gdImg, $x, 17);
+            $r = ($rgb >> 16) & 0xFF;
+            if ($x < 10 || $x >= 235) {
+                $this->assertGreaterThanOrEqual(250, $r, "Quiet Zone pixel at x={$x} must be pure white");
+            }
+            if ($r >= 30 && $r <= 225) {
+                $grayBlurCount++;
+            }
+        }
+        $this->assertEquals(0, $grayBlurCount, 'Barcode bars must have zero anti-aliasing gray blur');
+        imagedestroy($gdImg);
     }
 
     public function test_auto_lock_prevents_duplicate_pending_card_report()

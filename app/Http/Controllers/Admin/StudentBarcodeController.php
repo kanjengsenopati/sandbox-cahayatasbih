@@ -399,7 +399,7 @@ class StudentBarcodeController extends Controller
     }
 
     /**
-     * Generate unique 17-digit random barcode via API.
+     * Generate unique 16-digit random barcode via API.
      */
     public function generateUnique()
     {
@@ -434,24 +434,65 @@ class StudentBarcodeController extends Controller
 
     /**
      * Generate barcode image in JPEG format (100% quality) on a solid white (#ffffff) canvas
-     * sized to the student card barcode slot (6.5 cm x 0.9 cm => 245 x 34 px).
+     * sized to the student card barcode slot (6.5 cm x 0.9 cm => 245 x 34 px)
+     * with integer module width (zero anti-aliasing blur) and ISO Quiet Zone margins.
      */
-    private function generateBarcodeJpeg(string $barcode): string
+    public function generateBarcodeJpeg(string $barcode): string
     {
-        $dns1d = new DNS1D;
-        // Generate C128 pada resolusi dasar lalu normalisasi ke ukuran slot kartu santri
-        // (6.5 cm x 0.9 cm => 245 x 34 px). Jangan menaikkan modul width ($w), karena
-        // DNS1D mengalikan jumlah modul (17 digit = 145 modul) sehingga lebar gambar meledak.
-        $barcodePngBase64 = $dns1d->getBarcodePNG($barcode, 'C128', 2, 30);
-        $rawImage = Image::make(base64_decode($barcodePngBase64));
+        $targetWidth = 245;
+        $targetHeight = 34;
+        $minQuietZone = 10; // Minimal 10px margin putih di kiri dan kanan
+        $maxBarWidth = $targetWidth - ($minQuietZone * 2); // 225px
 
-        // Tempatkan di atas kanvas putih solid (#ffffff) terlebih dahulu agar area transparan
-        // dari DNS1D tidak berubah menjadi hitam saat di-resize atau di-encode ke JPEG.
-        $canvas = Image::canvas($rawImage->width(), $rawImage->height(), '#ffffff');
-        $canvas->insert($rawImage, 'top-left', 0, 0);
-        $canvas->resize(245, 34);
+        $dns1d = new DNS1D;
+
+        // Cek apakah modul bulat w=2 muat tanpa resize di dalam area aktif 225px
+        $tryW2 = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 2, $targetHeight)));
+        if ($tryW2->width() <= $maxBarWidth) {
+            $rawImage = $tryW2;
+        } else {
+            // Gunakan modul bulat w=1 (16 digit = 123px, 17 digit = 145px) -> 0% blur + Quiet Zone lebar
+            $rawImage = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 1, $targetHeight)));
+        }
+
+        // Tempatkan di atas kanvas putih solid (#ffffff) terlebih dahulu
+        $barCanvas = Image::canvas($rawImage->width(), $rawImage->height(), '#ffffff');
+        $barCanvas->insert($rawImage, 'top-left', 0, 0);
+
+        // Fallback nearest-neighbor (tanpa anti-aliasing blur) hanya jika ada barcode kustom ekstra panjang (>225 modul)
+        if ($barCanvas->width() > $maxBarWidth) {
+            $srcGd = $barCanvas->getCore();
+            $dstGd = imagecreatetruecolor($maxBarWidth, $targetHeight);
+            $white = imagecolorallocate($dstGd, 255, 255, 255);
+            imagefill($dstGd, 0, 0, $white);
+            imagecopyresized($dstGd, $srcGd, 0, 0, 0, 0, $maxBarWidth, $targetHeight, $barCanvas->width(), $barCanvas->height());
+            $barCanvas = Image::make($dstGd);
+        }
+
+        $canvas = Image::canvas($targetWidth, $targetHeight, '#ffffff');
+        $canvas->insert($barCanvas, 'center');
 
         return (string) $canvas->encode('jpg', 100);
+    }
+
+    /**
+     * Generate high-resolution barcode PNG base64 with solid white background and built-in
+     * Quiet Zone (12 modules left & right) for crisp PDF Card printing (A4 & PVC).
+     */
+    public static function generatePrintableBarcodeBase64(string $barcode): string
+    {
+        $dns1d = new DNS1D;
+        $moduleWidth = 3;
+        $barHeight = 60;
+        $quietZonePx = $moduleWidth * 12; // 12x module width quiet zone on left and right
+
+        $rawImage = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', $moduleWidth, $barHeight)));
+        $canvasWidth = $rawImage->width() + ($quietZonePx * 2);
+
+        $canvas = Image::canvas($canvasWidth, $barHeight, '#ffffff');
+        $canvas->insert($rawImage, 'center');
+
+        return base64_encode((string) $canvas->encode('png'));
     }
 
 

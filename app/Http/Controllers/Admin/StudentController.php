@@ -633,8 +633,8 @@ class StudentController extends Controller
                 $qr = QrCode::size(100)->generate($student->barcode);
                 $codeHtml = '<img src="data:image/svg+xml;base64,' . base64_encode($qr) . '" />';
             } else {
-                $dns1d = new \Milon\Barcode\DNS1D();
-                $codeHtml = '<img src="data:image/png;base64,' . $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 40) . '" style="width: 100%; height: 100%; display: block;" />';
+                $barcodeBase64 = \App\Http\Controllers\Admin\StudentBarcodeController::generatePrintableBarcodeBase64($student->barcode);
+                $codeHtml = '<img src="data:image/png;base64,' . $barcodeBase64 . '" style="width: 100%; height: 100%; display: block;" />';
             }
         }
 
