@@ -539,6 +539,19 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-transaction/export-sheets', [ReportTransactionController::class, 'exportSheets'])->name('report-transaction.export-sheets');
     Route::resource('report-transaction', ReportTransactionController::class, ['only' => ['index', 'destroy']]);
 
+    // start report arus kas mart
+    Route::get('report-mart-cashflow/export', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'export'])->name('report-mart-cashflow.export');
+    Route::post('report-mart-cashflow/handover/request', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'requestWithdrawal'])->name('report-mart-cashflow.handover.request');
+    Route::post('report-mart-cashflow/handover/{id}/accept-handover', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'acceptAndHandover'])->name('report-mart-cashflow.handover.accept-handover');
+    Route::post('report-mart-cashflow/handover/{id}/revise', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'reviseNominal'])->name('report-mart-cashflow.handover.revise');
+    Route::post('report-mart-cashflow/handover/{id}/accept-revision', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'acceptRevision'])->name('report-mart-cashflow.handover.accept-revision');
+    Route::post('report-mart-cashflow/handover', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'storeHandover'])->name('report-mart-cashflow.handover.store');
+    Route::post('report-mart-cashflow/handover/{id}/confirm', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'confirmHandover'])->name('report-mart-cashflow.handover.confirm');
+    Route::post('report-mart-cashflow/handover/{id}/reject', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'rejectHandover'])->name('report-mart-cashflow.handover.reject');
+    Route::delete('report-mart-cashflow/handover/{id}', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'destroyHandover'])->name('report-mart-cashflow.handover.destroy');
+    Route::get('report-mart-cashflow', [\App\Http\Controllers\Admin\ReportMartCashflowController::class, 'index'])->name('report-mart-cashflow.index');
+    // end report arus kas mart
+
 
     // start ppdb
     Route::resource('ppdb-type', PpdbTypeController::class);

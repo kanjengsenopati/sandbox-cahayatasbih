@@ -89,13 +89,17 @@ class StudentBarcodeController extends Controller
                     }
 
                     // 3. Quick Generate Button & Download Button
-                    $btnGenerate = "<a href='{$actionEditUrl}' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px' " .
-                        "onclick=\"return confirm('Apakah Anda yakin ingin generate acak barcode baru untuk santri {$safeName}? Barcode lama akan disimpan dan dapat di-rollback.');\" " .
-                        "title='Generate Acak Baru & Unduh PNG'>" .
-                        "<i class='fas fa-sync-alt fa-xs'></i></a>";
+                    $btnGenerate = "<button type='button' class='btn btn-icon btn-light-info btn-sm me-1 w-30px h-30px btn-quick-generate-barcode' " .
+                        "data-id='{$data->id}' " .
+                        "data-name='{$safeName}' " .
+                        "data-nis='{$safeNis}' " .
+                        "data-barcode='{$safeBarcode}' " .
+                        "data-url='{$actionEditUrl}' " .
+                        "title='Generate Acak Baru & Unduh JPG'>" .
+                        "<i class='fas fa-sync-alt fa-xs'></i></button>";
 
                     $btnDownload = "<a href='{$actionDownloadUrl}' class='btn btn-icon btn-light-success btn-sm w-30px h-30px' " .
-                        "title='Unduh Gambar Barcode PNG'>" .
+                        "title='Unduh Gambar Barcode JPG'>" .
                         "<i class='fas fa-download fa-xs'></i></a>";
 
                     return "<div class='d-flex align-items-center justify-content-center flex-nowrap'>" .
@@ -143,32 +147,18 @@ class StudentBarcodeController extends Controller
 
         // Generate barcode images for each user and resize them
         foreach ($users as $user) {
-            $dns1d = new DNS1D;
+            if (empty($user['barcode'])) {
+                continue;
+            }
 
-            // Generate the barcode in base64 PNG format with higher resolution
-            $barcodeImage = $dns1d->getBarcodePNG($user['barcode'], 'C128', 3, 100); // Width and height scaling
-            $imageData = base64_decode($barcodeImage);
-
-            // Load the barcode image using Intervention Image
-            $image = Image::make($imageData);
-
-            // Resize the image to the desired dimensions in cm
-            // Convert dimensions from cm to pixels
-            $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels (now width)
-            $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels (now height)
-
-            // Resize the image without losing quality
-            $image->resize($widthInPixels, $heightInPixels, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize(); // Prevent upsizing
-            });
+            $jpegData = $this->generateBarcodeJpeg($user['barcode']);
 
             // Create a custom filename for each barcode image
-            $fileName = $user['nis'] ? $user['nis'] . '.png' : $user['name'] . '.png';
+            $fileName = ($user['nis'] ? $user['nis'] : $user['name']) . '.jpg';
             $filePath = $tempFolder . $fileName;
 
-            // Save the resized image to the temporary folder in PNG format first
-            $image->save($filePath, 100, 'png'); // Save as PNG for better quality
+            // Save the resized image to the temporary folder in JPEG format
+            file_put_contents($filePath, $jpegData);
 
             // Add the image path to the array for zipping
             $barcodeImages[] = $filePath;
@@ -310,6 +300,16 @@ class StudentBarcodeController extends Controller
             'admin_id' => auth()->id(),
         ]);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Barcode baru untuk {$student->name} berhasil di-generate.",
+                'barcode' => $newBarcode,
+                'previous_barcode' => $oldBarcode,
+                'download_url' => route('student-barcode.download-png', $student->id),
+            ]);
+        }
+
         return $this->downloadBarcodePng($student->id);
     }
 
@@ -413,7 +413,7 @@ class StudentBarcodeController extends Controller
     }
 
     /**
-     * Generate unique 17-digit random barcode via API.
+     * Generate unique 16-digit random barcode via API.
      */
     public function generateUnique()
     {
@@ -424,7 +424,7 @@ class StudentBarcodeController extends Controller
     }
 
     /**
-     * Download barcode PNG for student in HD quality (Best Resolution).
+     * Download barcode JPEG for student with solid white background (245 x 34 px).
      */
     public function downloadBarcodePng($id)
     {
@@ -434,25 +434,74 @@ class StudentBarcodeController extends Controller
             return redirect()->back()->with('error', 'Santri belum memiliki barcode.');
         }
 
-        $dns1d = new DNS1D;
-        // Generate C128 pada resolusi dasar lalu normalisasi ke ukuran slot kartu santri
-        // (6.5 cm x 0.9 cm => 245 x 34 px). Jangan menaikkan modul width ($w), karena
-        // DNS1D mengalikan jumlah modul (17 digit = 145 modul) sehingga lebar gambar meledak.
-        $barcodeImage = $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 30);
-        $imageData = base64_decode($barcodeImage);
-
-        $image = Image::make($imageData);
-        $image->resize(245, 34);
-        $imageData = (string) $image->encode('png');
+        $imageData = $this->generateBarcodeJpeg($student->barcode);
 
         $rawName = $student->nis ?: $student->name;
-        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.png';
+        $fileName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $rawName) . '.jpg';
 
         return response($imageData, 200, [
-            'Content-Type' => 'image/png',
+            'Content-Type' => 'image/jpeg',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
         ]);
+    }
+
+    /**
+     * Generate barcode image in JPEG format (100% quality) on a solid white (#ffffff) canvas
+     * sized to the student card barcode slot (6.5 cm x 0.9 cm => 245 x 34 px)
+     * stretched to 231 px (~94.3% width) with proportional 7 px white margins on left & right
+     * using Nearest-Neighbor scaling (zero anti-aliasing blur).
+     */
+    public function generateBarcodeJpeg(string $barcode): string
+    {
+        $targetWidth = 245;
+        $targetHeight = 34;
+        $marginPx = 7; // Margin putih proporsional 7px di kiri dan 7px di kanan
+        $stretchedBarWidth = $targetWidth - ($marginPx * 2); // 231px (~94.3% lebar kanvas)
+
+        $dns1d = new DNS1D;
+        // Render pada resolusi dasar tinggi (w=6) agar proporsi rasio modul sangat presisi
+        $rawPng = base64_decode($dns1d->getBarcodePNG($barcode, 'C128', 6, $targetHeight));
+        $srcIm = imagecreatefromstring($rawPng);
+        $srcW = imagesx($srcIm);
+        $srcH = imagesy($srcIm);
+
+        // Tempatkan di atas layer putih terlebih dahulu agar background transparan DNS1D menjadi putih murni
+        $whiteSrc = imagecreatetruecolor($srcW, $srcH);
+        $whiteSrcCol = imagecolorallocate($whiteSrc, 255, 255, 255);
+        imagefill($whiteSrc, 0, 0, $whiteSrcCol);
+        imagecopy($whiteSrc, $srcIm, 0, 0, 0, 0, $srcW, $srcH);
+        imagedestroy($srcIm);
+
+        // Kanvas akhir 245 x 34 px dengan Nearest-Neighbor stretch ke 231 px (0% blur)
+        $dstIm = imagecreatetruecolor($targetWidth, $targetHeight);
+        $whiteDstCol = imagecolorallocate($dstIm, 255, 255, 255);
+        imagefill($dstIm, 0, 0, $whiteDstCol);
+        imagecopyresized($dstIm, $whiteSrc, $marginPx, 0, 0, 0, $stretchedBarWidth, $targetHeight, $srcW, $srcH);
+        imagedestroy($whiteSrc);
+
+        $canvas = Image::make($dstIm);
+        return (string) $canvas->encode('jpg', 100);
+    }
+
+    /**
+     * Generate high-resolution barcode PNG base64 with solid white background and proportional
+     * Quiet Zone (4 modules left & right) for crisp PDF Card printing (A4 & PVC).
+     */
+    public static function generatePrintableBarcodeBase64(string $barcode): string
+    {
+        $dns1d = new DNS1D;
+        $moduleWidth = 3;
+        $barHeight = 60;
+        $quietZonePx = $moduleWidth * 4; // 4x module width proportional quiet zone on left and right
+
+        $rawImage = Image::make(base64_decode($dns1d->getBarcodePNG($barcode, 'C128', $moduleWidth, $barHeight)));
+        $canvasWidth = $rawImage->width() + ($quietZonePx * 2);
+
+        $canvas = Image::canvas($canvasWidth, $barHeight, '#ffffff');
+        $canvas->insert($rawImage, 'center');
+
+        return base64_encode((string) $canvas->encode('png'));
     }
 
 

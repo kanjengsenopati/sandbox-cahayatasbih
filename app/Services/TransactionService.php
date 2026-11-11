@@ -1692,6 +1692,13 @@ class TransactionService
                 }
             }
 
+            // 4. Ghost Bill Check for OTHER type: Hapus tagihan bertipe OTHER jika nominal 0 dan belum pernah dibayar
+            if (!$shouldDelete && $bType && $bType->type === 'OTHER') {
+                if ((int)$bill->amount === 0 && (int)$bill->paid_amount === 0) {
+                    $shouldDelete = true;
+                }
+            }
+
             if ($shouldDelete) {
                 if ($bType && $bType->type === 'MONTHLY') {
                     $billTypeIdsToDeleteFully[] = $bill->bill_type_id;

@@ -209,9 +209,11 @@
                                         <select name="school_id" class="form-select form-select-solid" id="school_id"
                                             data-control="select2" data-allow-clear="true" data-hide-search="true">
                                             <option value="">Pilih Sekolah</option>
+                                            @php
+                                                $currentSchoolId = @$selectedSchoolId ?? @$student->school_id ?? @$student->classroom?->school_id;
+                                            @endphp
                                             @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}" {{ @$student->school_id == $school->id ?
-                                                'selected' : '' }}>
+                                            <option value="{{ $school->id }}" {{ $currentSchoolId == $school->id ? 'selected' : '' }}>
                                                 {{ $school->name }}</option>
                                             @endforeach
                                         </select>

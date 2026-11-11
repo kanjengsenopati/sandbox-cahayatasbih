@@ -227,15 +227,20 @@
                             <div class="row g-3">
                                 @php
                                     $studentBills = $bill->bills->where('student_id', $student->id);
-                                    $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
-                                    $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                                    // Abaikan baris ghost dengan amount = 0 & paid_amount = 0 jika terdapat baris tagihan valid lain
+                                    $validStudentBills = $studentBills->filter(fn($b) => (int)$b->amount > 0 || (int)$b->paid_amount > 0);
+                                    if ($validStudentBills->isEmpty() && $studentBills->isNotEmpty()) {
+                                        $validStudentBills = $studentBills;
+                                    }
+                                    // Untuk tipe FREE (Cicilan Bebas), ambil langsung daftar bulan unik dari tagihan valid (termasuk month = 0)
+                                    $monthsToLoop = $validStudentBills->pluck('month')->map(fn($m) => (int)$m)->unique()->values()->all();
                                     if (empty($monthsToLoop)) {
                                         $monthsToLoop = [0];
                                     }
                                 @endphp
                                 @foreach ($monthsToLoop as $month)
                                 @php
-                                    $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
+                                    $billDetail = $studentBills->firstWhere('month', $month) ?? $studentBills->firstWhere('month', (string)$month) ?? ($month === 0 ? $studentBills->first() : null);
                                     $amount = $billDetail ? $billDetail->amount : 0;
                                     $paidAmountDetail = $billDetail ? $billDetail->paid_amount : 0;
                                     $remainingAmount = $billDetail ? max(0, $amount - $paidAmountDetail) : 0;
@@ -413,15 +418,20 @@
                     <div class="row g-3">
                         @php
                             $studentBills = $bill->bills->where('student_id', $student->id);
-                            $hasSpecificMonthBills = $studentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
-                            $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $studentBills->pluck('month')->unique()->values()->all();
+                            // Abaikan baris ghost dengan amount = 0 & paid_amount = 0 jika terdapat baris tagihan valid lain
+                            $validStudentBills = $studentBills->filter(fn($b) => (int)$b->amount > 0 || (int)$b->paid_amount > 0);
+                            if ($validStudentBills->isEmpty() && $studentBills->isNotEmpty()) {
+                                $validStudentBills = $studentBills;
+                            }
+                            $hasSpecificMonthBills = $validStudentBills->filter(fn($b) => (int)$b->month >= 1 && (int)$b->month <= 12)->isNotEmpty();
+                            $monthsToLoop = $hasSpecificMonthBills ? array_merge(range(7, 12), range(1, 6)) : $validStudentBills->pluck('month')->map(fn($m) => (int)$m)->unique()->values()->all();
                             if (empty($monthsToLoop)) {
                                 $monthsToLoop = [0];
                             }
                         @endphp
                         @foreach ($monthsToLoop as $month)
                         @php
-                            $billDetail = $studentBills->firstWhere('month', $month) ?? ($month === 0 ? $studentBills->first() : null);
+                            $billDetail = $studentBills->firstWhere('month', $month) ?? $studentBills->firstWhere('month', (string)$month) ?? ($month === 0 ? $studentBills->first() : null);
                             $amount = $billDetail ? $billDetail->amount : 0;
                             $paidAmountDetail = $billDetail ? $billDetail->paid_amount : 0;
                             $remainingAmount = $billDetail ? max(0, $amount - $paidAmountDetail) : 0;

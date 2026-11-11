@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogActivityTrait;
 use App\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,11 +10,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OutletHandover extends Model
 {
-    use HasFactory, UuidTrait, SoftDeletes;
+    use HasFactory, UuidTrait, SoftDeletes, LogActivityTrait;
 
     const TYPE_KOPERASI_TO_OUTLET = 'KOPERASI_TO_OUTLET';
     const TYPE_CASHIER_TO_MANAGEMENT = 'CASHIER_TO_MANAGEMENT';
 
+    const STATUS_REQUESTED = 'REQUESTED';
+    const STATUS_REVISED = 'REVISED';
+    const STATUS_REVISION_AGREED = 'REVISION_AGREED';
     const STATUS_PENDING = 'PENDING';
     const STATUS_APPROVED = 'APPROVED';
     const STATUS_REJECTED = 'REJECTED';
