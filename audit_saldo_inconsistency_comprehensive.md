@@ -2,7 +2,7 @@
 
 **Tanggal Audit**: 6 Agustus 2026  
 **Auditor**: Senior System Analyst & Database Engineer  
-**Metode**: Pelacakan Log Database Master (`saldo_histories`) + Analisis Kode Sumber (`AdvancedSyncService.php`, `TransactionService.php`, `OrderItemController.php`, `SaldoRecalculatorService.php`)
+**Metode**: Pelacakan Log Database Master (`saldo_histories`) + Analisis Kode Sumber (`[legacy_sync_service_retired]`, `TransactionService.php`, `OrderItemController.php`, `SaldoRecalculatorService.php`)
 
 ---
 
@@ -80,10 +80,10 @@ $balanceAfter = $student->saldo;
 | Parameter | Aplikasi Lama (`ponpes.cahayatasbih.or.id`) | Aplikasi Baru (`aplikasi.cahayatasbih.or.id`) |
 | :--- | :--- | :--- |
 | **URL** | `ponpes.cahayatasbih.or.id/report-saldo` | `aplikasi.cahayatasbih.or.id/saldo-history/create` |
-| **Database** | `aplikasidb` | `cahayatasbihdb` |
+| **Database** | `aplikasidb` | `[legacy_db_retired]` |
 | **Saldo Tampil** | **Rp +295.223** (positif) | **Rp -1.086.223** (minus jutaan) |
 
-### B. Kronologi Log Transaksi Luthfia (10-12 Juli 2026 di `cahayatasbihdb`)
+### B. Kronologi Log Transaksi Luthfia (10-12 Juli 2026 di `[legacy_db_retired]`)
 
 ```
 [2026-07-10 09:24:37] OUT/POS  Rp 9.500   | BB: -744.000  → BA: -753.500  ✅
@@ -101,12 +101,12 @@ $balanceAfter = $student->saldo;
 [2026-07-12 16:52:30] OUT/POS  Rp 4.000   | BB: -1.235.500 → BA: -1.239.500 ✅
 ```
 
-**Chain Breaks pada periode 10-12 Juli 2026: 0** (rantai integritas sempurna di `cahayatasbihdb`)
+**Chain Breaks pada periode 10-12 Juli 2026: 0** (rantai integritas sempurna di `[legacy_db_retired]`)
 
 > [!IMPORTANT]
-> **Root Cause**: Perbedaan saldo bukan karena bug kalkulasi, melainkan karena **kedua database (`aplikasidb` dan `cahayatasbihdb`) memiliki cakupan data transaksi yang berbeda**:
+> **Root Cause**: Perbedaan saldo bukan karena bug kalkulasi, melainkan karena **kedua database (`aplikasidb` dan `[legacy_db_retired]`) memiliki cakupan data transaksi yang berbeda**:
 > - **`aplikasidb` (Lama)**: Hanya menyimpan transaksi POS kantin dan topup lokal → saldo positif `Rp +295.223`.
-> - **`cahayatasbihdb` (Baru)**: Menyimpan **SEMUA** transaksi termasuk autodebit tagihan bulanan (`USAGE_BILL`), penarikan cash (`WITHDRAW`), dan Adjustment Sinkronisasi Master → saldo minus `Rp -1.086.223`.
+> - **`[legacy_db_retired]` (Baru)**: Menyimpan **SEMUA** transaksi termasuk autodebit tagihan bulanan (`USAGE_BILL`), penarikan cash (`WITHDRAW`), dan Adjustment Sinkronisasi Master → saldo minus `Rp -1.086.223`.
 >
 > Adjustment `Rp 406.000` pada `2026-07-12 11:57:57` (deskripsi: *"Adjustment sinkronisasi master (selisih saldo)"*) adalah bukti bahwa skrip migrasi VPS lama pernah memasukkan penyesuaian selisih saldo yang mendorong angka minus semakin dalam.
 
@@ -116,7 +116,7 @@ $balanceAfter = $student->saldo;
 
 ### A. Formula Kalkulasi dari Kode Sumber
 
-Berdasarkan [`AdvancedSyncService.php` baris 100-120](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/AdvancedSyncService.php#L100-L120):
+Berdasarkan [`[legacy_sync_service_retired]` baris 100-120](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/[legacy_sync_service_retired]#L100-L120):
 
 ```php
 $currentLocalSaldo = $localStudent ? $localStudent->saldo : 0;   // [A]
@@ -140,7 +140,7 @@ if ($localStudent && $localStudent->saldo != $masterStudent->saldo) {
 
 | Variabel | Nilai | Sumber |
 | :--- | :--- | :--- |
-| **[A]** Saldo Aplikasi Baru (`cahayatasbihdb`) | `Rp -1.086.223` | `students.saldo` di lokal |
+| **[A]** Saldo Aplikasi Baru (`[legacy_db_retired]`) | `Rp -1.086.223` | `students.saldo` di lokal |
 | **[B]** Total Riwayat Tertunda Masuk | `+ Rp 2.150.000` | SUM transaksi `type=IN` yang belum ada di lokal |
 | **[C]** Total Riwayat Tertunda Keluar | `- Rp 1.823.000` | SUM transaksi `type=OUT/WITHDRAW` yang belum ada di lokal |
 | **Net Tertunda** ([B] - [C]) | `+ Rp 327.000` | |
@@ -149,7 +149,7 @@ if ($localStudent && $localStudent->saldo != $masterStudent->saldo) {
 **Saldo Aplikasi Lama** (`aplikasidb`): `Rp 366.723` — berbeda dari Saldo Aplikasi Baru (`Rp -1.086.223`) → **CONFLICT_DETECTED** → UI render **"CONFLICT MERGED"**.
 
 > [!NOTE]
-> **Penilaian Analyst**: Formula kalkulasi `Estimasi Saldo Akhir = Saldo Lokal + Net Riwayat Tertunda` pada kode [`AdvancedSyncService.php`](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/AdvancedSyncService.php#L100-L115) adalah **100% AKURAT secara matematika**. Angka `Rp -759.223` yang muncul di Gambar 4 benar dan presisi.
+> **Penilaian Analyst**: Formula kalkulasi `Estimasi Saldo Akhir = Saldo Lokal + Net Riwayat Tertunda` pada kode [`[legacy_sync_service_retired]`](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/[legacy_sync_service_retired]#L100-L115) adalah **100% AKURAT secara matematika**. Angka `Rp -759.223` yang muncul di Gambar 4 benar dan presisi.
 
 ---
 
@@ -189,9 +189,9 @@ if ($localStudent && $localStudent->saldo != $masterStudent->saldo) {
 
 1. **Dual-Source Recording (MASALAH SISTEMIK)** — Dua sistem (Aplikasi Lama VPS + Aplikasi Baru) menulis transaksi ke database yang sama secara **independen tanpa mekanisme sinkronisasi real-time**, menyebabkan setiap sistem memiliki snapshot `students.saldo` yang berbeda saat mencatat `balance_before`. Sampling acak membuktikan **90% santri terdampak** — ini bukan insiden terisolasi.
 
-2. **Perbedaan Cakupan Data Antar Database** — `aplikasidb` (Lama) hanya menyimpan transaksi POS kantin dan topup, sedangkan `cahayatasbihdb` (Baru) menyimpan seluruh jenis transaksi termasuk autodebit tagihan dan adjustment sinkronisasi. Ini menyebabkan saldo yang ditampilkan di 2 aplikasi **berbeda secara fundamental**.
+2. **Perbedaan Cakupan Data Antar Database** — `aplikasidb` (Lama) hanya menyimpan transaksi POS kantin dan topup, sedangkan `[legacy_db_retired]` (Baru) menyimpan seluruh jenis transaksi termasuk autodebit tagihan dan adjustment sinkronisasi. Ini menyebabkan saldo yang ditampilkan di 2 aplikasi **berbeda secara fundamental**.
 
-3. **CONFLICT MERGED adalah fitur yang benar** — Status ini muncul karena kode [`AdvancedSyncService.php` baris 117-120](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/AdvancedSyncService.php#L117-L120) mendeteksi bahwa `$localStudent->saldo ≠ $masterStudent->saldo`, yang merupakan kondisi faktual akibat poin 1 dan 2 di atas. Formula Estimasi Saldo Akhir **100% presisi secara matematis**.
+3. **CONFLICT MERGED adalah fitur yang benar** — Status ini muncul karena kode [`[legacy_sync_service_retired]` baris 117-120](file:///f:/Antigravity/Projects/cahayatasbih/app/Services/[legacy_sync_service_retired]#L117-L120) mendeteksi bahwa `$localStudent->saldo ≠ $masterStudent->saldo`, yang merupakan kondisi faktual akibat poin 1 dan 2 di atas. Formula Estimasi Saldo Akhir **100% presisi secara matematis**.
 
 ### Solusi yang Sudah Tersedia — `SaldoRecalculatorService`:
 

@@ -58,18 +58,6 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Master Application URL (Clone/Replica Mode)
-    |--------------------------------------------------------------------------
-    |
-    | Jika aplikasi ini berjalan sebagai clone/replica, set URL master agar
-    | file gambar (avatar, bukti transfer, dll) diambil dari server master.
-    | Kosongkan jika ini adalah server master/standalone.
-    |
-    */
-
-    'master_url' => env('MASTER_APP_URL', null),
 
     /*
     |--------------------------------------------------------------------------

@@ -98,21 +98,12 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit/tagihan-pembayaran', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'index'])->name('audit.tagihan');
     Route::get('audit/admin/audit/tagihan-pembayaran', fn() => redirect()->route('audit.tagihan'));
     Route::match(['put', 'post', 'delete'], 'transaction/{id}/hide-archive', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'hideArchive'])->name('admin.transaction.hide-archive');
-    Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
-    Route::get('audit/diagnostics/comparison', [App\Http\Controllers\Admin\AuditController::class, 'ajaxComparison'])->name('admin.audit.diagnostics.comparison');
     Route::get('audit/diagnostics/scripts', [App\Http\Controllers\Admin\AuditController::class, 'ajaxScripts'])->name('admin.audit.diagnostics.scripts');
-    Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
     Route::get('audit/duplicate-students', [App\Http\Controllers\Admin\AuditController::class, 'duplicatesIndex'])->name('admin.audit.duplicates');
     Route::get('audit/simulation', [App\Http\Controllers\Admin\AuditController::class, 'simulationIndex'])->name('admin.audit.simulation');
     Route::post('audit/run-simulation', [App\Http\Controllers\Admin\AuditController::class, 'runSimulation'])->name('admin.audit.run-simulation');
     Route::post('audit/apply-simulation', [App\Http\Controllers\Admin\AuditController::class, 'applySimulation'])->name('admin.audit.apply-simulation');
-    
-    // Advanced Sync Saldo & POS
-    Route::get('audit/advanced-sync', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'index'])->name('admin.audit.advanced-sync');
-    Route::post('audit/advanced-sync/preview', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'preview'])->name('admin.audit.advanced-sync.preview');
-    Route::post('audit/advanced-sync/execute', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'execute'])->name('admin.audit.advanced-sync.execute');
-    Route::post('audit/advanced-sync/clean-reconcile', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'cleanReconcile'])->name('admin.audit.advanced-sync.clean-reconcile');
     Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
 
     // Audit Saldo Minus
@@ -130,13 +121,9 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 
     // Redirect old route for compatibility
     Route::get('audit', function() {
-        return redirect()->route('admin.audit.sync');
+        return redirect()->route('admin.audit.diagnostics');
     })->name('admin.audit');
 
-    Route::post('sync-master', [App\Http\Controllers\Admin\AuditController::class, 'syncMaster'])->name('admin.sync-master');
-    Route::post('audit/preview-pull-master', [App\Http\Controllers\Admin\AuditController::class, 'previewPullMaster'])->name('admin.audit.preview-pull-master');
-    Route::post('audit/confirm-merge-master', [App\Http\Controllers\Admin\AuditController::class, 'confirmMergeMaster'])->name('admin.audit.confirm-merge-master');
-    Route::post('audit/sync-selected-students', [App\Http\Controllers\Admin\AuditController::class, 'syncSelectedStudents'])->name('admin.audit.sync-selected-students');
     Route::post('audit/merge-students', [App\Http\Controllers\Admin\AuditController::class, 'mergeStudents'])->name('admin.merge-students');
 });
 // start wali santri & penanggung jawab (CT-Mobile)

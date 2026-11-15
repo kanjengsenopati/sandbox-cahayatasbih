@@ -22,7 +22,6 @@ return [
     'allowed_origins' => [
         'http://127.0.0.1:8000',
         'http://localhost:8000',
-        'https://ponpes.cahayatasbih.or.id',
         'https://aplikasi.cahayatasbih.or.id',
         'https://cahayatasbih.or.id'
     ],

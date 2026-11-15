@@ -315,13 +315,6 @@
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Tutup</button>
-                    <form action="{{ route('admin.audit.sync-selected-students') }}" method="POST" id="form-modal-single-sync">
-                        @csrf
-                        <input type="hidden" name="student_ids[]" id="modal-student-id-input">
-                        <button type="submit" class="btn btn-success fw-bold text-white" style="background-color: #10B981; border: none;">
-                            <i class="fas fa-sync-alt me-1 text-white"></i> Sinkronkan Siswa Ini
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
@@ -330,251 +323,7 @@
     <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const comparisonUrl = '{{ route("admin.audit.diagnostics.comparison") }}';
             const scriptsUrl = '{{ route("admin.audit.diagnostics.scripts") }}';
-            const aiInsightUrl = '{{ route("admin.audit.diagnostics.ai-insight") }}';
-
-            let currentSearch = '';
-            let currentPage = 1;
-
-            // Update Summary Cards HTML
-            function updateSummaryCards(summaries) {
-                if (!summaries) return;
-
-                // Students
-                if (summaries.students) {
-                    const st = summaries.students;
-                    document.getElementById('summary-students-local').textContent = Number(st.local || 0).toLocaleString('id-ID') + ' Santri';
-                    document.getElementById('summary-students-master').innerHTML = 'Database Lama: <strong>' + Number(st.master || 0).toLocaleString('id-ID') + '</strong>';
-                    
-                    let stBadge = '<span class="badge badge-light-success fw-bold">Sinkron</span>';
-                    if (st.diff != 0) {
-                        const isPlus = st.diff > 0;
-                        stBadge = `<span class="badge ${isPlus ? 'badge-light-danger' : 'badge-light-success'} fw-bold">${isPlus ? '+' : ''}${Number(st.diff).toLocaleString('id-ID')} Selisih</span>`;
-                    }
-                    document.getElementById('summary-students-diff').innerHTML = stBadge;
-                }
-
-                // Saldo
-                if (summaries.saldo) {
-                    const sa = summaries.saldo;
-                    document.getElementById('summary-saldo-local').textContent = 'Rp ' + Number(sa.local || 0).toLocaleString('id-ID');
-                    document.getElementById('summary-saldo-master').innerHTML = 'Database Lama: <strong>Rp ' + Number(sa.master || 0).toLocaleString('id-ID') + '</strong>';
-                    
-                    let saBadge = '<span class="badge badge-light-success fw-bold">Sinkron</span>';
-                    if (sa.diff != 0) {
-                        saBadge = `<span class="badge ${sa.diff > 0 ? 'badge-light-danger' : 'badge-light-success'} fw-bold">Rp ${Number(sa.diff).toLocaleString('id-ID')}</span>`;
-                    }
-                    document.getElementById('summary-saldo-diff').innerHTML = saBadge;
-                }
-
-                // Bills
-                if (summaries.bills) {
-                    const bi = summaries.bills;
-                    document.getElementById('summary-bills-local').textContent = Number(bi.local || 0).toLocaleString('id-ID') + ' Tagihan';
-                    document.getElementById('summary-bills-master').innerHTML = 'Database Lama: <strong>' + Number(bi.master || 0).toLocaleString('id-ID') + '</strong>';
-                    
-                    let biBadge = '<span class="badge badge-light-success fw-bold">Sinkron</span>';
-                    if (bi.diff != 0) {
-                        const isPlus = bi.diff > 0;
-                        biBadge = `<span class="badge ${isPlus ? 'badge-light-danger' : 'badge-light-success'} fw-bold">${isPlus ? '+' : ''}${Number(bi.diff).toLocaleString('id-ID')} Selisih</span>`;
-                    }
-                    document.getElementById('summary-bills-diff').innerHTML = biBadge;
-                }
-            }
-
-            // Render skeleton placeholder for table
-            function showTableSkeleton() {
-                const container = document.getElementById('comparison-table-container');
-                container.innerHTML = `
-                    <div class="p-4">
-                        <div class="d-flex align-items-center justify-content-between mb-5">
-                            <div class="placeholder-glow w-50">
-                                <span class="placeholder col-8 py-3 rounded"></span>
-                            </div>
-                            <div class="placeholder-glow w-25 text-end">
-                                <span class="placeholder col-6 py-3 rounded"></span>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle">
-                                <thead>
-                                    <tr class="bg-light">
-                                        <th style="width: 5%;"><span class="placeholder col-6"></span></th>
-                                        <th style="width: 25%;"><span class="placeholder col-8"></span></th>
-                                        <th style="width: 15%;"><span class="placeholder col-6"></span></th>
-                                        <th style="width: 20%;"><span class="placeholder col-7"></span></th>
-                                        <th style="width: 20%;"><span class="placeholder col-7"></span></th>
-                                        <th style="width: 15%;"><span class="placeholder col-6"></span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-12"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-9 mb-1"></span><br><span class="placeholder col-6"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-8"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-7"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-7"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-6"></span></span></td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-12"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-9 mb-1"></span><br><span class="placeholder col-6"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-8"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-7"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-7"></span></span></td>
-                                        <td><span class="placeholder-glow"><span class="placeholder col-6"></span></span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Render skeleton placeholder for summary cards
-            function showSummarySkeleton() {
-                const placeholders = ['summary-students-local', 'summary-saldo-local', 'summary-bills-local'];
-                placeholders.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerHTML = '<span class="placeholder-glow"><span class="placeholder col-6"></span></span>';
-                });
-                ['summary-students-master', 'summary-saldo-master', 'summary-bills-master'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerHTML = 'Database Lama: <span class="placeholder-glow"><span class="placeholder col-4"></span></span>';
-                });
-                ['summary-students-diff', 'summary-saldo-diff', 'summary-bills-diff'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.innerHTML = '<span class="placeholder-glow"><span class="placeholder col-4"></span></span>';
-                });
-            }
-
-            // Bind dynamic table events (Checkboxes, Search form, Pagination)
-            function bindTableEvents() {
-                const container = document.getElementById('comparison-table-container');
-                if (!container) return;
-
-                const checkAll = container.querySelector('#check-all-students');
-                const rowCheckboxes = container.querySelectorAll('.student-select-checkbox');
-                const btnSyncSelected = container.querySelector('#btn-sync-selected');
-                const selectedCountSpan = container.querySelector('#selected-count');
-
-                function updateSelectedCount() {
-                    const checked = container.querySelectorAll('.student-select-checkbox:checked');
-                    const count = checked.length;
-                    if (selectedCountSpan) selectedCountSpan.textContent = count;
-                    if (btnSyncSelected) {
-                        if (count > 0) {
-                            btnSyncSelected.classList.remove('d-none');
-                        } else {
-                            btnSyncSelected.classList.add('d-none');
-                        }
-                    }
-                }
-
-                if (checkAll) {
-                    checkAll.addEventListener('change', function () {
-                        rowCheckboxes.forEach(cb => cb.checked = checkAll.checked);
-                        updateSelectedCount();
-                    });
-                }
-
-                rowCheckboxes.forEach(cb => {
-                    cb.addEventListener('change', function () {
-                        if (!this.checked && checkAll) {
-                            checkAll.checked = false;
-                        }
-                        updateSelectedCount();
-                    });
-                });
-
-                // Search form submit
-                const searchForm = container.querySelector('#form-search-comparison');
-                if (searchForm) {
-                    searchForm.addEventListener('submit', function (e) {
-                        e.preventDefault();
-                        const searchInput = container.querySelector('#input-search-term');
-                        currentSearch = searchInput ? searchInput.value.trim() : '';
-                        currentPage = 1;
-                        loadComparison(currentSearch, currentPage, false);
-                    });
-                }
-
-                // Reset search button
-                const resetBtn = container.querySelector('#btn-reset-search');
-                if (resetBtn) {
-                    resetBtn.addEventListener('click', function () {
-                        currentSearch = '';
-                        currentPage = 1;
-                        loadComparison('', 1, false);
-                    });
-                }
-
-                // Pagination link interceptor
-                const paginationLinks = container.querySelectorAll('.pagination-container a');
-                paginationLinks.forEach(link => {
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        try {
-                            const url = new URL(this.href, window.location.origin);
-                            currentPage = parseInt(url.searchParams.get('page') || '1', 10);
-                            currentSearch = url.searchParams.get('search') || currentSearch;
-                            loadComparison(currentSearch, currentPage, false);
-                        } catch (err) {
-                            console.error('Pagination click error:', err);
-                        }
-                    });
-                });
-            }
-
-            // Load Comparison via AJAX
-            function loadComparison(search = '', page = 1, isRefresh = false) {
-                showTableSkeleton();
-                if (isRefresh) {
-                    showSummarySkeleton();
-                }
-
-                const params = new URLSearchParams();
-                if (search) params.append('search', search);
-                if (page > 1) params.append('page', page);
-                if (isRefresh) params.append('refresh', '1');
-
-                const url = comparisonUrl + (params.toString() ? '?' + params.toString() : '');
-
-                fetch(url)
-                    .then(res => {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        return res.json();
-                    })
-                    .then(data => {
-                        updateSummaryCards(data.summaries);
-                        const container = document.getElementById('comparison-table-container');
-                        if (container && data.html) {
-                            container.innerHTML = data.html;
-                            bindTableEvents();
-                        }
-                        // Chained: Trigger AI Insight sequentially AFTER comparison is loaded & cached
-                        loadAiInsight(isRefresh);
-                    })
-                    .catch(err => {
-                        console.error('Error loading comparison:', err);
-                        const container = document.getElementById('comparison-table-container');
-                        if (container) {
-                            container.innerHTML = `
-                                <div class="alert bg-light-danger border border-danger d-flex align-items-center p-5 rounded-[16px]">
-                                    <i class="fas fa-exclamation-triangle text-danger fs-1 me-4"></i>
-                                    <div class="d-flex flex-column">
-                                        <h4 class="mb-1 text-dark">Gagal Memuat Data Perbandingan</h4>
-                                        <span class="text-slate-600 fs-7">Terjadi kendala saat menghubungkan ke database pembanding.</span>
-                                        <button type="button" class="btn btn-sm btn-danger mt-3 w-fit" onclick="loadComparison('${search}', ${page}, true)">
-                                            <i class="fas fa-redo me-1"></i> Coba Lagi
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-            }
 
             // Load Diagnostic Integrity Scripts
             function loadScripts(isRefresh = false) {
@@ -585,7 +334,7 @@
                     container.innerHTML = `
                         <div class="d-flex align-items-center py-4 text-primary">
                             <div class="spinner-border spinner-border-sm me-3 text-primary" role="status"></div>
-                            <span class="fw-bold fs-7">Menjalankan ulang seluruh naskah diagnostik sistem...</span>
+                            <span class="fw-bold fs-7">Menjalankan seluruh naskah diagnostik sistem...</span>
                         </div>
                     `;
                 }
@@ -619,99 +368,6 @@
                     });
             }
 
-            // Load AI Insight
-            function loadAiInsight(isRefresh = false) {
-                const container = document.getElementById('ai-insight-container');
-                if (!container) return;
-
-                container.innerHTML = `
-                    <div class="d-flex align-items-center py-4 text-purple-600">
-                        <div class="spinner-border spinner-border-sm me-3 text-purple-600" role="status"></div>
-                        <span class="fw-bold fs-7">Sedang memuat analisis AI Insight otomatis...</span>
-                    </div>
-                `;
-
-                const url = aiInsightUrl + (isRefresh ? '?refresh=1' : '');
-
-                fetch(url)
-                    .then(res => {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data && data.html) {
-                            container.innerHTML = data.html;
-                        } else {
-                            container.innerHTML = '<span class="text-muted fs-7">Tidak ada rekomendasi AI Insight.</span>';
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error fetching AI Insight:', err);
-                        container.innerHTML = '<span class="text-danger fs-7"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat AI Insight secara otomatis.</span>';
-                    });
-            }
-
-            // Event Delegation for Detail Modal Button
-            document.addEventListener('click', function (e) {
-                const btn = e.target.closest('.btn-detail-modal');
-                if (!btn) return;
-
-                try {
-                    const data = JSON.parse(btn.getAttribute('data-json'));
-
-                    document.getElementById('modal-student-name').textContent = 'Detil Perubahan: ' + (data.name || '');
-                    document.getElementById('modal-student-nis').textContent = 'NIS: ' + (data.nis || '-');
-                    document.getElementById('modal-student-id-input').value = data.id || '';
-
-                    const props = [
-                        { label: 'UPT / Lembaga', key: 'school', type: 'text' },
-                        { label: 'Kelas', key: 'class', type: 'text' },
-                        { label: 'Tahun Ajaran', key: 'academic_year', type: 'text' },
-                        { label: 'Saldo Utama', key: 'saldo', type: 'currency' },
-                        { label: 'Tabungan', key: 'saving', type: 'currency' },
-                        { label: 'Jumlah Tagihan', key: 'bills_count', type: 'count' },
-                        { label: 'Transaksi Saldo', key: 'tx_count', type: 'count' }
-                    ];
-
-                    let html = '';
-                    props.forEach(p => {
-                        let localVal = data.local ? data.local[p.key] : '-';
-                        let masterVal = data.master ? data.master[p.key] : '-';
-                        let syncVal = data.sync_result ? data.sync_result[p.key] : '-';
-
-                        if (p.type === 'currency') {
-                            localVal = 'Rp ' + Number(localVal || 0).toLocaleString('id-ID');
-                            masterVal = 'Rp ' + Number(masterVal || 0).toLocaleString('id-ID');
-                            syncVal = 'Rp ' + Number(syncVal || 0).toLocaleString('id-ID');
-                        } else if (p.type === 'count') {
-                            localVal = (localVal || 0) + ' Rekor';
-                            masterVal = (masterVal || 0) + ' Rekor';
-                            syncVal = (syncVal || 0) + ' Rekor';
-                        }
-
-                        const isDiff = data.local && data.master && (data.local[p.key] != data.master[p.key]);
-                        const diffClass = isDiff ? 'bg-light-danger text-danger fw-bold' : '';
-
-                        html += `
-                            <tr>
-                                <td class="fw-bold text-gray-700">${p.label}</td>
-                                <td class="text-center ${diffClass}">${localVal}</td>
-                                <td class="text-center">${masterVal}</td>
-                                <td class="text-center fw-bold text-emerald-600" style="color: #10B981;">${syncVal}</td>
-                            </tr>
-                        `;
-                    });
-
-                    document.getElementById('modal-detail-tbody').innerHTML = html;
-
-                    const modalEl = document.getElementById('modalStudentDetail');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                } catch (err) {
-                    console.error('Error parsing student modal data:', err);
-                }
-            });
-
             // Manual On-Demand Scripts Scan Button
             const btnRunScriptsNow = document.getElementById('btn-run-scripts-now');
             if (btnRunScriptsNow) {
@@ -735,25 +391,21 @@
                     const text = document.getElementById('text-btn-audit');
 
                     if (icon) icon.classList.add('fa-spin');
-                    if (text) text.textContent = 'Memperbarui Audit...';
+                    if (text) text.textContent = 'Memindai Integritas...';
                     btnToolbarAudit.disabled = true;
 
-                    // Trigger comparison with refresh=1 (chains AI Insight), and refresh scripts
-                    loadComparison(currentSearch, 1, true);
                     loadScripts(true);
 
                     setTimeout(() => {
                         if (icon) icon.classList.remove('fa-spin');
-                        if (text) text.textContent = 'Jalankan Ulang Audit & Analisis AI';
+                        if (text) text.textContent = 'Jalankan Pindai Integritas';
                         btnToolbarAudit.disabled = false;
                     }, 2500);
                 });
             }
 
-            // Initial Asynchronous Load on Page Visit:
-            // ONLY comparison runs first to avoid saturating PHP worker pool!
-            // It will sequentially trigger loadAiInsight once cached.
-            loadComparison('', 1, false);
+            // Initial load
+            loadScripts(false);
         });
     </script>
 @endsection

@@ -11,17 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Bersihkan pada koneksi default
+        // Bersihkan pada koneksi default
         $this->cleanupDummyHandovers(null);
-
-        // 2. Bersihkan juga pada koneksi mysql_aplikasi jika tersedia
-        try {
-            if (config('database.connections.mysql_aplikasi')) {
-                $this->cleanupDummyHandovers('mysql_aplikasi');
-            }
-        } catch (\Throwable $e) {
-            // Abaikan jika koneksi remote tidak aktif saat migrasi offline
-        }
     }
 
     /**

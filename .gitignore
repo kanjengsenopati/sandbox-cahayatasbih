@@ -39,6 +39,7 @@ docker-compose.yml
 /pptq-cahaya-tasbih-firebase-adminsdk-w9fmm-0a9cd58eed.json
 /scratch
 scratch_*.php
+/.agents
 database/production.sql
 *.sql
 database/*.sql

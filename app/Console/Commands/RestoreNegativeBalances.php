@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class RestoreNegativeBalances extends Command
 {
     protected $signature = 'saldo:restore-negative 
-        {--connection=default : Database connection to use (default, mysql_master, mysql_aplikasi)}
+        {--connection=default : Database connection to use (default)}
         {--dry-run : Preview affected students without making changes}
         {--threshold=0 : Only restore balances below this threshold (e.g. -100000)}
         {--student= : Restore specific student by ID (comma-separated for multiple)}
@@ -264,7 +264,7 @@ class RestoreNegativeBalances extends Command
             return $conn;
         } catch (\Throwable $e) {
             $this->error("Gagal koneksi ke '{$name}': " . $e->getMessage());
-            $this->info("Koneksi tersedia: default, mysql_master, mysql_aplikasi, mysql_ponpes");
+            $this->info("Koneksi tersedia: default");
             exit(1);
         }
     }

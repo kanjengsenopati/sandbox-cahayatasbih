@@ -13,39 +13,11 @@ class AuditSaldoMinusController extends Controller
 {
     /**
      * Resolve database connection to use for audit.
-     * Checks if current database contains negative saldo; if not, connects to mysql_aplikasi.
+     * Operates standalone using the default database connection.
      */
     private function getAuditConnection($source = null)
     {
-        if ($source === 'local') {
-            return DB::connection();
-        }
-
-        if ($source === 'aplikasidb') {
-            try {
-                DB::connection('mysql_aplikasi')->getPdo();
-                return DB::connection('mysql_aplikasi');
-            } catch (\Throwable $e) {
-                return DB::connection();
-            }
-        }
-
-        // Default auto-detect: check local first
-        try {
-            if (DB::table('students')->where('saldo', '<', 0)->exists()) {
-                return DB::connection();
-            }
-        } catch (\Throwable $e) {
-            // fallback
-        }
-
-        // Fallback to mysql_aplikasi where historical minus records are stored
-        try {
-            DB::connection('mysql_aplikasi')->getPdo();
-            return DB::connection('mysql_aplikasi');
-        } catch (\Throwable $e) {
-            return DB::connection();
-        }
+        return DB::connection();
     }
 
     /**

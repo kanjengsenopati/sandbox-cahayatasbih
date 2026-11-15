@@ -1,7 +1,7 @@
 # Laporan Audit Forensik & Fakta: Akar Masalah Saldo Minus Santri
 
 **Tanggal Audit**: 26 September 2026  
-**Status**: Terverifikasi Empiris di Database Master (`cahayatasbihdb` & `aplikasidb`) & Tersimpan di CodeGraph Memory (`ID: c8284901-29dc-4dfc-a2a0-ede7dcd5d7f4`)
+**Status**: Terverifikasi Empiris di Database Master (`[legacy_db_retired]` & `aplikasidb`) & Tersimpan di CodeGraph Memory (`ID: c8284901-29dc-4dfc-a2a0-ede7dcd5d7f4`)
 
 ---
 

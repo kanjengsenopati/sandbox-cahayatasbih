@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AuditService;
-use App\Services\AuditComparisonService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Artisan;
@@ -12,97 +11,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AuditController extends Controller
 {
-    /**
-     * Show database sync UI.
-     */
-    public function syncIndex(Request $request)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-
-        // 1. Clean up previous stuck running sync logs in database (older than 15 minutes)
-        try {
-            \App\Models\DatabaseSyncLog::where('status', 'running')
-                ->where('started_at', '<', now()->subMinutes(15))
-                ->update([
-                    'status' => 'failed',
-                    'finished_at' => now(),
-                    'duration' => 120,
-                    'error' => 'Proses sinkronisasi terhenti secara tidak terduga (Stuck/Timeout/Server Restart).'
-                ]);
-        } catch (\Throwable $e) {
-            // Ignore error
-        }
-
-        // 2. Backwards compatibility/latest status from cache or db
-        $syncStatus = Cache::get('last_db_sync_status');
-        
-        // Clean up stuck running status in Cache too
-        if ($syncStatus && isset($syncStatus['status']) && $syncStatus['status'] === 'running') {
-            $startedAt = isset($syncStatus['started_at']) ? strtotime($syncStatus['started_at']) : 0;
-            if (time() - $startedAt > 900) { // 15 minutes
-                $syncStatus['status'] = 'failed';
-                $syncStatus['finished_at'] = now()->toDateTimeString();
-                $syncStatus['error'] = 'Proses sinkronisasi terhenti secara tidak terduga (Stuck/Timeout/Server Restart).';
-                Cache::put('last_db_sync_status', $syncStatus, 1800);
-            }
-        }
-
-        if (!$syncStatus) {
-            $latestLog = \App\Models\DatabaseSyncLog::latest('id')->first();
-            if ($latestLog) {
-                $syncStatus = [
-                    'status' => $latestLog->status,
-                    'started_at' => $latestLog->started_at->toDateTimeString(),
-                    'finished_at' => $latestLog->finished_at?->toDateTimeString(),
-                    'duration' => $latestLog->duration,
-                    'report' => $latestLog->report ?? [],
-                    'error' => $latestLog->error
-                ];
-            }
-        }
-
-        // Fetch full sync history list
-        $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
-
-        $schools = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('schools')->whereNull('deleted_at')->get();
-        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
-        
-        foreach ($classrooms as $cls) {
-            $name = strtoupper(trim($cls->name));
-            $group = 'Lainnya / Tambahan';
-
-            if (preg_match('/^7/', $name)) $group = 'Kelas 7';
-            elseif (preg_match('/^8/', $name)) $group = 'Kelas 8';
-            elseif (preg_match('/^9/', $name)) $group = 'Kelas 9';
-            elseif (preg_match('/^10|^X\b|^X-/', $name)) $group = 'Kelas 10';
-            elseif (preg_match('/^11|^XI\b|^XI-/', $name)) $group = 'Kelas 11';
-            elseif (preg_match('/^12|^XII\b|^XII-/', $name)) $group = 'Kelas 12';
-            elseif (strpos($name, 'PONDOK') !== false || strpos($name, 'DEMO') !== false || strpos($name, 'CONTOH') !== false || strpos($name, 'USTADZ') !== false) {
-                $group = 'Pondok / Khusus';
-            }
-            
-            $cls->grade_group = $group;
-        }
-
-        $academicYears = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('academic_years')->whereNull('deleted_at')->orderBy('name', 'desc')->get();
-        // Resolve bill types and map them to their corresponding school_id via payment_rates -> payment_rate_classrooms -> classrooms
-        $billTypes = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bill_types')
-            ->leftJoin('payment_rates', 'payment_rates.bill_type_id', '=', 'bill_types.id')
-            ->leftJoin('payment_rate_classrooms', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
-            ->leftJoin('classrooms', 'classrooms.id', '=', 'payment_rate_classrooms.classroom_id')
-            ->whereNull('bill_types.deleted_at')
-            ->select('bill_types.id', 'bill_types.name', 'bill_types.academic_year_id', 'classrooms.school_id')
-            ->groupBy('bill_types.id', 'bill_types.name', 'bill_types.academic_year_id', 'classrooms.school_id')
-            ->orderBy('bill_types.name', 'asc')
-            ->get();
-
-        $localClassroomIds = \Illuminate\Support\Facades\DB::connection('mysql')->table('classrooms')->pluck('id')->toArray();
-
-        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms', 'academicYears', 'billTypes', 'localClassroomIds'));
-    }
-
     /**
      * Show system diagnostics UI (instant page load with skeleton loaders).
      */
@@ -113,36 +21,6 @@ class AuditController extends Controller
         }
 
         return view('admins.admin.audit.diagnostics');
-    }
-
-    /**
-     * AJAX endpoint to fetch audit comparison data asynchronously.
-     */
-    public function ajaxComparison(Request $request, AuditComparisonService $comparisonService)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
-        }
-
-        session()->save();
-
-        if ($request->boolean('refresh')) {
-            Cache::forget('audit_diagnostics_raw_comparison');
-            Cache::forget('audit_ai_insight');
-        }
-
-        $search = $request->input('search');
-        $page = (int) $request->input('page', 1);
-
-        $comparison = $comparisonService->getComparisonData($search, $page, 10);
-
-        $html = view('admins.admin.audit.partials.comparison-table', compact('comparison'))->render();
-
-        return response()->json([
-            'summaries' => $comparison['summaries'],
-            'total_discrepancies' => $comparison['total_discrepancies'],
-            'html' => $html,
-        ]);
     }
 
     /**
@@ -173,161 +51,6 @@ class AuditController extends Controller
     }
 
     /**
-     * Synchronize selected students from master database.
-     */
-    public function syncSelectedStudents(Request $request)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-
-        $studentIds = $request->input('student_ids', []);
-        if (empty($studentIds) || !is_array($studentIds)) {
-            return redirect()->back()->with('error', 'Silakan pilih minimal satu siswa untuk disinkronkan.');
-        }
-
-        try {
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
-            $masterStudents = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('students')
-                ->whereIn('id', $studentIds)
-                ->whereNull('deleted_at')
-                ->get();
-
-            $syncedCount = 0;
-            foreach ($masterStudents as $ms) {
-                // Ensure classroom exists in local DB if linked
-                if (!empty($ms->classroom_id)) {
-                    $masterClassroom = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->where('id', $ms->classroom_id)->first();
-                    if ($masterClassroom) {
-                        \Illuminate\Support\Facades\DB::connection('mysql')->table('classrooms')->updateOrInsert(
-                            ['id' => $masterClassroom->id],
-                            (array) $masterClassroom
-                        );
-                    }
-                }
-
-                \Illuminate\Support\Facades\DB::connection('mysql')->table('students')->updateOrInsert(
-                    ['id' => $ms->id],
-                    (array) $ms
-                );
-
-                // Sync student_classroom_histories
-                $masterHistories = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('student_classroom_histories')
-                    ->where('student_id', $ms->id)
-                    ->get();
-                foreach ($masterHistories as $mh) {
-                    \Illuminate\Support\Facades\DB::connection('mysql')->table('student_classroom_histories')->updateOrInsert(
-                        ['id' => $mh->id],
-                        (array) $mh
-                    );
-                }
-
-                // Sync bills
-                $masterBills = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bills')
-                    ->where('student_id', $ms->id)
-                    ->get();
-                foreach ($masterBills as $mb) {
-                    \Illuminate\Support\Facades\DB::connection('mysql')->table('bills')->updateOrInsert(
-                        ['id' => $mb->id],
-                        (array) $mb
-                    );
-                }
-
-                $syncedCount++;
-            }
-
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-            // Clear caches
-            Cache::forget('audit_diagnostics_results');
-
-            return redirect()->back()->with('success', "Berhasil menyinkronkan data {$syncedCount} siswa terpilih dari Database Master.");
-        } catch (\Throwable $e) {
-            return redirect()->back()->with('error', 'Gagal menyinkronkan siswa terpilih: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Preview Data Pull & Diff calculation from Master Database without overwriting local DB.
-     */
-    public function previewPullMaster(Request $request, \App\Services\MasterIngestionBridgeService $bridgeService)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
-        }
-
-        $module = $request->input('module', 'students');
-        $limit = (int) $request->input('limit', 50);
-        $schoolId = $request->input('school_id');
-        $classroomId = $request->input('classroom_id');
-        $academicYearId = $request->input('academic_year_id');
-        $billTypeId = $request->input('bill_type_id');
-
-        // STRICT CONSTRAINT: Hardening data filter untuk billing_status
-        if ($module === 'billing_status') {
-            if (empty($academicYearId) || empty($billTypeId)) {
-                return response()->json([
-                    'error' => 'Validasi Gagal: Anda harus memilih Tahun Ajaran dan Jenis Tagihan untuk melihat Status Tagihan.',
-                ], 422);
-            }
-        }
-
-        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
-
-        return response()->json($diffAnalysis);
-    }
-
-    /**
-     * Execute verified merge for selected records from preview.
-     */
-    public function confirmMergeMaster(Request $request, \App\Services\MasterIngestionBridgeService $bridgeService)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return redirect()->back()->with('error', 'Akses ditolak.');
-        }
-
-        $module = $request->input('module', 'students');
-        $selectedIds = $request->input('selected_ids', []);
-        $academicYearId = $request->input('academic_year_id');
-        $billTypeId = $request->input('bill_type_id');
-
-        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds, $academicYearId, $billTypeId);
-
-        if ($result['status'] === 'success') {
-            return redirect()->back()->with('success', $result['message'])->with('synced_ids', $selectedIds);
-        }
-
-        return redirect()->back()->with('error', $result['message']);
-    }
-
-    /**
-     * AJAX endpoint to generate AI Insight asynchronously without blocking HTTP response.
-     */
-    public function ajaxAiInsight(Request $request, AuditComparisonService $comparisonService)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return response()->json(['html' => 'Akses ditolak.'], 403);
-        }
-
-        session()->save();
-
-        $comparison = $comparisonService->getComparisonData();
-        $cacheKey = 'audit_ai_insight_' . count($comparison['discrepancies']);
-
-        if ($request->boolean('refresh')) {
-            Cache::forget($cacheKey);
-            Cache::forget('audit_ai_insight');
-        }
-        
-        $aiInsight = Cache::remember($cacheKey, 1800, function () use ($comparisonService, $comparison) {
-            return $comparisonService->generateAiInsight($comparison);
-        });
-
-        return response()->json(['html' => $aiInsight]);
-    }
-
-    /**
      * Show duplicate students UI.
      */
     public function duplicatesIndex(Request $request)
@@ -349,28 +72,6 @@ class AuditController extends Controller
             ->groupBy('name');
 
         return view('admins.admin.audit.duplicate-students', compact('duplicateStudents'));
-    }
-
-    /**
-     * Trigger database sync from master manually.
-     */
-    public function syncMaster(Request $request)
-    {
-        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
-            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
-        }
-
-        try {
-            $selectedTables = $request->input('tables', []);
-            $params = [];
-            if (!empty($selectedTables)) {
-                $params['--tables'] = implode(',', $selectedTables);
-            }
-            Artisan::call('db:sync-master', $params);
-            return redirect()->route('admin.audit.sync')->with('success', 'Sinkronisasi database master berhasil dijalankan!');
-        } catch (\Throwable $e) {
-            return redirect()->route('admin.audit.sync')->with('error', 'Gagal memicu sinkronisasi: ' . $e->getMessage());
-        }
     }
 
     /**
