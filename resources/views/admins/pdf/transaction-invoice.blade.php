@@ -72,12 +72,18 @@
          */
         .receipt-slip {
             width: auto;
-            height: 92mm;
-            max-height: 92mm;
-            padding: 3mm 10mm 3mm 10mm;
+            height: 86.5mm;
+            max-height: 86.5mm;
+            padding: 9mm 10mm 2.5mm 10mm;
             overflow: hidden;
             position: relative;
             page-break-inside: avoid;
+        }
+
+        .receipt-slip.compact-slip {
+            height: 90mm;
+            max-height: 90mm;
+            padding: 5.5mm 10mm 2.5mm 10mm;
         }
 
         .receipt-slip.with-cutline {
@@ -89,7 +95,7 @@
             width: auto;
             border: 1px solid #CBD5E1;
             border-radius: 6px;
-            padding: 5.5px 9px 5px 9px;
+            padding: 7.5px 10px 6.5px 10px;
             background-color: #FFFFFF;
         }
 
@@ -110,8 +116,8 @@
             width: 100%;
             table-layout: fixed;
             border-collapse: collapse;
-            margin-bottom: 4px;
-            padding-bottom: 3.5px;
+            margin-bottom: 6px;
+            padding-bottom: 4.5px;
             border-bottom: 1.5px solid #E2E8F0;
         }
 
@@ -184,8 +190,8 @@
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
             border-radius: 5px;
-            padding: 4px 8px;
-            margin-bottom: 5px;
+            padding: 5.5px 9px;
+            margin-bottom: 6.5px;
         }
 
         .info-table {
@@ -618,7 +624,7 @@
             $waQrLink = 'https://wa.me/' . $targetWaPhone . '?text=' . rawurlencode($waText);
         @endphp
 
-        <div class="receipt-slip {{ $slipIndex < 2 ? 'with-cutline' : '' }}">
+        <div class="receipt-slip {{ $slipIndex < 2 ? 'with-cutline' : '' }} {{ $isCompact ? 'compact-slip' : '' }}">
             <div class="slip-card">
                 <!-- 1. Header -->
                 <table class="header-table">
