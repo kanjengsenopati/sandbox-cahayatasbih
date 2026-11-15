@@ -204,18 +204,19 @@
         .label-cell {
             color: #475569;
             font-weight: 600;
-            width: 66px;
+            white-space: nowrap;
         }
 
         .colon-cell {
             color: #475569;
-            width: 7px;
             text-align: center;
+            white-space: nowrap;
         }
 
         .value-cell {
             color: #0F172A;
             font-weight: 700;
+            white-space: nowrap;
             overflow: hidden;
         }
 
@@ -628,7 +629,7 @@
                             @else
                                 <div class="brand-title">PPTQ CAHAYA TASBIH</div>
                             @endif
-                            <div class="brand-subtitle">PPTQ Cahaya Tasbih • Bukti Pembayaran Sah Sistem CT-Pay</div>
+                            <div class="brand-subtitle">PPTQ Cahaya Tasbih • Bukti Pembayaran Sah</div>
                         </td>
                         <td width="50%" class="text-end">
                             <div>
@@ -648,38 +649,38 @@
                 <div class="info-card">
                     <table class="info-table">
                         <tr>
-                            <td width="54%" style="padding-right: 6px;">
+                            <td width="56%" style="padding-right: 6px;">
                                 <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
                                     <tr>
-                                        <td class="label-cell">Nama Santri</td>
-                                        <td class="colon-cell">:</td>
-                                        <td class="value-cell">
-                                            {{ \Illuminate\Support\Str::limit($tx->student?->name ?? '-', 25) }}{{ $tx->student?->nis ? ' (' . $tx->student->nis . ')' : '' }}
+                                        <td width="23%" class="label-cell">Nama Santri</td>
+                                        <td width="3%" class="colon-cell">:</td>
+                                        <td width="74%" class="value-cell">
+                                            {{ \Illuminate\Support\Str::limit($tx->student?->name ?? '-', 26) }}{{ $tx->student?->nis ? ' (' . $tx->student->nis . ')' : '' }}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="label-cell">Tgl Transaksi</td>
-                                        <td class="colon-cell">:</td>
-                                        <td class="value-cell">
+                                        <td width="23%" class="label-cell">Tgl Transaksi</td>
+                                        <td width="3%" class="colon-cell">:</td>
+                                        <td width="74%" class="value-cell">
                                             {{ \Carbon\Carbon::parse($tx->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY, HH:mm') }} WIB
                                         </td>
                                     </tr>
                                 </table>
                             </td>
-                            <td width="46%" style="border-left: 1px solid #E2E8F0; padding-left: 8px;">
+                            <td width="44%" style="border-left: 1px solid #E2E8F0; padding-left: 8px;">
                                 <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
                                     <tr>
-                                        <td class="label-cell" style="width: 62px;">Kelas / Unit</td>
-                                        <td class="colon-cell">:</td>
-                                        <td class="value-cell">
-                                            {{ $tx->student?->classroom?->name ?? '-' }} • {{ \Illuminate\Support\Str::limit($tx->student?->classroom?->school?->name ?? '-', 20) }}
+                                        <td width="26%" class="label-cell">Kelas / Unit</td>
+                                        <td width="3%" class="colon-cell">:</td>
+                                        <td width="71%" class="value-cell">
+                                            {{ $tx->student?->classroom?->name ?? '-' }} • {{ \Illuminate\Support\Str::limit($tx->student?->classroom?->school?->name ?? '-', 22) }}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td class="label-cell" style="width: 62px;">Metode/Kasir</td>
-                                        <td class="colon-cell">:</td>
-                                        <td class="value-cell">
-                                            {{ $tx?->paymentMethod?->name ?? 'Tunai' }} • {{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 16) }}
+                                        <td width="26%" class="label-cell">Metode/Kasir</td>
+                                        <td width="3%" class="colon-cell">:</td>
+                                        <td width="71%" class="value-cell">
+                                            {{ $tx?->paymentMethod?->name ?? 'Tunai' }} • {{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 20) }}
                                         </td>
                                     </tr>
                                 </table>
@@ -870,8 +871,8 @@
                                     <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
                                         <tr>
                                             <td width="76%" style="vertical-align: middle; padding-right: 4px;" class="verification-note">
-                                                <strong>Bukti Sah Sistem CT-Pay</strong><br />
-                                                Petugas: <strong>{{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 17) }}</strong><br />
+                                                <strong>Bukti Sah</strong><br />
+                                                Petugas: <strong>{{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 18) }}</strong><br />
                                                 Cetak: {{ $printedAt }} WIB<br />
                                                 <span class="role-badge">{{ $officerRoleLabel }}</span>
                                             </td>
