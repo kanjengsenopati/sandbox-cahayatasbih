@@ -118,14 +118,70 @@ class TransactionController extends Controller
 
         $data = Transaction::with([
             'student.classroom.school',
-            'transactionDetails.bill.billType',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
             'transactionDetails.saldoHistory',
             'transactionDetails.savingHistory',
             'paymentMethod',
             'admin'
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data'));
+        $transactions = collect([$data]);
+
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data', 'transactions'))
+            ->setPaper('a4', 'portrait');
         return $pdf->stream("Invoice {$data->payment_code}.pdf");
+    }
+
+    public function invoiceBatch(Request $request)
+    {
+        if (!auth()->user()?->can('Manage Transaksi') && !auth()->user()?->can('Manage Laporan Transaksi') && !auth()->user()?->can('Manage Tagihan') && !auth()->user()?->hasRole('Super Admin')) {
+            abort(403, 'Maaf, Anda tidak memiliki izin untuk melihat invoice transaksi.');
+        }
+
+        $rawIds = $request->input('ids', []);
+        if (is_string($rawIds)) {
+            $ids = array_values(array_filter(array_map('trim', explode(',', $rawIds))));
+        } elseif (is_array($rawIds)) {
+            $ids = array_values(array_filter(array_map('trim', $rawIds)));
+        } else {
+            $ids = [];
+        }
+
+        if (empty($ids)) {
+            abort(400, 'Silakan pilih minimal 1 transaksi untuk dicetak.');
+        }
+
+        $ids = array_slice(array_unique($ids), 0, 60);
+
+        $itemsById = Transaction::with([
+            'student.classroom.school',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'paymentMethod',
+            'admin'
+        ])->whereIn('id', $ids)->get()->keyBy('id');
+
+        $transactions = collect($ids)
+            ->map(fn($id) => $itemsById->get($id))
+            ->filter()
+            ->values();
+
+        if ($transactions->isEmpty()) {
+            abort(404, 'Data transaksi tidak ditemukan.');
+        }
+
+        $data = $transactions->first();
+
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data', 'transactions'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = $transactions->count() === 1
+            ? "Invoice {$data->payment_code}.pdf"
+            : 'Bukti-Bayar-Batch-' . $transactions->count() . '-Transaksi-' . date('Ymd-His') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }

@@ -611,6 +611,7 @@ Route::group(['middleware' => ['auth']], function () {
 Route::get('privacy-policy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
 Route::get('term-condition', [PrivacyPolicyController::class, 'termCondition'])->name('term-condition');
 Route::get('about-us', [PrivacyPolicyController::class, 'aboutUs'])->name('about-us');
+Route::get('transaction/invoice-batch', [TransactionController::class, 'invoiceBatch'])->name('transaction.invoice.batch');
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
 
 Route::controller(App\Http\Controllers\User\PaymentCheckController::class)->group(function () {
