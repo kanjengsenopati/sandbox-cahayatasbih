@@ -699,6 +699,27 @@
             var $btn = $(this).find('button[type="submit"]');
             $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses Pembayaran...');
         });
+
+        @if(session('last_paid_transaction_id'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Pembayaran Berhasil Disimpan!',
+                html: '<div class="text-slate-600 fs-6 mb-2">Transaksi <strong>{{ session("last_paid_transaction_code") }}</strong> sebesar <strong class="text-emerald-600">Rp {{ number_format((int) session("last_paid_amount"), 0, ",", ".") }}</strong> telah berhasil dicatat.</div>' +
+                      '<div class="text-slate-500 fs-7">Apakah Anda ingin langsung mencetak <strong>Bukti Pembayaran Tagihan (Format 1/3 A4)</strong>?</div>',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-print me-1"></i> Cetak Bukti Bayar (1/3 A4)',
+                cancelButtonText: 'Tutup',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary fw-bold me-2',
+                    cancelButton: 'btn btn-light fw-bold'
+                }
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    window.open("{{ route('transaction.invoice', session('last_paid_transaction_id')) }}", '_blank');
+                }
+            });
+        @endif
     });
 </script>
 <script>

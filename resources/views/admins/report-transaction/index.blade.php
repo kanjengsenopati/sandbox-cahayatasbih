@@ -131,13 +131,21 @@
                                         </div>
                                     </div>
 
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 flex-wrap">
                                         <!--begin::Tampilkan Button-->
                                         <button type="button" id="btn-tampilkan" class="btn btn-sm btn-primary d-flex align-items-center">
                                             <i class="fas fa-filter me-1 fs-6"></i>
                                             Tampilkan
                                         </button>
                                         <!--end::Tampilkan Button-->
+
+                                        <!--begin::Batch Print 3-Up Button-->
+                                        <button type="button" id="btn-print-batch-tx" class="btn btn-sm btn-success d-flex align-items-center opacity-50" style="height: 38px; cursor: not-allowed;" title="Pilih transaksi pada tabel untuk mencetak gabungan (3 Bukti Bayar per 1 Lembar A4)">
+                                            <i class="fas fa-print me-1 fs-6"></i>
+                                            <span>Cetak Terpilih (3/A4)</span>
+                                            <span id="badge-selected-tx-count" class="badge badge-circle bg-white text-success fw-bolder ms-2 d-none" style="width: 20px; height: 20px; font-size: 11px;">0</span>
+                                        </button>
+                                        <!--end::Batch Print 3-Up Button-->
 
                                         <!--begin::Export dropdown-->
                                         <button type="button" class="btn btn-sm btn-light-primary d-flex align-items-center" data-kt-menu-trigger="click"
@@ -235,6 +243,9 @@
                         <table id="table-saldo" class="table table-striped border rounded gy-5 gs-7">
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                    <th style="width: 36px" class="text-center">
+                                        <input type="checkbox" id="select-all-tx" class="form-check-input form-check-sm cursor-pointer" title="Pilih Semua Transaksi di Halaman Ini" />
+                                    </th>
                                     <th style="width: 5%">No</th>
                                     <th>Tanggal</th>
                                     <th>Kode Transaksi</th>
@@ -788,6 +799,16 @@
             },
             columns: [
                 {
+                    data: 'id',
+                    sortable: false,
+                    searchable: false,
+                    className: 'text-center',
+                    render: function(data, type, row) {
+                        var isChecked = window.selectedTxIds && window.selectedTxIds.indexOf(String(data)) !== -1 ? 'checked' : '';
+                        return '<input type="checkbox" class="form-check-input form-check-sm tx-row-checkbox cursor-pointer" value="' + data + '" ' + isChecked + ' />';
+                    }
+                },
+                {
                     data: null,
                     sortable: false,
                     searchable: false,
@@ -846,12 +867,89 @@
                             }
                         }
                     });
+                    if (typeof syncSelectAllTxCheckbox === 'function') {
+                        syncSelectAllTxCheckbox();
+                    }
                 } catch (e) {
                     console.error('DataTables drawCallback error:', e);
                 }
             }
         });
     }
+
+    window.selectedTxIds = [];
+
+    function updateBatchPrintButtonState() {
+        var count = window.selectedTxIds.length;
+        var $btn = $('#btn-print-batch-tx');
+        var $badge = $('#badge-selected-tx-count');
+        if (count > 0) {
+            $btn.removeClass('opacity-50').css('cursor', 'pointer');
+            $badge.text(count).removeClass('d-none');
+        } else {
+            $btn.addClass('opacity-50').css('cursor', 'not-allowed');
+            $badge.text('0').addClass('d-none');
+        }
+    }
+
+    function syncSelectAllTxCheckbox() {
+        var $checkboxes = $('#table-saldo tbody .tx-row-checkbox');
+        if ($checkboxes.length === 0) {
+            $('#select-all-tx').prop('checked', false);
+            return;
+        }
+        var allChecked = true;
+        $checkboxes.each(function() {
+            if (!$(this).is(':checked')) {
+                allChecked = false;
+                return false;
+            }
+        });
+        $('#select-all-tx').prop('checked', allChecked);
+    }
+
+    $(document).on('change', '#select-all-tx', function() {
+        var isChecked = $(this).is(':checked');
+        $('#table-saldo tbody .tx-row-checkbox').each(function() {
+            var val = String($(this).val());
+            $(this).prop('checked', isChecked);
+            var idx = window.selectedTxIds.indexOf(val);
+            if (isChecked && idx === -1) {
+                window.selectedTxIds.push(val);
+            } else if (!isChecked && idx !== -1) {
+                window.selectedTxIds.splice(idx, 1);
+            }
+        });
+        updateBatchPrintButtonState();
+    });
+
+    $(document).on('change', '#table-saldo tbody .tx-row-checkbox', function() {
+        var val = String($(this).val());
+        var isChecked = $(this).is(':checked');
+        var idx = window.selectedTxIds.indexOf(val);
+        if (isChecked && idx === -1) {
+            window.selectedTxIds.push(val);
+        } else if (!isChecked && idx !== -1) {
+            window.selectedTxIds.splice(idx, 1);
+        }
+        syncSelectAllTxCheckbox();
+        updateBatchPrintButtonState();
+    });
+
+    $(document).on('click', '#btn-print-batch-tx', function() {
+        if (!window.selectedTxIds || window.selectedTxIds.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Pilih Transaksi Terlebih Dahulu',
+                text: 'Centang minimal 1 transaksi pada tabel untuk mencetak bukti bayar (otomatis disusun 3 Bukti Bayar per 1 lembar kertas A4).',
+                confirmButtonText: 'Mengerti',
+                customClass: { confirmButton: 'btn btn-primary' }
+            });
+            return;
+        }
+        var batchUrl = "{{ route('transaction.invoice.batch') }}?ids=" + encodeURIComponent(window.selectedTxIds.join(','));
+        window.open(batchUrl, '_blank');
+    });
 
     function getTotalSaldo() {
         $.ajax({

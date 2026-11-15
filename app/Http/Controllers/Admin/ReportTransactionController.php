@@ -322,7 +322,7 @@ class ReportTransactionController extends Controller
                         }
 
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
-                            "<a href='" . route('transaction.invoice', $data->id) . "' target='_blank' class='btn btn-sm btn-primary' title='Cetak Invoice'><i class='fas fa-print'></i></a>" .
+                            "<a href='" . route('transaction.invoice', $data->id) . "' target='_blank' class='btn btn-sm btn-primary' title='Cetak Bukti Bayar (1/3 A4)'><i class='fas fa-print'></i></a>" .
                             $waButton .
                             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Transaksi']) .
                             "</div>";

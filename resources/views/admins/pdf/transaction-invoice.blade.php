@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Invoice Bukti Pembayaran</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 0mm;
+        }
+
         @font-face {
             font-family: 'Inter';
             font-style: normal;
@@ -35,29 +40,79 @@
         }
 
         * {
-            box-sizing: border-box;
             font-family: 'Inter', Helvetica, Arial, sans-serif !important;
             margin: 0;
             padding: 0;
         }
 
-        body {
+        html, body {
+            width: 100%;
             color: #1E293B;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 9.5px;
+            line-height: 1.25;
             background-color: #FFFFFF;
-            padding: 24px;
+            margin: 0;
+            padding: 0;
         }
 
-        #paper {
+        .a4-sheet {
             width: 100%;
+            position: relative;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        /*
+         * 1/3 A4 Slip Container:
+         * PENTING UNTUK DOMPDF: Jangan gunakan width: 210mm bersamaan dengan padding horizontal,
+         * karena DomPDF mengabaikan box-sizing: border-box dan menjumlahkan 210mm + padding = 228mm (terpotong di kanan).
+         * Gunakan width: auto dengan padding kiri-kanan 10mm sehingga lebar bersih otomatis 190mm di tengah kertas A4.
+         */
+        .receipt-slip {
+            width: auto;
+            height: 92mm;
+            max-height: 92mm;
+            padding: 3mm 10mm 3mm 10mm;
+            overflow: hidden;
+            position: relative;
+            page-break-inside: avoid;
+        }
+
+        .receipt-slip.with-cutline {
+            border-bottom: 1.2px dashed #94A3B8;
+        }
+
+        /* Bingkai Kartu Kwitansi per Slip */
+        .slip-card {
+            width: auto;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            padding: 5.5px 9px 5px 9px;
+            background-color: #FFFFFF;
+        }
+
+        .cut-indicator {
+            position: absolute;
+            bottom: 1px;
+            right: 10mm;
+            font-size: 7px;
+            color: #64748B;
+            font-weight: 600;
+            background-color: #F8FAFC;
+            padding: 0px 5px;
+            border-radius: 3px;
         }
 
         /* Header */
         .header-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 4px;
+            padding-bottom: 3.5px;
+            border-bottom: 1.5px solid #E2E8F0;
         }
 
         .header-table td {
@@ -65,82 +120,120 @@
         }
 
         .brand-title {
-            font-size: 18px;
+            font-size: 12.5px;
             font-weight: 800;
             color: #4D0C7A;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            font-size: 8px;
+            color: #64748B;
+            font-weight: 600;
+            margin-top: 1px;
         }
 
         .invoice-title {
-            font-size: 15px;
+            font-size: 10.5px;
             font-weight: 800;
             color: #0F172A;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.2px;
             text-transform: uppercase;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .invoice-code {
-            font-size: 13px;
+            font-size: 9.5px;
             font-weight: 700;
             color: #4D0C7A;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
-        /* Information Box (2 Columns Layout) */
+        /* Badge Status */
+        .badge-pill-success {
+            background-color: #DEF7EC;
+            color: #03543F;
+            padding: 1px 6px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 8px;
+            letter-spacing: 0.2px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 3px;
+        }
+
+        .badge-pill-danger {
+            background-color: #FDE8E8;
+            color: #9B1C1C;
+            padding: 1px 6px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 8px;
+            letter-spacing: 0.2px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 3px;
+        }
+
+        /* Student & Transaction Info Compact Box */
         .info-card {
+            width: auto;
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-        }
-
-        .info-card-header {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #64748B;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #E2E8F0;
-            padding-bottom: 4px;
+            border-radius: 5px;
+            padding: 4px 8px;
+            margin-bottom: 5px;
         }
 
         .info-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
         }
 
         .info-table td {
-            padding: 3px 0;
-            font-size: 12px;
+            padding: 0.8px 0;
+            font-size: 8.8px;
             vertical-align: top;
+            line-height: 1.25;
         }
 
         .label-cell {
-            color: #64748B;
-            font-weight: 500;
+            color: #475569;
+            font-weight: 600;
+            width: 66px;
         }
 
         .colon-cell {
-            color: #64748B;
-            width: 12px;
+            color: #475569;
+            width: 7px;
             text-align: center;
         }
 
         .value-cell {
             color: #0F172A;
-            font-weight: 600;
+            font-weight: 700;
+            overflow: hidden;
         }
 
-        /* Modern Data Table */
+        /* Main 2-Column Layout Table (64% Left : 36% Right) */
+        .main-layout-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+
+        /* Data Table (Left Column) */
         .data-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: separate;
             border-spacing: 0;
-            margin-bottom: 20px;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
+            border: 1px solid #CBD5E1;
+            border-radius: 5px;
             overflow: hidden;
         }
 
@@ -149,46 +242,39 @@
         }
 
         .data-table thead th {
-            color: #475569;
-            font-size: 11px;
+            color: #334155;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 10px 14px;
-            border-bottom: 1.5px solid #CBD5E1;
+            letter-spacing: 0.2px;
+            padding: 3.5px 6px;
+            border-bottom: 1px solid #CBD5E1;
             text-align: left;
         }
 
-        .data-table thead th.text-end {
-            text-align: right;
-        }
-
-        .data-table thead th.text-center {
-            text-align: center;
-        }
-
-        .data-table tbody tr {
+        .data-table tbody td {
+            padding: 3.5px 6px;
+            font-size: 8.8px;
+            color: #1E293B;
+            vertical-align: top;
             border-bottom: 1px solid #F1F5F9;
+            line-height: 1.2;
         }
 
         .data-table tbody tr:last-child td {
             border-bottom: none;
         }
 
-        .data-table tbody td {
-            padding: 11px 14px;
-            font-size: 12px;
-            color: #334155;
-            vertical-align: top;
-            border-bottom: 1px solid #F1F5F9;
+        /* Auto-Compact Mode when >= 4 BillType groups */
+        .data-table.compact-mode thead th {
+            padding: 2.5px 5px;
+            font-size: 7.5px;
         }
 
-        .data-table tbody td.text-end {
-            text-align: right;
-        }
-
-        .data-table tbody td.text-center {
-            text-align: center;
+        .data-table.compact-mode tbody td {
+            padding: 2px 5px;
+            font-size: 8px;
+            line-height: 1.12;
         }
 
         .item-name {
@@ -197,15 +283,16 @@
         }
 
         .item-count-badge {
-            font-size: 10px;
-            color: #64748B;
+            font-size: 7.5px;
+            color: #475569;
             font-weight: 600;
-            margin-top: 2px;
+            display: inline-block;
+            margin-left: 2px;
         }
 
         .period-year-row {
-            margin-bottom: 4px;
-            line-height: 1.4;
+            margin-bottom: 1px;
+            line-height: 1.15;
         }
 
         .period-year-row:last-child {
@@ -214,42 +301,44 @@
 
         .period-year-badge {
             background-color: #E2E8F0;
-            color: #334155;
+            color: #1E293B;
             font-weight: 700;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
+            font-size: 7.5px;
+            padding: 0.5px 3.5px;
+            border-radius: 3px;
             display: inline-block;
-            margin-right: 4px;
+            margin-right: 2px;
         }
 
         .period-months-text {
-            font-size: 11px;
-            color: #475569;
-            font-weight: 500;
+            font-size: 8px;
+            color: #334155;
+            font-weight: 600;
         }
 
         .item-desc {
-            color: #64748B;
-            font-size: 11px;
+            color: #475569;
+            font-size: 8px;
         }
 
-        /* Summary & Totals Table */
-        .summary-wrapper {
-            width: 100%;
-            margin-top: 10px;
-            margin-bottom: 20px;
+        /* Right Summary & Verification Panel */
+        .summary-panel {
+            width: auto;
+            background-color: #F8FAFC;
+            border: 1px solid #CBD5E1;
+            border-radius: 5px;
+            padding: 5px 7px;
         }
 
         .summary-table {
-            width: 48%;
-            margin-left: auto;
+            width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
         }
 
         .summary-table td {
-            padding: 5px 8px;
-            font-size: 12px;
+            padding: 1.5px 1px;
+            font-size: 8.5px;
         }
 
         .summary-label {
@@ -260,90 +349,77 @@
         .summary-value {
             text-align: right;
             color: #0F172A;
-            font-weight: 600;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
-        /* Total Highlight Container */
         .total-box {
-            background-color: #F3E8FF;
-            border: 1px solid #E9D5FF;
-            border-radius: 6px;
+            width: auto;
+            background-color: #ECFDF5;
+            border: 1px solid #A7F3D0;
+            border-radius: 4px;
+            margin-top: 2.5px;
+            padding: 4px 6px;
         }
 
-        .total-box td {
-            padding: 8px 12px !important;
-        }
-
-        .total-label {
-            color: #4D0C7A !important;
-            font-weight: 800 !important;
-            font-size: 13px !important;
-        }
-
-        .total-value {
-            color: #4D0C7A !important;
-            font-weight: 800 !important;
-            font-size: 14px !important;
-            text-align: right;
-        }
-
-        /* Badge Status */
-        .badge-pill-success {
-            background-color: #DEF7EC;
-            color: #03543F;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        .badge-pill-danger {
-            background-color: #FDE8E8;
-            color: #9B1C1C;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        /* Footer */
-        .footer-divider {
-            border-top: 1px solid #E2E8F0;
-            margin-top: 16px;
-            padding-top: 14px;
-        }
-
-        .footer-table {
+        .total-box-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
         }
 
-        .footer-table td {
-            vertical-align: top;
-            font-size: 11px;
-            color: #64748B;
+        .total-label {
+            color: #065F46;
+            font-weight: 800;
+            font-size: 8.8px;
+            text-transform: uppercase;
         }
 
-        .footer-note {
-            line-height: 1.6;
-        }
-
-        .footer-note a {
-            color: #4D0C7A;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .timestamp {
-            margin-top: 10px;
-            text-align: right;
+        .total-value {
+            color: #059669;
+            font-weight: 800;
             font-size: 10px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .verification-divider {
+            border-top: 1px solid #E2E8F0;
+            margin-top: 4.5px;
+            padding-top: 4px;
+        }
+
+        .verification-note {
+            font-size: 7.5px;
+            color: #475569;
+            line-height: 1.25;
+        }
+
+        .verification-note strong {
+            color: #0F172A;
+            font-weight: 700;
+        }
+
+        .role-badge {
+            display: inline-block;
+            margin-top: 1.5px;
+            background-color: #F3E8FF;
+            color: #4D0C7A;
+            border: 1px solid #D8B4FE;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 7.2px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .slip-footer-note {
+            margin-top: 3.5px;
+            padding-top: 2.5px;
+            border-top: 1px solid #F1F5F9;
+            font-size: 7px;
             color: #94A3B8;
-            font-style: italic;
         }
 
         .text-end {
@@ -357,282 +433,479 @@
 </head>
 
 <body>
-    <div id="paper">
-        <!-- Header -->
-        <table class="header-table">
-            <tr>
-                <td width="50%">
-                    @php
-                        $logoPath = public_path('assets/media/logos/logo-full.png');
-                    @endphp
-                    @if (file_exists($logoPath))
-                        <img src="{{ $logoPath }}" width="180" alt="Logo PPTQ Cahaya Tasbih" />
-                    @else
-                        <div class="brand-title">PPTQ CAHAYA TASBIH</div>
-                    @endif
-                </td>
-                <td width="50%" class="text-end">
-                    <div class="invoice-title">INVOICE BUKTI PEMBAYARAN</div>
-                    <div class="invoice-code">{{ $data->payment_code }}</div>
-                </td>
-            </tr>
-        </table>
+    @php
+        $shortMonthsMap = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
 
-        <!-- Transaction Information Card (2 Columns Layout) -->
-        <div class="info-card">
-            <div class="info-card-header">Informasi Transaksi</div>
-            <table class="info-table">
-                <tr>
-                    <td width="55%" style="vertical-align: top;">
-                        <table width="100%">
-                            <tr>
-                                <td class="label-cell" style="width: 130px;">Tanggal Transaksi</td>
-                                <td class="colon-cell">:</td>
-                                <td class="value-cell">{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY HH:mm') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="label-cell" style="width: 130px;">Nama Siswa / Santri</td>
-                                <td class="colon-cell">:</td>
-                                <td class="value-cell">{{ $data->student?->name ?? '-' }}</td>
-                            </tr>
-                        </table>
-                    </td>
-                    <td width="45%" style="vertical-align: top; padding-left: 15px;">
-                        <table width="100%">
-                            <tr>
-                                <td class="label-cell" style="width: 75px;">Kelas</td>
-                                <td class="colon-cell">:</td>
-                                <td class="value-cell">{{ $data->student?->classroom?->name ?? '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="label-cell" style="width: 75px;">Lembaga</td>
-                                <td class="colon-cell">:</td>
-                                <td class="value-cell">{{ $data->student?->classroom?->school?->name ?? '-' }}</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        $formatSmartMonths = function ($yearItems, bool $useCompact) use ($shortMonthsMap) {
+            $sortedItems = $yearItems->sortBy(fn($d) => (int) ($d->bill?->month ?? 0))->values();
+            $monthNums = $sortedItems
+                ->map(fn($d) => (int) ($d->bill?->month ?? 0))
+                ->filter(fn($m) => $m >= 1 && $m <= 12)
+                ->unique()
+                ->values()
+                ->all();
 
-        <!-- Modern Data Table (Grouped Compact Layout) -->
-        <main>
-            <table class="data-table">
-                @if ($data->type == 'SALDO')
-                <thead>
+            if (empty($monthNums)) {
+                $fallback = $sortedItems->map(fn($d) => $d->bill?->translated_month ?? '')->filter()->implode(', ');
+                return $fallback !== '' ? $fallback : 'Sekali Bayar';
+            }
+
+            if (!$useCompact && count($monthNums) <= 3) {
+                return $sortedItems->map(fn($d) => $d->bill?->translated_month ?? ($shortMonthsMap[(int)$d->bill?->month] ?? ''))->filter()->unique()->implode(', ');
+            }
+
+            $ranges = [];
+            $start = $monthNums[0];
+            $prev = $monthNums[0];
+
+            for ($i = 1; $i < count($monthNums); $i++) {
+                if ($monthNums[$i] === $prev + 1) {
+                    $prev = $monthNums[$i];
+                } else {
+                    $ranges[] = [$start, $prev];
+                    $start = $monthNums[$i];
+                    $prev = $monthNums[$i];
+                }
+            }
+            $ranges[] = [$start, $prev];
+
+            $parts = [];
+            foreach ($ranges as [$rStart, $rEnd]) {
+                if ($rStart === $rEnd) {
+                    $parts[] = $shortMonthsMap[$rStart] ?? $rStart;
+                } elseif ($rEnd === $rStart + 1) {
+                    $parts[] = ($shortMonthsMap[$rStart] ?? $rStart) . ', ' . ($shortMonthsMap[$rEnd] ?? $rEnd);
+                } else {
+                    $parts[] = ($shortMonthsMap[$rStart] ?? $rStart) . '–' . ($shortMonthsMap[$rEnd] ?? $rEnd);
+                }
+            }
+
+            return implode(', ', $parts);
+        };
+
+        $normalizePhone = function (?string $raw): ?string {
+            if (empty($raw)) {
+                return null;
+            }
+            $digits = preg_replace('/\D/', '', $raw);
+            if ($digits === '' || strlen($digits) < 8) {
+                return null;
+            }
+            if (str_starts_with($digits, '0')) {
+                return '62' . substr($digits, 1);
+            }
+            if (str_starts_with($digits, '8')) {
+                return '62' . $digits;
+            }
+            return $digits;
+        };
+
+        $resolvePrimaryRoleLabel = function ($admin, string $uptType): string {
+            if (!$admin) {
+                return $uptType !== '' ? 'BENDAHARA ' . $uptType : 'SISTEM CT-PAY';
+            }
+
+            $roleNames = $admin->roles ? $admin->roles->pluck('name')->map(fn($r) => trim($r))->filter()->values()->all() : [];
+            if (empty($roleNames) && !empty($admin->role_name)) {
+                $roleNames = array_filter(array_map('trim', explode(',', $admin->role_name)));
+            }
+
+            foreach ($roleNames as $rName) {
+                if (stripos($rName, 'bendahara') !== false) {
+                    return strtoupper($rName);
+                }
+            }
+            foreach ($roleNames as $rName) {
+                if (stripos($rName, 'piket') !== false) {
+                    return strtoupper($rName);
+                }
+            }
+            foreach ($roleNames as $rName) {
+                if (stripos($rName, 'tata usaha') !== false || preg_match('/\btu\b/i', $rName)) {
+                    return strtoupper($rName);
+                }
+            }
+
+            $firstRole = $roleNames[0] ?? 'PETUGAS KEUANGAN';
+            return strtoupper(\Illuminate\Support\Str::limit($firstRole, 24, ''));
+        };
+
+        $txCollection = isset($transactions) && $transactions instanceof \Illuminate\Support\Collection && $transactions->isNotEmpty()
+            ? $transactions->values()
+            : collect([$data]);
+
+        $waMap = $uptWaNumbers ?? [
+            'SMP' => '6281225219812',
+            'MA' => '6285728128483',
+            'PONDOK' => null,
+            'DEFAULT' => '6281326368494',
+        ];
+
+        $pages = $txCollection->chunk(3);
+        $logoPath = public_path('assets/media/logos/logo-full.png');
+        $hasLogoFile = file_exists($logoPath);
+        $printedAt = \Carbon\Carbon::now()->locale('id_ID')->isoFormat('DD/MM/YYYY HH:mm');
+    @endphp
+
+    @foreach ($pages as $pageIndex => $pageTransactions)
+    <div class="a4-sheet {{ !$loop->last ? 'page-break' : '' }}">
+        @foreach ($pageTransactions->values() as $slipIndex => $tx)
+        @php
+            $details = $tx->transactionDetails ?? collect();
+            $groupedDetails = collect();
+            $isCompact = false;
+
+            if ($tx->type !== 'SALDO' && $tx->type !== 'SAVING') {
+                $groupedDetails = $details->groupBy(function ($detail) {
+                    return $detail->bill?->billType?->name ?? 'Pembayaran Tagihan';
+                });
+                $isCompact = $groupedDetails->count() >= 4 || $details->count() >= 6;
+            }
+
+            $subTotal = 0;
+            if ($tx->type === 'BILL') {
+                $subTotal = $details->sum(function ($d) {
+                    return ($d->amount !== null && $d->amount > 0) ? (int) $d->amount : (int) ($d->bill?->amount ?? 0);
+                });
+                if ($subTotal <= 0) {
+                    $subTotal = (int) ($tx->pay_amount ?? 0);
+                }
+            } elseif ($tx->type === 'SAVING') {
+                $subTotal = $details->sum(fn($d) => (int) ($d->savingHistory?->amount ?? 0)) ?: (int) ($tx->pay_amount ?? 0);
+            } elseif ($tx->type === 'SALDO') {
+                $subTotal = $details->sum(fn($d) => (int) ($d->saldoHistory?->amount ?? 0)) ?: (int) ($tx->pay_amount ?? 0);
+            } else {
+                $subTotal = (int) ($tx->pay_amount ?? 0);
+            }
+
+            $totalTagihan = (int) ($tx->pay_amount ?? $subTotal);
+            if (($tx->xendit_fee ?? 0) > 0) {
+                $totalTagihan += (int) $tx->xendit_fee + (int) ($tx->app_fee ?? 0);
+            }
+
+            // Identifikasi UPT (SMP / MA / PONDOK) & Role Petugas
+            $schoolType = strtoupper(trim($tx->student?->classroom?->school?->type ?? ''));
+            if (!in_array($schoolType, ['SMP', 'MA', 'PONDOK'], true)) {
+                $schoolNameUpper = strtoupper($tx->student?->classroom?->school?->name ?? '');
+                if (str_contains($schoolNameUpper, 'SMP')) {
+                    $schoolType = 'SMP';
+                } elseif (str_contains($schoolNameUpper, 'MA') || str_contains($schoolNameUpper, 'ALIYAH')) {
+                    $schoolType = 'MA';
+                } else {
+                    $schoolType = 'PONDOK';
+                }
+            }
+
+            $officerRoleLabel = $resolvePrimaryRoleLabel($tx->admin, $schoolType);
+            $officerPhone = $normalizePhone($tx->admin?->phone);
+
+            if ($schoolType === 'SMP') {
+                $targetWaPhone = $waMap['SMP'] ?? $officerPhone ?? $waMap['DEFAULT'];
+            } elseif ($schoolType === 'MA') {
+                $targetWaPhone = $waMap['MA'] ?? $officerPhone ?? $waMap['DEFAULT'];
+            } else {
+                $targetWaPhone = $waMap['PONDOK'] ?? $officerPhone ?? $waMap['DEFAULT'];
+            }
+
+            $studentShortName = \Illuminate\Support\Str::limit($tx->student?->name ?? 'Santri', 24, '');
+            $formattedTotalRp = 'Rp ' . number_format($totalTagihan, 0, ',', '.');
+            $waText = "Konfirmasi Bukti Bayar #{$tx->payment_code} a.n {$studentShortName} ({$formattedTotalRp})";
+            $waQrLink = 'https://wa.me/' . $targetWaPhone . '?text=' . rawurlencode($waText);
+        @endphp
+
+        <div class="receipt-slip {{ $slipIndex < 2 ? 'with-cutline' : '' }}">
+            <div class="slip-card">
+                <!-- 1. Header -->
+                <table class="header-table">
                     <tr>
-                        <th width="8%" class="text-center">No</th>
-                        <th width="42%">Nama Pembayaran</th>
-                        <th class="text-end" width="25%">Jumlah</th>
-                        <th class="text-end" width="25%">Keterangan</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data->transactionDetails as $transaction_detail)
-                    <tr>
-                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
-                        <td>
-                            <span class="item-name">Top Up Saldo</span>
+                        <td width="50%">
+                            @if ($hasLogoFile)
+                                <img src="{{ $logoPath }}" width="118" alt="Logo PPTQ Cahaya Tasbih" style="display: block;" />
+                            @else
+                                <div class="brand-title">PPTQ CAHAYA TASBIH</div>
+                            @endif
+                            <div class="brand-subtitle">PPTQ Cahaya Tasbih • Bukti Pembayaran Sah Sistem CT-Pay</div>
                         </td>
-                        <td class="text-end">Rp {{ number_format($transaction_detail->saldoHistory?->amount ?? 0, 0, ',', '.') }}</td>
-                        <td class="text-end item-desc">{{ $transaction_detail->saldoHistory?->description ?? '-' }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="text-center">Tidak ada detail transaksi</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-                @elseif ($data->type == 'SAVING')
-                <thead>
-                    <tr>
-                        <th width="8%" class="text-center">No</th>
-                        <th width="42%">Nama Pembayaran</th>
-                        <th class="text-end" width="25%">Jumlah</th>
-                        <th class="text-end" width="25%">Keterangan</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($data->transactionDetails as $transaction_detail)
-                    <tr>
-                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
-                        <td>
-                            <span class="item-name">Setoran Tabungan</span>
-                        </td>
-                        <td class="text-end">Rp {{ number_format($transaction_detail->savingHistory?->amount ?? 0, 0, ',', '.') }}</td>
-                        <td class="text-end item-desc">{{ $transaction_detail->savingHistory?->description ?? '-' }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="4" class="text-center">Tidak ada detail transaksi</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-                @else
-                @php
-                    // Group transaction details by Bill Type Name
-                    $groupedDetails = $data->transactionDetails->groupBy(function($detail) {
-                        return $detail->bill?->billType?->name ?? 'Pembayaran Tagihan';
-                    });
-                @endphp
-                <thead>
-                    <tr>
-                        <th width="8%" class="text-center">No</th>
-                        <th width="35%">Item Tagihan</th>
-                        <th width="35%">Periode Tagihan (Bulan & Tahun)</th>
-                        <th class="text-end" width="22%">Total Nominal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($groupedDetails as $billTypeName => $detailsGroup)
-                        @php
-                            $groupTotal = $detailsGroup->sum(function($d) { return $d->bill?->amount ?? 0; });
-                            // Group items by year
-                            $byYear = $detailsGroup->groupBy(function($d) {
-                                return $d->bill?->year ?? '-';
-                            })->sortKeys();
-                        @endphp
-                        <tr>
-                            <td class="text-center" style="color: #64748B; font-weight: 600; padding-top: 12px;">{{ $loop->iteration }}</td>
-                            <td style="padding-top: 12px;">
-                                <span class="item-name">{{ $billTypeName }}</span>
-                                @if ($detailsGroup->count() > 1)
-                                    <div class="item-count-badge">({{ $detailsGroup->count() }} Bulan)</div>
+                        <td width="50%" class="text-end">
+                            <div>
+                                @if ($tx->status == 'PAID')
+                                    <span class="badge-pill-success">LUNAS</span>
+                                @else
+                                    <span class="badge-pill-danger">BELUM LUNAS</span>
                                 @endif
-                            </td>
-                            <td style="padding-top: 10px;">
-                                @foreach ($byYear as $year => $yearItems)
-                                    @php
-                                        // Sort months in numerical order (1..12)
-                                        $sortedItems = $yearItems->sortBy(function($d) {
-                                            return (int) ($d->bill?->month ?? 0);
-                                        });
-                                        $monthNames = $sortedItems->map(function($d) {
-                                            return $d->bill?->translated_month ?? '';
-                                        })->filter()->implode(', ');
-                                    @endphp
-                                    <div class="period-year-row">
-                                        <span class="period-year-badge">{{ $year }}</span>
-                                        <span class="period-months-text">{{ $monthNames }}</span>
-                                    </div>
-                                @endforeach
-                            </td>
-                            <td class="text-end" style="padding-top: 12px; font-weight: 700; color: #0F172A;">
-                                Rp {{ number_format($groupTotal, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
-                            <td><span class="item-name">Pembayaran Tagihan</span></td>
-                            <td>-</td>
-                            <td class="text-end">Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-                @endif
-            </table>
-
-            <!-- Summary & Totals -->
-            <div class="summary-wrapper">
-                <table class="summary-table">
-                    <tr>
-                        <td class="summary-label">SUB TOTAL</td>
-                        <td class="summary-value">
-                            @if ($data->type == 'BILL')
-                            Rp {{ number_format($data->transactionDetails->sum(function($d) { return $d->bill?->amount ?? 0; }), 0, ',', '.') }}
-                            @elseif ($data->type == 'SAVING')
-                            Rp {{ number_format($data->transactionDetails->sum(function($d) { return $d->savingHistory?->amount ?? 0; }), 0, ',', '.') }}
-                            @elseif ($data->type == 'SALDO')
-                            Rp {{ number_format($data->transactionDetails->sum(function($d) { return $d->saldoHistory?->amount ?? 0; }), 0, ',', '.') }}
-                            @else
-                            Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}
-                            @endif
-                        </td>
-                    </tr>
-
-                    @if (($data->xendit_fee ?? 0) > 0)
-                    <tr>
-                        <td class="summary-label">Biaya Transaksi</td>
-                        <td class="summary-value">Rp {{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
-                    </tr>
-                    @endif
-
-                    @if (($data->app_fee ?? 0) > 0)
-                    <tr>
-                        <td class="summary-label">Biaya Aplikasi</td>
-                        <td class="summary-value">Rp {{ number_format($data->app_fee, 0, ',', '.') }}</td>
-                    </tr>
-                    @endif
-
-                    @if (($data->unique_payment ?? 0) > 0)
-                    <tr>
-                        <td class="summary-label">Kode Unik Transaksi</td>
-                        <td class="summary-value">Rp {{ number_format($data->unique_payment, 0, ',', '.') }}</td>
-                    </tr>
-                    @endif
-
-                    <tr class="total-box">
-                        <td class="total-label">TOTAL TAGIHAN</td>
-                        @php
-                            $total = $data->pay_amount ?? 0;
-                            if (($data->xendit_fee ?? 0) > 0) {
-                                $total += $data->xendit_fee + ($data->app_fee ?? 0);
-                            }
-                        @endphp
-                        <td class="total-value">Rp {{ number_format($total, 0, ',', '.') }}</td>
-                    </tr>
-
-                    <tr>
-                        <td class="summary-label" style="padding-top: 8px;">STATUS PEMBAYARAN</td>
-                        <td class="summary-value" style="padding-top: 8px;">
-                            @if($data->status == 'PAID')
-                            <span class="badge-pill-success">LUNAS</span>
-                            @else
-                            <span class="badge-pill-danger">BELUM LUNAS</span>
-                            @endif
+                                <span class="invoice-title">INVOICE BUKTI PEMBAYARAN</span>
+                            </div>
+                            <div class="invoice-code">#{{ $tx->payment_code }}</div>
                         </td>
                     </tr>
                 </table>
+
+                <!-- 2. Student & Transaction Information Strip -->
+                <div class="info-card">
+                    <table class="info-table">
+                        <tr>
+                            <td width="54%" style="padding-right: 6px;">
+                                <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
+                                    <tr>
+                                        <td class="label-cell">Nama Santri</td>
+                                        <td class="colon-cell">:</td>
+                                        <td class="value-cell">
+                                            {{ \Illuminate\Support\Str::limit($tx->student?->name ?? '-', 25) }}{{ $tx->student?->nis ? ' (' . $tx->student->nis . ')' : '' }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-cell">Tgl Transaksi</td>
+                                        <td class="colon-cell">:</td>
+                                        <td class="value-cell">
+                                            {{ \Carbon\Carbon::parse($tx->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY, HH:mm') }} WIB
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td width="46%" style="border-left: 1px solid #E2E8F0; padding-left: 8px;">
+                                <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
+                                    <tr>
+                                        <td class="label-cell" style="width: 62px;">Kelas / Unit</td>
+                                        <td class="colon-cell">:</td>
+                                        <td class="value-cell">
+                                            {{ $tx->student?->classroom?->name ?? '-' }} • {{ \Illuminate\Support\Str::limit($tx->student?->classroom?->school?->name ?? '-', 20) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-cell" style="width: 62px;">Metode/Kasir</td>
+                                        <td class="colon-cell">:</td>
+                                        <td class="value-cell">
+                                            {{ $tx?->paymentMethod?->name ?? 'Tunai' }} • {{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 16) }}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 3. Main 2-Column Content (Left 64%: Items Table, Right 36%: Totals & QR WA Bendahara UPT) -->
+                <table class="main-layout-table">
+                    <tr>
+                        <!-- Left Column: Rincian Pembayaran -->
+                        <td width="64%" style="vertical-align: top; padding-right: 7px;">
+                            <table class="data-table {{ $isCompact ? 'compact-mode' : '' }}">
+                                @if ($tx->type == 'SALDO')
+                                    <thead>
+                                        <tr>
+                                            <th width="8%" class="text-center">No</th>
+                                            <th width="42%">Nama Pembayaran</th>
+                                            <th width="25%" class="text-end">Jumlah</th>
+                                            <th width="25%" class="text-end">Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($details->take(5) as $transaction_detail)
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
+                                                <td><span class="item-name">Top Up Saldo</span></td>
+                                                <td class="text-end" style="font-weight: 700; white-space: nowrap;">Rp {{ number_format($transaction_detail->saldoHistory?->amount ?? $tx->pay_amount ?? 0, 0, ',', '.') }}</td>
+                                                <td class="text-end item-desc">{{ \Illuminate\Support\Str::limit($transaction_detail->saldoHistory?->description ?? '-', 24) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
+                                                <td><span class="item-name">Top Up Saldo</span></td>
+                                                <td class="text-end" style="font-weight: 700; white-space: nowrap;">Rp {{ number_format($tx->pay_amount ?? 0, 0, ',', '.') }}</td>
+                                                <td class="text-end item-desc">-</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                @elseif ($tx->type == 'SAVING')
+                                    <thead>
+                                        <tr>
+                                            <th width="8%" class="text-center">No</th>
+                                            <th width="42%">Nama Pembayaran</th>
+                                            <th width="25%" class="text-end">Jumlah</th>
+                                            <th width="25%" class="text-end">Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($details->take(5) as $transaction_detail)
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
+                                                <td><span class="item-name">Setoran Tabungan</span></td>
+                                                <td class="text-end" style="font-weight: 700; white-space: nowrap;">Rp {{ number_format($transaction_detail->savingHistory?->amount ?? $tx->pay_amount ?? 0, 0, ',', '.') }}</td>
+                                                <td class="text-end item-desc">{{ \Illuminate\Support\Str::limit($transaction_detail->savingHistory?->description ?? '-', 24) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
+                                                <td><span class="item-name">Setoran Tabungan</span></td>
+                                                <td class="text-end" style="font-weight: 700; white-space: nowrap;">Rp {{ number_format($tx->pay_amount ?? 0, 0, ',', '.') }}</td>
+                                                <td class="text-end item-desc">-</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                @else
+                                    @php
+                                        $maxVisibleGroups = 5;
+                                        $visibleGroups = $groupedDetails->take($maxVisibleGroups);
+                                        $overflowGroups = $groupedDetails->slice($maxVisibleGroups);
+                                    @endphp
+                                    <thead>
+                                        <tr>
+                                            <th width="7%" class="text-center">No</th>
+                                            <th width="39%">Item Tagihan</th>
+                                            <th width="31%">Periode (Bulan & Tahun)</th>
+                                            <th width="23%" class="text-end">Nominal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($visibleGroups as $billTypeName => $detailsGroup)
+                                            @php
+                                                $groupTotal = $detailsGroup->sum(function ($d) {
+                                                    return ($d->amount !== null && $d->amount > 0) ? (int) $d->amount : (int) ($d->bill?->amount ?? 0);
+                                                });
+                                                $byYear = $detailsGroup->groupBy(function ($d) {
+                                                    return $d->bill?->year ?? ($d->bill?->academicYear?->name ?? '-');
+                                                })->sortKeys();
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
+                                                <td>
+                                                    <span class="item-name">{{ \Illuminate\Support\Str::limit($billTypeName, 24) }}</span>
+                                                    @if ($detailsGroup->count() > 1)
+                                                        <span class="item-count-badge">({{ $detailsGroup->count() }} Bln)</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @foreach ($byYear as $year => $yearItems)
+                                                        <div class="period-year-row">
+                                                            @if ($year !== '-')
+                                                                <span class="period-year-badge">{{ $year }}</span>
+                                                            @endif
+                                                            <span class="period-months-text">{{ $formatSmartMonths($yearItems, $isCompact || $byYear->count() > 1) }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </td>
+                                                <td class="text-end" style="font-weight: 700; color: #0F172A; white-space: nowrap;">
+                                                    Rp {{ number_format($groupTotal, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
+                                                <td><span class="item-name">Pembayaran Tagihan</span></td>
+                                                <td>-</td>
+                                                <td class="text-end" style="font-weight: 700; color: #0F172A; white-space: nowrap;">Rp {{ number_format($tx->pay_amount ?? 0, 0, ',', '.') }}</td>
+                                            </tr>
+                                        @endforelse
+
+                                        @if ($overflowGroups->isNotEmpty())
+                                            @php
+                                                $overflowTotal = $overflowGroups->sum(function ($grp) {
+                                                    return $grp->sum(fn($d) => ($d->amount !== null && $d->amount > 0) ? (int) $d->amount : (int) ($d->bill?->amount ?? 0));
+                                                });
+                                                $overflowItemCount = $overflowGroups->sum(fn($grp) => $grp->count());
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $visibleGroups->count() + 1 }}</td>
+                                                <td>
+                                                    <span class="item-name">+{{ $overflowGroups->count() }} Jenis Tagihan Lainnya</span>
+                                                </td>
+                                                <td>
+                                                    <span class="period-months-text">{{ $overflowItemCount }} Item Terbayar</span>
+                                                </td>
+                                                <td class="text-end" style="font-weight: 700; color: #0F172A; white-space: nowrap;">
+                                                    Rp {{ number_format($overflowTotal, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                @endif
+                            </table>
+                        </td>
+
+                        <!-- Right Column: Summary Totals, Officer Role & WA Bendahara UPT QR Code -->
+                        <td width="36%" style="vertical-align: top;">
+                            <div class="summary-panel">
+                                <table class="summary-table">
+                                    <tr>
+                                        <td width="52%" class="summary-label">Sub Total ({{ max(1, $details->count()) }} Item)</td>
+                                        <td width="48%" class="summary-value">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
+                                    </tr>
+
+                                    @if (($tx->xendit_fee ?? 0) > 0)
+                                    <tr>
+                                        <td class="summary-label">Biaya Transaksi</td>
+                                        <td class="summary-value">Rp {{ number_format($tx->xendit_fee, 0, ',', '.') }}</td>
+                                    </tr>
+                                    @endif
+
+                                    @if (($tx->app_fee ?? 0) > 0)
+                                    <tr>
+                                        <td class="summary-label">Biaya Aplikasi</td>
+                                        <td class="summary-value">Rp {{ number_format($tx->app_fee, 0, ',', '.') }}</td>
+                                    </tr>
+                                    @endif
+
+                                    @if (($tx->unique_payment ?? 0) > 0)
+                                    <tr>
+                                        <td class="summary-label">Kode Unik</td>
+                                        <td class="summary-value">Rp {{ number_format($tx->unique_payment, 0, ',', '.') }}</td>
+                                    </tr>
+                                    @endif
+                                </table>
+
+                                <div class="total-box">
+                                    <table class="total-box-table">
+                                        <tr>
+                                            <td width="44%" class="total-label">TOTAL BAYAR</td>
+                                            <td width="56%" class="total-value">Rp {{ number_format($totalTagihan, 0, ',', '.') }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="verification-divider">
+                                    <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
+                                        <tr>
+                                            <td width="76%" style="vertical-align: middle; padding-right: 4px;" class="verification-note">
+                                                <strong>Bukti Sah Sistem CT-Pay</strong><br />
+                                                Petugas: <strong>{{ \Illuminate\Support\Str::limit($tx?->admin?->name ?? 'CT-PAY', 17) }}</strong><br />
+                                                Cetak: {{ $printedAt }} WIB<br />
+                                                <span class="role-badge">{{ $officerRoleLabel }}</span>
+                                            </td>
+                                            <td width="24%" class="text-end" style="vertical-align: middle;">
+                                                <a href="{{ $waQrLink }}" target="_blank" style="text-decoration: none;">
+                                                    <img src="data:image/svg+xml;base64,{!! base64_encode(QrCode::format('svg')->size(84)->margin(0)->generate($waQrLink)) !!}"
+                                                        alt="QR WA Bendahara" style="display: inline-block; width: 41px; height: 41px;" />
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="slip-footer-note">
+                    <table width="100%" style="table-layout: fixed; border-collapse: collapse;">
+                        <tr>
+                            <td width="72%">Kwitansi Resmi • Scan QR untuk Konfirmasi WA Bendahara UPT ({{ $schoolType }})</td>
+                            <td width="28%" class="text-end">Format 1/3 A4 (210 × 99 mm)</td>
+                        </tr>
+                    </table>
+                </div>
             </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="footer-divider">
-            <table class="footer-table">
-                <tr>
-                    <td width="50%">
-                        Metode Pembayaran: <br />
-                        <strong style="color: #0F172A; font-size: 12px;">{{ $data?->paymentMethod?->name ?? 'Tunai' }}</strong>
-                    </td>
-                    @if($data->admin_id)
-                    <td width="50%" class="text-end">
-                        Nama Petugas: <br />
-                        <strong style="color: #0F172A; font-size: 12px;">{{ $data?->admin?->name ?? 'CT-PAY' }}</strong>
-                    </td>
-                    @endif
-                </tr>
-            </table>
-
-            <table class="footer-table" style="margin-top: 14px;">
-                <tr>
-                    <td width="65%" class="footer-note">
-                        Invoice bukti pembayaran ini sah dan telah diproses secara otomatis oleh sistem kami.<br />
-                        Jika Anda membutuhkan bantuan lebih lanjut, silakan hubungi
-                        <a href="https://cahayatasbih.or.id/" target="_blank">PUSKOMINFO PPTQ CAHAYA TASBIH</a>.
-                    </td>
-                    <td width="35%" class="text-end">
-                        <img src="data:image/svg+xml;base64,{!! base64_encode(QrCode::format('svg')->size(90)->generate(route('transaction.invoice', $data->id))) !!}"
-                            alt="QR Verification" style="display: inline-block; width: 80px; height: 80px;" />
-                    </td>
-                </tr>
-            </table>
-
-            <div class="timestamp">
-                Cetak Terakhir: {{ \Carbon\Carbon::now()->locale('id_ID')->isoFormat('D MMMM YYYY HH:mm') }} WIB
-            </div>
-        </footer>
+            @if ($slipIndex < 2)
+                <div class="cut-indicator">✂ Potong di sini (99 mm)</div>
+            @endif
+        </div>
+        @endforeach
     </div>
+    @endforeach
 </body>
 
 </html>

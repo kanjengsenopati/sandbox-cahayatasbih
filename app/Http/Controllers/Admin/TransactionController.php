@@ -110,6 +110,64 @@ class TransactionController extends Controller
     }
 
 
+    private function normalizeWaPhone(?string $raw): ?string
+    {
+        if (empty($raw)) {
+            return null;
+        }
+        $digits = preg_replace('/\D/', '', $raw);
+        if ($digits === '' || strlen($digits) < 8) {
+            return null;
+        }
+        if (str_starts_with($digits, '0')) {
+            return '62' . substr($digits, 1);
+        }
+        if (str_starts_with($digits, '8')) {
+            return '62' . $digits;
+        }
+        return $digits;
+    }
+
+    private function resolveUptTreasurerPhones(): array
+    {
+        $defaultWa = $this->normalizeWaPhone(\App\Models\ApplicationSetting::first()?->number_whatsapp) ?? '6281326368494';
+
+        $uptPhones = [
+            'SMP' => null,
+            'MA' => null,
+            'PONDOK' => null,
+            'DEFAULT' => $defaultWa,
+        ];
+
+        $treasurerAdmins = \App\Models\Admin::with('roles')
+            ->where('is_active', true)
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->whereHas('roles', function ($q) {
+                $q->where('name', 'like', '%Bendahara%');
+            })
+            ->get();
+
+        foreach ($treasurerAdmins as $admin) {
+            $phone = $this->normalizeWaPhone($admin->phone);
+            if (!$phone) {
+                continue;
+            }
+            $roleNamesLower = strtolower($admin->roles->pluck('name')->implode(' '));
+            if (str_contains($roleNamesLower, 'smp') && empty($uptPhones['SMP'])) {
+                $uptPhones['SMP'] = $phone;
+            }
+            if (preg_match('/\bma\b/i', $roleNamesLower) && empty($uptPhones['MA'])) {
+                $uptPhones['MA'] = $phone;
+            }
+            if (str_contains($roleNamesLower, 'pondok') && empty($uptPhones['PONDOK'])) {
+                $uptPhones['PONDOK'] = $phone;
+            }
+        }
+
+        return $uptPhones;
+    }
+
     public function invoice($id)
     {
         if (!auth()->user()?->can('Manage Transaksi') && !auth()->user()?->can('Manage Laporan Transaksi') && !auth()->user()?->can('Manage Tagihan') && !auth()->user()?->hasRole('Super Admin')) {
@@ -118,14 +176,72 @@ class TransactionController extends Controller
 
         $data = Transaction::with([
             'student.classroom.school',
-            'transactionDetails.bill.billType',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
             'transactionDetails.saldoHistory',
             'transactionDetails.savingHistory',
             'paymentMethod',
-            'admin'
+            'admin.roles'
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data'));
+        $transactions = collect([$data]);
+        $uptWaNumbers = $this->resolveUptTreasurerPhones();
+
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data', 'transactions', 'uptWaNumbers'))
+            ->setPaper('a4', 'portrait');
         return $pdf->stream("Invoice {$data->payment_code}.pdf");
+    }
+
+    public function invoiceBatch(Request $request)
+    {
+        if (!auth()->user()?->can('Manage Transaksi') && !auth()->user()?->can('Manage Laporan Transaksi') && !auth()->user()?->can('Manage Tagihan') && !auth()->user()?->hasRole('Super Admin')) {
+            abort(403, 'Maaf, Anda tidak memiliki izin untuk melihat invoice transaksi.');
+        }
+
+        $rawIds = $request->input('ids', []);
+        if (is_string($rawIds)) {
+            $ids = array_values(array_filter(array_map('trim', explode(',', $rawIds))));
+        } elseif (is_array($rawIds)) {
+            $ids = array_values(array_filter(array_map('trim', $rawIds)));
+        } else {
+            $ids = [];
+        }
+
+        if (empty($ids)) {
+            abort(400, 'Silakan pilih minimal 1 transaksi untuk dicetak.');
+        }
+
+        $ids = array_slice(array_unique($ids), 0, 60);
+
+        $itemsById = Transaction::with([
+            'student.classroom.school',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'paymentMethod',
+            'admin.roles'
+        ])->whereIn('id', $ids)->get()->keyBy('id');
+
+        $transactions = collect($ids)
+            ->map(fn($id) => $itemsById->get($id))
+            ->filter()
+            ->values();
+
+        if ($transactions->isEmpty()) {
+            abort(404, 'Data transaksi tidak ditemukan.');
+        }
+
+        $data = $transactions->first();
+        $uptWaNumbers = $this->resolveUptTreasurerPhones();
+
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data', 'transactions', 'uptWaNumbers'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = $transactions->count() === 1
+            ? "Invoice {$data->payment_code}.pdf"
+            : 'Bukti-Bayar-Batch-' . $transactions->count() . '-Transaksi-' . date('Ymd-His') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 }
