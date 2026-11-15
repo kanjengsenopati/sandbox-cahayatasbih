@@ -387,6 +387,17 @@
                                         <span class="badge badge-success fw-bolder px-2.5 py-1 text-white">
                                             <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                         </span>
+                                        @if(!empty($detailPayment?->id))
+                                            <a href="{{ route('transaction.invoice', $detailPayment->id) }}"
+                                                target="_blank"
+                                                class="btn btn-sm btn-icon btn-light-primary w-22px h-22px"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                title="Cetak Bukti Bayar ({{ $detailPayment->payment_code }})"
+                                                onclick="event.stopPropagation();">
+                                                <i class="fas fa-print fs-9 text-primary"></i>
+                                            </a>
+                                        @endif
                                         @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
                                             @php
                                                 $cancelBillId = $billDetail?->id;

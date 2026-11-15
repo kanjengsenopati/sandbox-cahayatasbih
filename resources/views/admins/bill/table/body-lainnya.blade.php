@@ -386,16 +386,26 @@
                                                     </td>
                                                     <td class="{{ $sisaClass }}">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
                                                     <td class="text-center">
-                                                        @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Batal Angsuran Tagihan'))
-                                                            <button type="button" 
-                                                                class="btn btn-sm {{ $isLatest ? 'btn-light-danger fw-bold' : 'btn-light-danger opacity-75' }} py-1 px-2.5 fs-8 btn-cancel-transaction"
-                                                                title="Batalkan Angsuran Transaksi Ini"
-                                                                onclick="handleCancelTransactionDetail('{{ $detail->id }}', 'Rp {{ number_format($paidAmt, 0, ',', '.') }}', '{{ $txDate }}', event)">
-                                                                <i class="fas fa-undo me-1 fs-9"></i> Batal
-                                                            </button>
-                                                        @else
-                                                            <span class="text-muted fs-8">-</span>
-                                                        @endif
+                                                        <div class="d-flex align-items-center justify-content-center gap-1 flex-nowrap">
+                                                            @if(!empty($detail->transaction?->id))
+                                                                <a href="{{ route('transaction.invoice', $detail->transaction->id) }}"
+                                                                    target="_blank"
+                                                                    class="btn btn-sm btn-light-primary fw-bold py-1 px-2.5 fs-8"
+                                                                    title="Cetak Bukti Bayar ({{ $detail->transaction->payment_code }})">
+                                                                    <i class="fas fa-print me-1 fs-9"></i> Cetak
+                                                                </a>
+                                                            @endif
+                                                            @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Batal Angsuran Tagihan'))
+                                                                <button type="button" 
+                                                                    class="btn btn-sm {{ $isLatest ? 'btn-light-danger fw-bold' : 'btn-light-danger opacity-75' }} py-1 px-2.5 fs-8 btn-cancel-transaction"
+                                                                    title="Batalkan Angsuran Transaksi Ini"
+                                                                    onclick="handleCancelTransactionDetail('{{ $detail->id }}', 'Rp {{ number_format($paidAmt, 0, ',', '.') }}', '{{ $txDate }}', event)">
+                                                                    <i class="fas fa-undo me-1 fs-9"></i> Batal
+                                                                </button>
+                                                            @elseif(empty($detail->transaction?->id))
+                                                                <span class="text-muted fs-8">-</span>
+                                                            @endif
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -491,20 +501,31 @@
                                                 </span>
                                             @endif
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <div class="d-flex justify-content-between align-items-center mt-2 gap-1">
                                             <span class="badge badge-success fw-bolder px-2 py-1">
                                                 <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                             </span>
-                                            @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
-                                                @if(!empty($billDetail?->id))
-                                                <button type="button" 
-                                                    class="btn btn-sm btn-light-danger fw-bold py-1 px-2 fs-9 btn-cancel-bill"
-                                                    title="Batalkan Pembayaran"
-                                                    onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
-                                                    Batal
-                                                </button>
+                                            <div class="d-flex align-items-center gap-1">
+                                                @if(!empty($detailPayment?->id))
+                                                    <a href="{{ route('transaction.invoice', $detailPayment->id) }}"
+                                                        target="_blank"
+                                                        class="btn btn-sm btn-light-primary fw-bold py-1 px-2 fs-9"
+                                                        title="Cetak Bukti Bayar ({{ $detailPayment->payment_code }})"
+                                                        onclick="event.stopPropagation();">
+                                                        <i class="fas fa-print me-1 fs-9"></i> Cetak
+                                                    </a>
                                                 @endif
-                                            @endif
+                                                @if(Auth::user()?->hasRole('Super Admin') || Auth::user()?->can('Cancel Tagihan') || Auth::user()?->can('Batal Transaksi Tagihan'))
+                                                    @if(!empty($billDetail?->id))
+                                                    <button type="button" 
+                                                        class="btn btn-sm btn-light-danger fw-bold py-1 px-2 fs-9 btn-cancel-bill"
+                                                        title="Batalkan Pembayaran"
+                                                        onclick="handleCancelBillPayment('{{ $billDetail->id }}', '{{ addslashes($bill->name) }}', event)">
+                                                        Batal
+                                                    </button>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </div>
                                     @else
                                         <div class="d-flex justify-content-center align-items-center py-2">

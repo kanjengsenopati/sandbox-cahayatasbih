@@ -684,22 +684,26 @@ class BillController extends Controller
 
     private function formatArchiveActionColumn($transaction)
     {
+        $printBtn = "<a href='" . route('transaction.invoice', $transaction->id) . "' target='_blank' class='btn btn-primary btn-sm' title='Cetak Bukti Bayar (1/3 A4)'><i class='fas fa-print me-1'></i> Cetak</a>";
+
         if (!Auth::user()->hasRole('Super Admin') && !Auth::user()->can('Delete Tagihan') && !Auth::user()->can('Edit Tagihan')) {
-            return '';
+            return "<div class='d-flex gap-1 justify-content-center'>{$printBtn}</div>";
         }
 
         $daysDiff = $transaction->updated_at ? $transaction->updated_at->diffInDays(now()) : 0;
         $canDelete = $daysDiff > 30;
 
         if ($canDelete) {
-            return "<button class='btn btn-danger btn-sm delete-archive-btn' data-id='{$transaction->id}'>
+            $deleteBtn = "<button class='btn btn-danger btn-sm delete-archive-btn' data-id='{$transaction->id}'>
                         <i class='fas fa-trash me-1'></i> Hapus
                     </button>";
         } else {
-            return "<button class='btn btn-danger btn-sm' disabled data-bs-toggle='tooltip' title='Hapus dinonaktifkan karena usia arsip kurang dari 30 hari'>
+            $deleteBtn = "<button class='btn btn-danger btn-sm' disabled data-bs-toggle='tooltip' title='Hapus dinonaktifkan karena usia arsip kurang dari 30 hari'>
                         <i class='fas fa-trash me-1'></i> Hapus
                     </button>";
         }
+
+        return "<div class='d-flex gap-1 justify-content-center flex-nowrap'>{$printBtn}{$deleteBtn}</div>";
     }
 
     /**
@@ -760,7 +764,11 @@ class BillController extends Controller
             // Invalidate sync cache agar job dipicu lagi saat santri buka tagihan
             Cache::forget("student_bills_synced_{$studentId}");
 
-            return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
+            return redirect()->back()
+                ->with('success', "Transaksi pembayaran berhasil")
+                ->with('last_paid_transaction_id', $transaction->id)
+                ->with('last_paid_transaction_code', $transaction->payment_code)
+                ->with('last_paid_amount', $transaction->pay_amount);
 
         } catch (\Throwable $th) {
             Log::error($th);
