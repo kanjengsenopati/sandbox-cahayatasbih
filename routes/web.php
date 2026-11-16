@@ -123,6 +123,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit', function() {
         return redirect()->route('admin.audit.diagnostics');
     })->name('admin.audit');
+    Route::get('audit/sync', fn() => redirect()->route('admin.audit.diagnostics'))->name('admin.audit.sync');
 
     Route::post('audit/merge-students', [App\Http\Controllers\Admin\AuditController::class, 'mergeStudents'])->name('admin.merge-students');
 });
@@ -790,10 +791,6 @@ Route::get('file-asset', function (\Illuminate\Http\Request $request) {
     
     $path = storage_path('app/public/' . $p);
     if (!file_exists($path)) {
-        $masterUrl = config('app.master_url');
-        if ($masterUrl) {
-            return redirect()->away(rtrim($masterUrl, '/') . '/file-asset?p=' . urlencode($p));
-        }
         abort(404);
     }
     
@@ -818,10 +815,6 @@ Route::get('file-asset', function (\Illuminate\Http\Request $request) {
 
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');
 Route::get('s/{code}', [App\Http\Controllers\Public\ShortUrlController::class, 'show'])->name('public.short-url.show');
-
-Route::any('/audit-vps-data', function() {
-    return require public_path('audit_vps.php');
-})->middleware('web');
 
 // Mobile APK Download Routes
 Route::get('/download/ct-mobile-latest.apk', [\App\Http\Controllers\Api\MobileAppController::class, 'downloadLatestApk'])->name('mobile.download.latest');

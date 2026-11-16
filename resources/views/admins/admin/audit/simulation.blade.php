@@ -39,12 +39,7 @@
                 <!-- Audit Navigation Tabs -->
                 <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6 fw-bolder border-bottom-0">
                     <li class="nav-item">
-                        <a class="nav-link text-active-primary pe-4" href="{{ route('admin.audit.sync') }}">
-                            <i class="fas fa-database me-2"></i> Sinkronisasi Master
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-active-primary px-4" href="{{ route('admin.audit.diagnostics') }}">
+                        <a class="nav-link text-active-primary pe-4" href="{{ route('admin.audit.diagnostics') }}">
                             <i class="fas fa-chart-line me-2"></i> Diagnostik Komparasi
                         </a>
                     </li>
